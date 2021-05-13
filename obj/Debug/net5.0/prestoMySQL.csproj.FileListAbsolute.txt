@@ -1,0 +1,12 @@
+C:\Users\Fede\source\repos\prestoMySQL\obj\Debug\net5.0\prestoMySQL.csprojAssemblyReference.cache
+C:\Users\Fede\source\repos\prestoMySQL\obj\Debug\net5.0\prestoMySQL.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Fede\source\repos\prestoMySQL\obj\Debug\net5.0\prestoMySQL.AssemblyInfoInputs.cache
+C:\Users\Fede\source\repos\prestoMySQL\obj\Debug\net5.0\prestoMySQL.AssemblyInfo.cs
+C:\Users\Fede\source\repos\prestoMySQL\obj\Debug\net5.0\prestoMySQL.csproj.CoreCompileInputs.cache
+C:\Users\Fede\source\repos\prestoMySQL\bin\Debug\net5.0\prestoMySQL.deps.json
+C:\Users\Fede\source\repos\prestoMySQL\bin\Debug\net5.0\prestoMySQL.dll
+C:\Users\Fede\source\repos\prestoMySQL\bin\Debug\net5.0\ref\prestoMySQL.dll
+C:\Users\Fede\source\repos\prestoMySQL\bin\Debug\net5.0\prestoMySQL.pdb
+C:\Users\Fede\source\repos\prestoMySQL\obj\Debug\net5.0\prestoMySQL.dll
+C:\Users\Fede\source\repos\prestoMySQL\obj\Debug\net5.0\ref\prestoMySQL.dll
+C:\Users\Fede\source\repos\prestoMySQL\obj\Debug\net5.0\prestoMySQL.pdb

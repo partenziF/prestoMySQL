@@ -1,5 +1,7 @@
-﻿using prestoMySQL.Column.Attribute;
+﻿using prestoMySQL.Column;
+using prestoMySQL.Column.Attribute;
 using prestoMySQL.Column.DataType;
+using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity;
 using prestoMySQL.Exception;
 using prestoMySQL.Helper;
@@ -16,7 +18,7 @@ using System.Text;
 namespace prestoMySQL.SQL {
     public static class SQLBuilder {
 
-        public static string sqlCreate<T>( bool ifNotExists = true ) where T : GenericEntity {
+        public static string sqlCreate<T>( bool ifNotExists = true ) where T : AbstractEntity {
             StringBuilder sb = new StringBuilder();
 
             List<String> pk = null;
@@ -42,7 +44,7 @@ namespace prestoMySQL.SQL {
                             throw new System.Exception( "Column type not present" );
                         }
 
-                        string sNotNull = ( a.NotNull ) ? " NOT NULL" : "";
+                        string sNotNull = ( a.NullValue == NullValue.NotNull ) ? " NOT NULL" : "";
                         string sUnique = ( a.Unique ) ? " UNIQUE" : "";
 
                         string sPrimaryKey = "";
@@ -96,7 +98,7 @@ namespace prestoMySQL.SQL {
             return sb.ToString();
         }
 
-        public static string sqlDrop<T>( bool ifExists = true ) where T : GenericEntity {
+        public static string sqlDrop<T>( bool ifExists = true ) where T : AbstractEntity {
             StringBuilder sb = new StringBuilder();
             sb.Append( "DROP TABLE " );
             if ( ifExists ) sb.Append( "IF EXISTS " );
@@ -104,73 +106,33 @@ namespace prestoMySQL.SQL {
             return sb.ToString();
         }
 
-        public static string sqlDelete<T>() where T : GenericEntity {
+        public static string sqlDelete<T>() where T : AbstractEntity {
             StringBuilder sb = new StringBuilder().Append( string.Format( "DELETE FROM {0}" , SQLTableEntityHelper.getTableName<T>() ) );
             return sb.ToString();
         }
 
-        public static string sqlDelete<T>( T aTableInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" ) where T : GenericEntity {
+        public static string sqlDelete<T>( T aTableInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" ) where T : AbstractEntity {
 
-            outParams ??= new SQLQueryParams();
-            StringBuilder sb = new StringBuilder();
+            List<dynamic> pk = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( aTableInstance );
 
-            List<dynamic> pk = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn<T>( aTableInstance );
-            String[] pkc = new String[pk.Count];
+            outParams ??= new SQLQueryParams( pk.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToArray() );
 
-            if ( outParams != null ) {
-                outParams.setCapacity( pk.Count );
-            }
-
-            int i = 0;
-            foreach ( dynamic o in pk ) {
-
-                outParams[i++] = ( MySQLQueryParam ) o;
-
-            }
-
-            sb.Append( String.Format( "DELETE FROM {0} WHERE {1}" ,
-                    SQLTableEntityHelper.getTableName( aTableInstance ) ,
-                    String.Join( "," , outParams.asStrings( aParamPlaceholder ) ) ) );
-
-            return sb.ToString();
-
+            return String.Format( "DELETE FROM {0} WHERE {1}" , SQLTableEntityHelper.getTableName( aTableInstance ) ,
+                                                                new EntityConditionalExpression( LogicOperator.AND , pk.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() ).ToString() );
         }
 
-        public static string sqlInsert<T>( T aTableInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" ) where T : GenericEntity {
+        public static string sqlInsert<T>( T aTableInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" ) where T : AbstractEntity {
 
 
             StringBuilder sb = new StringBuilder();
-            //List<string> fieldsName = new List<string>(); //= SQLTableEntityHelper.getColumnName<T>( false , false );
 
-            List<dynamic> listDefinitionColumns = SQLTableEntityHelper.getDefinitionColumn<T>( aTableInstance , true );
+            List<dynamic> columnDefinition = SQLTableEntityHelper.getDefinitionColumn<T>( aTableInstance , true );
 
-            //            outParams.setCapacity( listDefinitionColumns.Count );
-            //string[] Params = new string[listDefinitionColumns.Count];
-            //int i = 0;
-            //foreach ( dynamic DefinitionColumn in listDefinitionColumns ) {
-            //    outParams[i++] = ( QueryParam ) ( MySQLQueryParam ) DefinitionColumn;
-            //}
-            //var xxx = listDefinitionColumns.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToArray();
-
-            outParams ??= new SQLQueryParams( listDefinitionColumns.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToArray() );
-
-
-            //QueryParam queryParam = ( MySQLQueryParam ) DefinitionColumn;  // cast definition column into query param
-            //String.Concat( DefinitionColumn , "=" , ( QueryParam ) ( MySQLQueryParam ) DefinitionColumn.AsQueryParam( aParamPlaceholder ) );
-            //outParams[i] = queryParam;
-            //fieldsName.Add( DefinitionColumn );
-            //  i++;
-            //outParams[i] = (MySQLQueryParam) o;
-            //Params[i] = ( ( outParams != null ) && ( !String.IsNullOrWhiteSpace( aParamPlaceholder ) ) ) ? aParamPlaceholder : outParams[i].ToString();
-            //}
-            //sb.Append( string.Format( "INSERT INTO  {0} ( {1} ) VALUES ({2})" ,
-            //            SQLTableEntityHelper.getTableName( aTableInstance ) ,
-            //            string.Join( "," , listDefinitionColumns.Select( x => ( string ) x.ToString() ).ToList() ) ,
-            //            string.Join( "," , outParams.asArray().Select( x => x.AsQueryParam(aParamPlaceholder) ) ) ));
+            outParams ??= new SQLQueryParams( columnDefinition.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToArray() );
 
             sb.Append( "INSERT INTO " );
             sb.Append( SQLTableEntityHelper.getTableName( aTableInstance ) );
-            sb.Append( string.Concat( " ( " , string.Join( "," , listDefinitionColumns.Select( x => ( string ) x.ColumnName ).ToList() ) , " ) " ) );
+            sb.Append( string.Concat( " ( " , string.Join( "," , columnDefinition.Select( x => ( string ) x.ColumnName ).ToList() ) , " ) " ) );
             sb.Append( " VALUES " );
             sb.Append( string.Concat( " ( " , string.Join( "," , outParams.asArray().Select( x => x.AsQueryParam( aParamPlaceholder ) ) ) , " ) " ) );
 
@@ -178,92 +140,35 @@ namespace prestoMySQL.SQL {
 
         }
 
-        public static string sqlUpdate<T>( T aTableInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" ) where T : GenericEntity {
+        public static string sqlUpdate<T>( T aTableInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" ) where T : AbstractEntity {
 
-            //outParams ??= new MySQLQueryParams();
-            StringBuilder sb = new StringBuilder();
+            List<dynamic> pkColumnDefinition = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( aTableInstance );
+            List<dynamic> columnDefinition = SQLTableEntityHelper.getDefinitionColumn<T>( aTableInstance , false );
 
-            List<dynamic> pk = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn<T>( aTableInstance );
-            List<dynamic> p = SQLTableEntityHelper.getDefinitionColumn<T>( aTableInstance , false );
+            outParams ??= new SQLQueryParams( columnDefinition.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToList().Union( pkColumnDefinition.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToList() ).ToArray() );
 
-            outParams ??= new SQLQueryParams( p.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToList().Union( pk.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToList() ).ToArray() );
-
-            //String[] pkc = new String[pk.Count];
-            //String[] c = new String[p.Count];
-
-            //outParams.setCapacity( pkc.Length + c.Length );
-
-            //int i = 0;
-            //int k = 0;
-            //foreach ( dynamic o in p ) {
-            //    outParams[k++] = ( MySQLQueryParam ) o;
-            //}
-            //int j = k;
-            //foreach ( dynamic o in pk ) {
-            //    outParams[k++] = ( MySQLQueryParam ) o;
-            //}
-
-            //Array.Copy( outParams.asStrings( aParamPlaceholder ) , c , j );
-            //Array.Copy( outParams.asStrings( aParamPlaceholder ) , j , pkc , 0 , k - j );
-
-            sb.Append( String.Format( "UPDATE {0} SET {1} WHERE {2}" ,
+            return String.Format( "UPDATE {0} SET {1} WHERE {2}" ,
                 SQLTableEntityHelper.getTableName( aTableInstance ) ,
-                String.Join( ", " , p.Select( x => String.Concat( ( string ) x.ColumnName , " = " , ( ( MySQLQueryParam ) x ).AsQueryParam() ) ).ToList() ) ,
-                String.Join( " AND " , pk.Select( x => String.Concat( x.ToString() , " = " , ( ( MySQLQueryParam ) x ).AsQueryParam() ) ).ToArray() ) )
-            );
-
-            return sb.ToString();
-
+                new EntityListExpression( columnDefinition.Select( x => FactoryEntityConstraint.MakeAssignement( x , aParamPlaceholder ) ).ToArray() ).ToString() ,
+                new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() ).ToString() );
         }
 
 
+        //public static string sqlSelect<T>( ref SQLQueryParams outParams , params dynamic[] Constraint ) where T : AbstractEntity {
+        public static string sqlSelect<T>( ref SQLQueryParams outParams , EntityConditionalExpression Constraint = null ) where T : AbstractEntity {
 
-        public static string sqlSelect<T>( ref SQLQueryParams outParams , params dynamic[] definableConstraint ) where T : GenericEntity {
 
-
-            StringBuilder sb = new StringBuilder();
             List<String> columnsName = SQLTableEntityHelper.getColumnName<T>( true , false );
+
             String tableName = SQLTableEntityHelper.getTableName<T>();
 
-            //int valuesLength = 0;
+            if ( Constraint?.Length > 0 ) {
 
-            //string[] selectionArray;
+                EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
 
-            //if ( definableConstraint != null ) {
-
-            //    foreach ( dynamic c in definableConstraint ) {
-            //        valuesLength += c.countParam();
-            //    }
-
-            //    selectionArray = new String[definableConstraint.Length];
-
-            //} else {
-            //    selectionArray = new String[] { };
-            //}
-
-            //outParams.setCapacity( valuesLength );
-
-            //int index = 0;
-            //if ( valuesLength > 0 ) {
-            //    for ( int i = 0; i < definableConstraint.Length; i++ ) {
-            //        selectionArray[i] = definableConstraint[i].ToString();
-            //        if ( outParams != null ) {
-            //            QueryParam[] v = definableConstraint[i].getParam();
-            //            for ( int j = 0; j < definableConstraint[i].countParam(); j++ ) {
-            //                outParams[index++] = v[j];
-            //            }
-            //        }
-            //    }
-            //}
-
-
-            //if ( selectionArray.Length > 0 ) {
-            if ( definableConstraint != null ) {
-
-                GenericEntityConstraintExpression expr = new GenericEntityConstraintExpression( LogicOperator.AND , definableConstraint );
                 outParams ??= new SQLQueryParams( expr.getParam() );
 
-                sb.Append( string.Format(
+                return string.Format(
 @"SELECT
     {0}
 FROM
@@ -272,76 +177,37 @@ WHERE
     {2}" ,
                     String.Join( "," , columnsName ) ,
                     tableName ,
-                    //string.Join( " AND " , selectionArray ) 
                     expr.ToString()
-                    ) );
-            } else {
-                sb.Append( String.Format( "SELECT\n\t{0}\nFROM\n\t{1}" , String.Join( "," , columnsName ) , tableName ) );
-            }
+                );
 
-            return sb.ToString();
+            } else {
+                return String.Format( "SELECT\n\t{0}\nFROM\n\t{1}" , String.Join( "," , columnsName ) , tableName );
+            }
 
         }
 
-        public static string sqlSelect<T>( T aTableInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" , params DefinableConstraint<object>[] values ) where T : GenericEntity {
+        public static string sqlSelect<T>( T aTableInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) where T : AbstractEntity {
 
+            List<dynamic> pkColumnDefinition = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( aTableInstance );
+            List<String> columnsName = SQLTableEntityHelper.getColumnName<T>( true , false );
 
-            StringBuilder sb = new StringBuilder();
+            EntityConditionalExpression constraintExpression = null;
+            if ( Constraint?.Length > 0 ) {
 
-            List<dynamic> pk = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn<T>( aTableInstance );
+                constraintExpression = new EntityConditionalExpression( LogicOperator.AND ,
 
-            outParams ??= new SQLQueryParams( pk.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToArray() );
+                new EntityConditionalExpression( LogicOperator.AND ,
+                     new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() ) ,
+                     new EntityConditionalExpression( LogicOperator.AND , Constraint )
+                    ) );
 
-            List<String> columnsName = SQLTableEntityHelper.getColumnName<T>( false , false );
-            //String tableName = SQLTableEntityHelper.getTableName<T>();
+            } else {
+                constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() );
+            }
 
-            //            dynamic[] pk = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn<T>( aTableInstance ).ToArray();// .toArray( new DefinableColumn<?>[0] )
-            //int delta = pk.Length;
-            //int valuesLength = 0;
-            //if ( ( values != null ) && ( values.Length > 0 ) ) {
-            //    foreach ( DefinableConstraint<object> c in values ) {
-            //        valuesLength += c.countParam();
-            //    }
-            //}
+            outParams ??= new SQLQueryParams( constraintExpression.getParam() );
 
-            //String[] selectionArray;
-            //selectionArray = new String[delta + values?.Length ?? 0];
-
-            //            outParams.setCapacity( selectionArray.Length );
-
-            //int index = 0;
-            //for ( int i = 0; i < pk.Length; i++ ) {
-
-            //    var o = Convert.ChangeType( pk[i] , ( pk[i].GetType() ) );
-            //    outParams[index++] = ( MySQLQueryParam ) o;
-            //}
-
-
-            //if ( valuesLength > 0 ) {
-
-            //    for ( int i = 0; i < values.Length; i++ ) {
-
-            //        if ( !String.IsNullOrEmpty( aParamPlaceholder ) ) {
-            //            ( ( GenericEntityConstraint<T> ) values[i] ).ParamPlaceHolder = aParamPlaceholder;
-            //        }
-
-            //        selectionArray[i + delta] = ( ( GenericEntityConstraint<T> ) values[i] ).ToString();
-
-            //        if ( outParams != null ) {
-            //            object[] v = ( ( GenericEntityConstraint<T> ) values[i] ).getParam();
-
-            //            for ( int j = 0; j < ( ( GenericEntityConstraint<T> ) values[i] ).countParam(); j++ ) {
-            //                outParams[index++] = v[j];
-            //            }
-
-            //        }
-
-            //    }
-
-            //}
-
-            sb.Append(
-                string.Format(
+            return string.Format(
 @"SELECT
     {0}
 FROM
@@ -349,21 +215,23 @@ FROM
 WHERE
     {2}" ,
                 string.Join( "," , SQLTableEntityHelper.getDefinitionColumn<T>( aTableInstance , true ).Select( x => ( string ) x.ToString() ).ToList() ) ,
-                SQLTableEntityHelper.getTableName<T>() ,
-                string.Join( " AND " , String.Join( " AND " , pk.Select( x => String.Concat( x.ToString() , " = " , ( ( MySQLQueryParam ) x ).AsQueryParam() ) ).ToArray() ) ) )
+                                   SQLTableEntityHelper.getTableName<T>() ,
+                                   constraintExpression.ToString()
                 );
 
-
-            return sb.ToString();
         }
 
 
 
 
-        public static string sqlMaxId<T>() where T : GenericEntity {
+        public static string sqlMaxId<T>() where T : AbstractEntity {
             throw new NotImplementedException();
         }
 
+
+        public static string sqlastInsertId<T>() where T : AbstractEntity {
+            return "SELECT LAST_INSERT_ID()";
+        }
 
         public static String sqlSelect<T>( T aQueryInstance ) where T : SQLQuery {
             throw new NotImplementedException();
@@ -372,5 +240,7 @@ WHERE
         public static SQLQuery SELECT( SQLQuery aQuery ) {
             throw new NotImplementedException();
         }
+
     }
+
 }

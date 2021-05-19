@@ -26,9 +26,9 @@ namespace prestoMySQL.Query.SQL {
         public SQLBinaryOperator BinaryOperator { get => mBinaryOperator; set => mBinaryOperator = value; }
         public string ParamPlaceHolder { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public QueryParam QueryParam { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        EvaluableBinaryOperator DefinableConstraint<T>.BinaryOperator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        EvaluableBinaryOperator DefinableConstraint.BinaryOperator { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public IQueryParams QueryParams { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        SQLQueryParams DefinableConstraint<T>.QueryParams { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        SQLQueryParams DefinableConstraint.QueryParams { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
 
 
@@ -57,14 +57,18 @@ namespace prestoMySQL.Query.SQL {
             throw new NotImplementedException();
         }
 
-
-        T[] DefinableConstraint<T>.ColumnValue() {
+        QueryParam[] DefinableConstraint.getParam() {
             throw new NotImplementedException();
         }
 
-        QueryParam[] DefinableConstraint<T>.getParam() {
-            throw new NotImplementedException();
-        }
+
+        //T[] DefinableConstraint.ColumnValue() {
+        //    throw new NotImplementedException();
+        //}
+
+        //QueryParam[] DefinableConstraint<T>.getParam() {
+        //    throw new NotImplementedException();
+        //}
     }
 
 }

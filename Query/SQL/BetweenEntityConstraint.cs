@@ -12,7 +12,7 @@ namespace prestoMySQL.Query.SQL {
 
         SQLQueryParams mColumnValues;
 
-        public BetweenEntityConstraint( DefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition , SQLQueryParams columnValues , string aParamPlaceholder = "" ) : base( aColumnDefinition , SQLBinaryOperator.between() , columnValues , aParamPlaceholder ) {
+        public BetweenEntityConstraint( MySQLDefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition , SQLQueryParams columnValues , string aParamPlaceholder = "" ) : base( aColumnDefinition , SQLBinaryOperator.between() , columnValues , aParamPlaceholder ) {
 
             mColumnValues = columnValues ?? throw new ArgumentNullException( nameof( columnValues ) );
             if ( mColumnValues.asArray().Length != 2 ) throw new ArgumentOutOfRangeException( "Invalid number of argument." );

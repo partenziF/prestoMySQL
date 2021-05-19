@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace prestoMySQL.Extension {
     public static class GenericEntityAttributeExtension {
-        public static DALTable GetAttributeDALTable( this GenericEntity entity ) {
+        public static DALTable GetAttributeDALTable( this AbstractEntity entity ) {
 
             if ( entity is null ) {
                 throw new ArgumentNullException( nameof( entity ) );
@@ -18,7 +18,7 @@ namespace prestoMySQL.Extension {
 
         }
 
-        public static DALTable GetAttributeDALTable<T>() where T : GenericEntity => (DALTable) Attribute.GetCustomAttribute( typeof( T ) , typeof( DALTable ) );
+        public static DALTable GetAttributeDALTable<T>() where T : AbstractEntity => (DALTable) Attribute.GetCustomAttribute( typeof( T ) , typeof( DALTable ) );
         
 
 

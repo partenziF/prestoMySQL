@@ -1,4 +1,6 @@
-﻿using prestoMySQL.Entity;
+﻿using prestoMySQL.Adapter.Enum;
+using prestoMySQL.Entity;
+using prestoMySQL.Query.SQL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,11 +8,12 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.Adapter.Interface {
+
     public interface AdaptableTable {
 
-        GenericEntity CreateEntity();
+        AbstractEntity CreateEntity();
 
-        bool Create( params object[] aKeyValues );
+        OperationResult Create( EntityConditionalExpression Constraint = null , params object[] aKeyValues );
 
         bool Save();
 
@@ -18,11 +21,12 @@ namespace prestoMySQL.Adapter.Interface {
 
         U SelectLastInsertId<U>();
 
-		Object[] SelectSingleRow( String aSqlQuery );
+        //Object[] SelectSingleRow( String aSqlQuery );
+        object[] SelectSingleRow( string aSqlQuery , EntityConditionalExpression Constraint , params object[] values );
 
-        bool DropTable( bool ifExists );
+        OperationResult DropTable( bool ifExists );
 
-        bool CreateTable( bool ifExists );
+        OperationResult CreateTable( bool ifExists );
 
         void SetPrimaryKey( params Object[] values );
 
@@ -33,6 +37,7 @@ namespace prestoMySQL.Adapter.Interface {
         }
 
         void createForeignKey();
+
 
 
     }

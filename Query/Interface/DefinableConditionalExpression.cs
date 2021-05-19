@@ -8,9 +8,6 @@ namespace prestoMySQL.Query.Interface {
     public interface DefinableConditionalExpression {
 		
 		public QueryParam[] getParam();
-
-		public string[] getParamAsString();
-
 		public int countParam();
 
 	}

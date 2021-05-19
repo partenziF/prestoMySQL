@@ -2,50 +2,63 @@
 using prestoMySQL.Column.Attribute;
 using prestoMySQL.Column.DataType;
 using prestoMySQL.Column.Interface;
+using prestoMySQL.Entity;
+using prestoMySQL.Extension;
 using prestoMySQL.Query;
 using prestoMySQL.SQL;
 using prestoMySQL.SQL.Interface;
 using prestoMySQL.Table;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
 
 namespace prestoMySQL.Column {
-    public class DefinitionColumn<T> : MySQLColumn<T> where T : ISQLTypeWrapper { //where T : struct 
-        public DefinitionColumn( string aDeclaredVariableName ) :
-            base( aDeclaredVariableName ,
-            new System.Diagnostics.StackTrace()?.GetFrame( 1 )?.GetMethod().ReflectedType?.GetProperty( aDeclaredVariableName ) ) {
-            
+    public class MySQLDefinitionColumn<T> : SQLColumn<T> where T : ISQLTypeWrapper { //where T : struct 
+        public MySQLDefinitionColumn( string aDeclaredVariableName, PropertyInfo aMethodBase , AbstractEntity abstractEntity ) :
+            base( aDeclaredVariableName , aMethodBase ) 
+                //new System.Diagnostics.StackTrace()?.GetFrame( 1 )?.GetMethod().ReflectedType?.GetProperty( aDeclaredVariableName ) ) 
+            {
+
+            //Type? x = new System.Diagnostics.StackTrace()?.GetFrame( 1 )?.GetMethod().ReflectedType;
+
+            MethodInfo m1 = typeof( AbstractEntity ).GetMethod( "Entity_PropertyChanged" , BindingFlags.NonPublic | BindingFlags.Instance );
+            Delegate dlg = Delegate.CreateDelegate( typeof( PropertyChangedEventHandler ) , abstractEntity , m1 );
+
+            EventInfo evClick = this.GetType().GetEvent( "PropertyChanged" );
+            MethodInfo addHandler = evClick.GetAddMethod();
+            Object[] addHandlerArgs = { dlg };
+            addHandler.Invoke( this , addHandlerArgs );
+
         }
 
-       
+
 
         public override string ToString() {
             return Table.getColumnName( this.ColumnName );
         }
 
-        public static implicit operator QueryParam( DefinitionColumn<T> a ) {
+        public static implicit operator QueryParam( MySQLDefinitionColumn<T> a ) {
 
             return new MySQLQueryParam( ( ISQLTypeWrapper ) a.ValueAsParamType() , a.ColumnName );
 
         }
 
-
         //https://www.tutorialspoint.com/What-is-the-Chash-Equivalent-of-SQL-Server-DataTypes
-        public static implicit operator MySQLQueryParam( DefinitionColumn<T> a ) {
+        public static implicit operator MySQLQueryParam( MySQLDefinitionColumn<T> a ) {
 
-            object? value;
-            
+            object value;
 
-            if ( a.Value?.IsNull ?? true ) {
+
+            if ( a.TypeWrapper?.IsNull ?? true ) {
 
                 return new MySQLQueryParam( null , a.ColumnName );
 
             } else {
 
 
-                switch ( a.DataType ) {
+                switch ( a.SQLDataType ) {
 
                     //Type      ( Bytes)    Signed                  Maximum Unsigned
                     //TINYINT       1       - 128           127             255
@@ -161,17 +174,15 @@ namespace prestoMySQL.Column {
                     break;
                     case MySQLDataType.dbtEnum:
                     throw new NotImplementedException();
-                    break;
+                    //break;
                     case MySQLDataType.dbtSet:
                     throw new NotImplementedException();
-                    break;//A SET column can have a maximum of 64 distinct members.
-                          //11.4.1 Spatial Data Types : GEOMETRY, POINT, LINESTRING, POLYGON,MULTIPOINT,MULTILINESTRING,MULTIPOLYGON,GEOMETRYCOLLECTION
+                    //break;//A SET column can have a maximum of 64 distinct members.
+                    //11.4.1 Spatial Data Types : GEOMETRY, POINT, LINESTRING, POLYGON,MULTIPOINT,MULTILINESTRING,MULTIPOLYGON,GEOMETRYCOLLECTION
                     case MySQLDataType.dbtJSON:
                     throw new NotImplementedException();
-                    break;
                     default:
                     throw new NotImplementedException();
-                    break;
                 }
 
                 return new MySQLQueryParam( value , a.ColumnName );
@@ -179,5 +190,7 @@ namespace prestoMySQL.Column {
             }
 
         }
+
+
     }
 }

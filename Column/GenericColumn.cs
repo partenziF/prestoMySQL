@@ -1,6 +1,7 @@
 ﻿using prestoMySQL.Column.Attribute;
 using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity.Attributes;
+using prestoMySQL.Extension;
 using prestoMySQL.PrimaryKey.Attributes;
 using prestoMySQL.SQL.Interface;
 using prestoMySQL.Table;
@@ -20,27 +21,25 @@ namespace prestoMySQL.Column {
     //}
 
 
-    public abstract class GenericColumn<T> :  DefinableColumn<T> where T : ISQLTypeWrapper { 
-        
+    public abstract class GenericSQLColumn<T> : ConstructibleColumn, INotifyPropertyChanged, DefinableColumn<T> where T : ISQLTypeWrapper {
+
         // INotifyPropertyChanged https://stackoverflow.com/questions/32302733/can-c-sharp-implicit-operators-be-used-to-set-a-property where T:struct
 
-        private Type mType;
-        protected PropertyInfo mPropertyInfo;
-        public GenericColumn( PropertyInfo aPropertyInfo = null ) {
+        public GenericSQLColumn( PropertyInfo aPropertyInfo = null ) {
 
-            mType = typeof( T );
+            mGenericType = typeof( T ).GetGenericArguments()[0];
+
             this.mPropertyInfo = aPropertyInfo;
 
             DALTable dalTable = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALTable>();
             if ( dalTable == null ) throw new ArgumentNullException();
-
             mTable = new TableReference( dalTable.TableName );
 
             DDColumnAttribute ddColumnAttribute = this.mPropertyInfo?.GetCustomAttribute<DDColumnAttribute>();
             if ( ddColumnAttribute == null ) throw new ArgumentNullException();
 
             mColumnName = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().Name;
-            mNotNull = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().NotNull;
+            mNotNull = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().NullValue == NullValue.NotNull;
             mUnique = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().Unique;
             mDefaultValue = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().DefaultValue;
 
@@ -49,52 +48,95 @@ namespace prestoMySQL.Column {
             mIsPrimaryKey = ( ddPrimaryKey == null ) ? false : true;
             mIsAutoincrement = ( ddPrimaryKey == null ) ? false : true;
 
-
         }
 
         private TableReference mTable;
         public TableReference Table { get => this.mTable; }
 
 
+        private Type mGenericType;
+        public Type GenericType { get => mGenericType; }
+
+
+        protected PropertyInfo mPropertyInfo;
+
+
         private string mColumnName;
-        public string ColumnName { get => this.mColumnName;  }
+        public string ColumnName { get => this.mColumnName; }
 
 
-        private T mValue;
-        public T Value { get => this.mValue; set => this.mValue = value; }
+        private T mTypeWrapperValue;
+        public T TypeWrapper { get => mTypeWrapperValue; set => SetValue( value ); }
+
+
+        private void SetValue( T value ) {
+
+            if ( mTypeWrapperValue != null ) {
+
+                if ( !mTypeWrapperValue.Equals( value ) ) {
+                    OnPropertyChanged( mColumnName);
+                }
+
+            } else {
+                OnPropertyChanged( mColumnName );
+            }
+
+            this.mTypeWrapperValue = value;
+
+        }
+
+        public object Value() {
+            if ( mTypeWrapperValue.IsNull )
+                return null;
+            else
+                return ( ( object ) ( ( dynamic ) mTypeWrapperValue ).Value );
+        }
 
 
         bool mNotNull;
         public bool isNotNull { get => mNotNull; }
-        //////////////////
+
+
         bool mUnique;
-        public bool isUnique { get => mUnique;  }
-        //////////////////
+        public bool isUnique { get => mUnique; }
+
+
         object mDefaultValue;
-        public object DefaultValue { get => mDefaultValue;  }
-        //////////////////
-        ///Todo verificare la struttura delle classi e delle interfacce
+        public object DefaultValue { get => mDefaultValue; }
+
 
         private bool mIsPrimaryKey;
         public bool isPrimaryKey { get => mIsPrimaryKey; }
-        //////////////////
-        bool mIsAutoincrement;
 
-        //public event PropertyChangedEventHandler PropertyChanged;
 
+
+        bool mIsAutoincrement;      
         public bool isAutoIncrement { get => mIsAutoincrement; }
 
+
         public abstract object ValueAsParamType();
+        public abstract void AssignValue( object x );
+
+        
+        
+        public event PropertyChangedEventHandler PropertyChanged;
+        public virtual void OnPropertyChanged( string propertyName ) {
+            if ( PropertyChanged != null ) {
+                PropertyChanged( this , new PropertyChangedEventArgs( propertyName ) );
+            }
+        }
+
+        //public event PropertyChangedEventHandler PropertyChanged;
+        //private void NotifyPropertyChanged( [System.Runtime.CompilerServices.CallerMemberName] String propertyName = "" ) {
+
+        //    PropertyChanged?.Invoke( this , new PropertyChangedEventArgs( propertyName ) );
+
+        //    //if ( PropertyChanged != null ) {
+        //    //    PropertyChanged( this , new PropertyChangedEventArgs( propertyName ) );
+        //    //}
+        //}
 
 
-        //Convert column's value into param value, used in query
-        //object mParam;
-        //protected abstract object ConvertValueToParam();
-        //public object ValueToParam { get => ConvertValueToParam(); }
-
-        //protected abstract string ConvertValueToParamAsString();
-
-        /////////////////
     }
 
 }

@@ -4,6 +4,7 @@ using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity;
 using prestoMySQL.Extension;
 using prestoMySQL.PrimaryKey.Attributes;
+using prestoMySQL.Query.Interface;
 using prestoMySQL.Table;
 using System;
 using System.Collections.Generic;
@@ -14,19 +15,19 @@ namespace prestoMySQL.Helper {
 
         #region Entity
         #region Table Name
-        public static String getTableName<T>() where T : GenericEntity => GenericEntityAttributeExtension.GetAttributeDALTable<T>()?.TableName ?? typeof( T ).Name;
-        public static String getTableName<T>( T aInstance ) where T : GenericEntity => aInstance.GetAttributeDALTable()?.TableName ?? typeof( T ).Name;
+        public static String getTableName<T>() where T : AbstractEntity => GenericEntityAttributeExtension.GetAttributeDALTable<T>()?.TableName ?? typeof( T ).Name;
+        public static String getTableName( AbstractEntity aInstance )  => aInstance.GetAttributeDALTable()?.TableName ?? aInstance.GetType().Name;
 
         #endregion
 
-        public static List<PropertyInfo> getPropertyIfColumnDefinition<T>() where T : GenericEntity {
+        public static List<PropertyInfo> getPropertyIfColumnDefinition<T>() where T : AbstractEntity {
 
             var Result = new List<PropertyInfo>();
             PropertyInfo[] props = typeof( T ).GetProperties( BindingFlags.Public | BindingFlags.Instance );
 
             foreach ( PropertyInfo propertyInfo in props ) {
 
-                if ( propertyInfo.PropertyType.IsGenericType && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( DefinitionColumn<> ) ) ) {
+                if ( propertyInfo.PropertyType.IsGenericType && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) ) ) {
 
                     Result.Add( propertyInfo );
 
@@ -39,16 +40,16 @@ namespace prestoMySQL.Helper {
             return Result;
         }
 
-        public static List<PropertyInfo> getPropertyIfPrimaryKey<T>() {
+        public static List<PropertyInfo> getPropertyIfPrimaryKey(Type aType ) {
 
             List<PropertyInfo> Result = new List<PropertyInfo>();
 
-            PropertyInfo[] props = typeof( T ).GetProperties( BindingFlags.Public | BindingFlags.Instance );
+            PropertyInfo[] props = aType.GetProperties( BindingFlags.Public | BindingFlags.Instance );
 
             foreach ( PropertyInfo propertyInfo in props ) {
 
                 if ( propertyInfo.PropertyType.IsGenericType
-                     && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( DefinitionColumn<> ) )
+                     && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) )
                      && ( propertyInfo.GetCustomAttribute<DDPrimaryKey>() != null )
                      && ( propertyInfo.GetCustomAttribute<DDColumnAttribute>() != null )
                    ) {
@@ -65,14 +66,13 @@ namespace prestoMySQL.Helper {
 
 
 
-        public static List<dynamic> getPrimaryKeyDefinitionColumn<T>( T aTableInstance ) where T : GenericEntity {
+        public static List<dynamic> getPrimaryKeyDefinitionColumn( AbstractEntity aTableInstance )   {
 
-            //List<ColumnDefinition<?>> how to implement from java to c#
             List<dynamic> l = new List<dynamic>();
 
             try {
 
-                foreach ( PropertyInfo f in getPropertyIfPrimaryKey<T>() ) {
+                foreach ( PropertyInfo f in getPropertyIfPrimaryKey( aTableInstance.GetType()) ) {
 
                     var oDefinitionColumn = f.GetValue( aTableInstance );
                     if ( oDefinitionColumn != null ) l.Add( ( dynamic ) oDefinitionColumn );
@@ -87,7 +87,7 @@ namespace prestoMySQL.Helper {
 
         }
 
-        public static List<dynamic> getDefinitionColumn<T>( T aTableInstance , bool aIncludePrimaryKey = false ) where T : GenericEntity {
+        public static List<dynamic> getDefinitionColumn<T>( T aTableInstance , bool aIncludePrimaryKey = false ) where T : AbstractEntity {
 
             List<dynamic> l = new List<dynamic>();
 
@@ -119,7 +119,7 @@ namespace prestoMySQL.Helper {
         }
 
 
-        public static List<string> getColumnName<T>( bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) where T : GenericEntity {
+        public static List<string> getColumnName<T>( bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) where T : AbstractEntity {
 
             List<String> result = new List<String>();
 

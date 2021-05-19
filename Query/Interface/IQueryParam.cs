@@ -5,8 +5,6 @@ namespace prestoMySQL.Query.Interface {
 		
         object Value { get; }
 
-        object GetValue();
-
         string Name { get; }
 
         string AsQueryParam( string aPlaceholder = "" );

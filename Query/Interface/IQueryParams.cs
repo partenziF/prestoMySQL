@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace prestoMySQL.Query.Interface {
 
     public interface IQueryParams : IEnumerable {
-
+        QueryParam this[int index] { get; set; }
 
         public void setParam( int index , QueryParam value );
 

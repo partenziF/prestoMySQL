@@ -1,11 +1,14 @@
-﻿using prestoMySQL.Adapter.Interface;
+﻿using prestoMySQL.Adapter.Enum;
+using prestoMySQL.Adapter.Interface;
 using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity;
+using prestoMySQL.Query.SQL;
 using prestoMySQL.SQL;
 using System;
 using System.Collections.Generic;
 
 namespace prestoMySQL.Adapter {
+
     public abstract class TableAdapter : AdaptableTable {
 
         protected List<DefinableColumn<SQLTypeWrapper<object>>> definitionColumns;
@@ -13,18 +16,22 @@ namespace prestoMySQL.Adapter {
         protected TableAdapter() {
         }
 
-        public abstract GenericEntity CreateEntity();
+        public abstract AbstractEntity CreateEntity();
         protected abstract void CreateNew();
-        public abstract bool Create( params Object[] aKeyValues );
-        protected abstract bool Select( params Object[] values );
-        protected abstract bool Insert();
-        protected abstract bool Update();
-        public abstract bool Save();
         public abstract U SelectLastInsertId<U>();
         public abstract U SelectSingleValue<U>( string aSqlQuery );
-        public abstract object[] SelectSingleRow( string aSqlQuery );
-        public abstract bool DropTable( bool ifExists );
-        public abstract bool CreateTable( bool ifExists );
+        public abstract object[] SelectSingleRow( string aSqlQuery , EntityConditionalExpression Constraint , params object[] values );
+
+
+        public abstract OperationResult DropTable( bool ifExists );
+        public abstract OperationResult CreateTable( bool ifExists );
+        public abstract OperationResult Create( EntityConditionalExpression Constraint = null , params Object[] aKeyValues );
+        protected abstract OperationResult Select( EntityConditionalExpression Constraint = null , params Object[] values );
+        protected abstract OperationResult Insert();
+        protected abstract OperationResult Update();
+        public abstract bool Save();
+
+
         public abstract void SetPrimaryKey( params object[] values );
         public abstract object[] CreatePrimaryKey();
         public abstract void createForeignKey();

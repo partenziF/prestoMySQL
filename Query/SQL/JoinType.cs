@@ -12,7 +12,8 @@ namespace prestoMySQL.Query.SQL {
 	public enum LogicOperator {
 		AND,
 		OR,
-		NOT
+		NOT,
+		SEPARATOR
 	}
 
 }

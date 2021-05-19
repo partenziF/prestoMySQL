@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.SQL {
-    public class SQLTypeWrapper<T> : ISQLTypeWrapper, IConvertible {
+    public class SQLTypeWrapper<T> : ISQLTypeWrapper, IConvertible where T : notnull{
 
         public static readonly SQLTypeWrapper<T> NULL = new SQLTypeWrapper<T>( default( T ) ) { mIsNull = true };
 
@@ -36,10 +36,12 @@ namespace prestoMySQL.SQL {
         //    return x.mValue;
         //}
 
+
+        #region Conversion method
+
         public override string ToString() {
             return mIsNull ? "NULL" : mValue.ToString();
         }
-
 
         public bool IsInteger( out TypeCode code ) {
             code = ( !IsNull ) ? Convert.GetTypeCode( mValue ) : 0;
@@ -138,8 +140,14 @@ namespace prestoMySQL.SQL {
         ulong IConvertible.ToUInt64( IFormatProvider provider ) {
             return Convert.ToUInt64( mValue );
         }
+
+        public override bool Equals( object obj ) {
+            
+            return ( Value.Equals(  ( obj as SQLTypeWrapper<T> ).Value ) && ( IsNull == ( obj as SQLTypeWrapper<T> ).IsNull ) );
+        }
     }
 
+    #endregion
     //public class IntSQLTypeWrapper : SQLTypeWrapper<int> {
     //    public IntSQLTypeWrapper( int mValue ) : base( mValue ) {
     //    }

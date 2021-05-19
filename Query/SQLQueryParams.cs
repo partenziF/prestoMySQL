@@ -23,7 +23,7 @@ namespace prestoMySQL.Query {
             setCapacity( capacity );
         }
 
-        public SQLQueryParams( QueryParam[] values ) {
+        public SQLQueryParams( params QueryParam[] values ) {
 
             setCapacity( values.Length );
             Array.Copy( values,this.values,values.Length );

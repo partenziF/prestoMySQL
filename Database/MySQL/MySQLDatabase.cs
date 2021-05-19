@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MySqlConnector;
 using PrestoMySQ.Database;
+using prestoMySQL.Extension;
 using PrestoMySQL.Database.Interface;
 using System;
 using System.Collections.Generic;
@@ -179,8 +180,9 @@ namespace PrestoMySQL.Database.MySQL {
 
 
         //}
+        public int? ExecuteQuery( string aSQLQuery , params MySqlParameter[] args ) {
 
-        public MySQResultSet ExecuteQuery( string aSQLQuery , params object[] args ) {
+             int? result = null;
 
             if ( isConnected ) {
 
@@ -194,11 +196,40 @@ namespace PrestoMySQL.Database.MySQL {
                     mCommand.Parameters.Clear();
 
                     if ( args.Length > 0 ) {
-                    //    for ( int i = 0; i < args.Length; i++ ) {
-                            mCommand.Parameters.AddRange( args );
-                      //  }
+                        mCommand.Parameters.AddRange( args );
                     }
 
+                    result = Command.ExecuteNonQuery();
+
+                } catch ( MySqlException ex ) {
+                    Logger?.LogWarning( $"{nameof( ExecuteQueryAsync )} {{0}}" , ex.Message );
+                    this.LastError = new LastErrorInfo( ex );
+                }
+
+            } else {
+                throw new Exception( "Connection is closed" );
+            }
+
+            return result;
+
+        }
+
+        public MySQResultSet ReadQuery( string aSQLQuery , params MySqlParameter[] args ) {
+
+            if ( isConnected ) {
+
+                try {
+
+                    Command.CommandText = aSQLQuery;
+
+                    if ( mTransaction != null )
+                        this.mCommand.Transaction = mTransaction;
+
+                    mCommand.Parameters.Clear();
+
+                    if ( args.Length > 0 ) {
+                        mCommand.Parameters.AddRange( args );
+                    }
 
                     var rs = Command.ExecuteReader();
 
@@ -306,7 +337,7 @@ namespace PrestoMySQL.Database.MySQL {
 
         public override bool Commit() {
 
-            if ( this.mLogger != null ) Logger.LogTrace( $"{nameof( Commit )} {{0}} {{1}}" , new { isConnected } );
+            if ( this.mLogger != null ) Logger.LogTrace( $"{nameof( Commit )} {{0}}" , new { isConnected } );
 
             if ( ( isConnected ) && ( this.mTransaction != null ) ) {
                 try {
@@ -322,7 +353,7 @@ namespace PrestoMySQL.Database.MySQL {
         }
 
         public override bool Rollback() {
-            if ( this.mLogger != null ) Logger.LogTrace( $"{nameof( Rollback )} {{0}} {{1}}" , new { isConnected } );
+            if ( this.mLogger != null ) Logger.LogTrace( $"{nameof( Rollback )} {{0}}" , new { isConnected } );
 
             if ( ( isConnected ) && ( this.mTransaction != null ) ) {
                 try {
@@ -355,6 +386,46 @@ namespace PrestoMySQL.Database.MySQL {
         }
 
 
+        public T? ExecuteScalar<T>( string aSQLQuery , params MySqlParameter[] args ) where T :notnull {
+
+            T? result = default;
+
+            if ( isConnected ) {
+
+                try {
+
+                    Command.CommandText = aSQLQuery;
+
+                    if ( mTransaction != null )
+                        this.mCommand.Transaction = mTransaction;
+
+                    mCommand.Parameters.Clear();
+
+                    if ( args.Length > 0 ) {
+                        //    for ( int i = 0; i < args.Length; i++ ) {
+                        mCommand.Parameters.AddRange( args );
+                        //  }
+                    }
+
+
+                    
+                    var id = Command.ExecuteScalar();
+                    result = id.ConvertTo<T>();
+
+                    //return new MySQResultSet( rs );
+
+                } catch ( MySqlException ex ) {
+                    Logger?.LogWarning( $"{nameof( ExecuteQueryAsync )} {{0}}" , ex.Message );
+                    this.LastError = new LastErrorInfo( ex );
+                }
+
+            } else {
+                throw new Exception( "Connection is closed" );
+            }
+
+            return result;
+
+        }
 
     }
 

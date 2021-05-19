@@ -1,20 +1,15 @@
-﻿
-using prestoMySQL.Query.Interface;
-using prestoMySQL.SQL.Interface;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-//cmd.CommandText = "INSERT INTO blogEntry (entryText) VALUE ('"+MySql.Data.MySqlClient.MySqlHelper.EscapeString(entryText)+"');";
-
 
 namespace prestoMySQL.Query {
-    public class MySQLQueryParam : QueryParam {
+    class MySQLGenericsQueryParam<T> : GenericsQueryParam<T> where T : notnull{
 
         public static readonly string MYSQL_DATE_FORMAT = "yyyy-MM-dd H:mm:ss";
 
-        public MySQLQueryParam( object aValue , string aName ) : base( aValue , aName ) {
+        public MySQLGenericsQueryParam( T aValue , string aName ) : base( aValue , aName ) {
         }
 
 
@@ -30,9 +25,9 @@ namespace prestoMySQL.Query {
                 //  '	            Delimitatore di stringhe di dati di tipo carattere
                 //  --              Delimitatore di commento a riga singola. Il testo --che segue fino alla fine della riga non viene valutato dal server.
                 //  /*_ ... _*/	    Delimitatori di commento.Il testo compreso fra /* _ e _ */ non viene valutato dal server.
-                return String.Concat( "'" , MySqlConnector.MySqlHelper.EscapeString( ( string ) mValue ) , "'" );
+                return String.Concat( "'" , MySqlConnector.MySqlHelper.EscapeString( ( string ) ( mValue as object) ) , "'" );
             else if ( mValue is DateTime )
-                return String.Concat( "'" , MySqlConnector.MySqlHelper.EscapeString( ( ( DateTime ) mValue ).ToString( MySQLQueryParam.MYSQL_DATE_FORMAT ) ) , "'" );
+                return String.Concat( "'" , MySqlConnector.MySqlHelper.EscapeString( ( ( DateTime ) ( mValue as object ) ).ToString( MySQLQueryParam.MYSQL_DATE_FORMAT ) ) , "'" );
             else
                 return mValue.ToString();
 
@@ -40,11 +35,10 @@ namespace prestoMySQL.Query {
 
         protected override object GetValue() {
             if ( mValue is string ) {
-                return MySqlConnector.MySqlHelper.EscapeString( ( string ) mValue );
+                return MySqlConnector.MySqlHelper.EscapeString( ( string ) ( mValue as object ) );
             } else
                 return mValue;
         }
-
 
     }
 

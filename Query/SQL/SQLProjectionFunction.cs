@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.Query.SQL {
-    public class SQLProjectionFunction<T> : MySQLColumn<T> where T : ISQLTypeWrapper {
+    public class SQLProjectionFunction<T> : SQLColumn<T> where T : ISQLTypeWrapper {
         public SQLProjectionFunction( string aDeclaredVariableName , PropertyInfo aMethodBase = null ) : base( aDeclaredVariableName , aMethodBase ) {
 
 			//// TODO Auto-generated constructor stub			

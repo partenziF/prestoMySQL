@@ -16,8 +16,6 @@ namespace prestoMySQL {
 
 	public interface IPrimaryKey {
 
-		public KeyState getKeyState();
-
 		public Object[] getKeyValues();
 
 		void setKeyValues( params Object[] values );

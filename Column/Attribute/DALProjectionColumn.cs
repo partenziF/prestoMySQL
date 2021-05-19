@@ -18,7 +18,7 @@ namespace prestoMySQL.Column.Attribute {
         public String Name { get; set; }
 
         public String Table { get; set; }//default "";
-        public GenericEntity Entity { get; set; }// () default void.class;
+        public AbstractEntity Entity { get; set; }// () default void.class;
         public String Alias { get; set; }// () default ""; 
         public SQLiteDataType Type { get; set; }
         public int OrderBy { get; set; }// () default  0;

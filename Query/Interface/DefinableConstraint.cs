@@ -5,12 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.Query.Interface {
-    public interface DefinableConstraint<T> {
+    public interface DefinableConstraint {
         string ParamPlaceHolder { get; set; }
         SQLQueryParams QueryParams { get; set; }
         EvaluableBinaryOperator BinaryOperator { get; set; }
-
-        T[] ColumnValue();
+        
         QueryParam[] getParam();
         String[] getParamAsString();
         int countParam();

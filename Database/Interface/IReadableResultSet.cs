@@ -7,8 +7,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace PrestoMySQL.Database.Interface {
-    public interface IReadableResultSet<T> where T : DbDataReader {
+    public interface IReadableResultSet {
 
+
+        public object this[string name] { get; }
         public Task<bool> fetchAsync();
         public bool fetch();
 
@@ -28,8 +30,9 @@ namespace PrestoMySQL.Database.Interface {
 
         public U getValueAs<U>( String aColumnName );
 
-
         public Object getObject( int i );
         bool isEmpty();
-    }
+
+        object ResultSetSchemaTable();
+        }
 }

@@ -2,23 +2,17 @@
 using System;
 
 namespace prestoMySQL.Column.Interface {
-    public interface DefinableColumn<T> : ConstructibleColumn<T> where T : ISQLTypeWrapper { //where T :struct 
+    public interface DefinableColumn<T>  where T : ISQLTypeWrapper { //where T :struct 
 
-        bool isNotNull { get; }
 
-        bool isUnique { get; }
+        public T TypeWrapper { get; set; }
 
         object DefaultValue { get; }
 
-        //object ValueToParam { get; }
-        //public string ValueToParamAsString { get; }
         object ValueAsParamType();
-        //public object ValueToParam { get => ConvertValueToParam(); }
-
-
-        bool isPrimaryKey { get; }
-        bool isAutoIncrement { get; }
-
+        
+        void AssignValue( object x );
 
     }
+
 }

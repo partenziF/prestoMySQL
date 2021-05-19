@@ -3,23 +3,24 @@ using prestoMySQL.Table;
 using System;
 
 namespace prestoMySQL.Column.Interface {
-    public interface ConstructibleColumn<T> where T : ISQLTypeWrapper { //where T: struct
+    public interface ConstructibleColumn {
+        
+        Type GenericType { get; }
 
-        //Type of generic
-        Type TypeClass => typeof( T );
+        bool isNotNull { get; }
 
-        public TableReference Table { get;  }
+        bool isUnique { get; }
+
+        bool isPrimaryKey { get; }
+        bool isAutoIncrement { get; }
+
+        public object Value();
+
+        public TableReference Table { get; }
 
         ///////////////////////////////////////////
+        public string ColumnName { get; }
 
-        public string ColumnName { get;  }
-
-
-        ////////////////////////////////////////////////////
-
-        public T Value { get; set; }
-
-        ////////////////////////////////////////////////////
     }
 
 }

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "66m7CMAuzK3qWJ0JgL1gHEGDtz4g2dYADRJwUf50Qt9JheH3SHWwqp1sTbh6BQEqUC5U9o2/ev6XZ/g/lkNUMw==",
+  "dgSpecHash": "4cphSANvB5xsVWjQAKf6Xs5rx3YpKzOJdF5ko1vLjzEYnxXX6HXQnZVGAXhIz37Dx101eXiRcaEYdo8I4YKdYw==",
   "success": true,
   "projectFilePath": "C:\\Users\\Fede\\source\\repos\\prestoMySQL\\prestoMySQL.csproj",
   "expectedPackageFiles": [
@@ -16,7 +16,8 @@
     "C:\\Users\\Fede\\.nuget\\packages\\microsoft.extensions.options\\5.0.0\\microsoft.extensions.options.5.0.0.nupkg.sha512",
     "C:\\Users\\Fede\\.nuget\\packages\\microsoft.extensions.options.configurationextensions\\5.0.0\\microsoft.extensions.options.configurationextensions.5.0.0.nupkg.sha512",
     "C:\\Users\\Fede\\.nuget\\packages\\microsoft.extensions.primitives\\5.0.0\\microsoft.extensions.primitives.5.0.0.nupkg.sha512",
-    "C:\\Users\\Fede\\.nuget\\packages\\mysqlconnector\\1.3.7\\mysqlconnector.1.3.7.nupkg.sha512"
+    "C:\\Users\\Fede\\.nuget\\packages\\mysqlconnector\\1.3.7\\mysqlconnector.1.3.7.nupkg.sha512",
+    "C:\\Users\\Fede\\.nuget\\packages\\mysqlconnector.logging.microsoft.extensions.logging\\1.0.0\\mysqlconnector.logging.microsoft.extensions.logging.1.0.0.nupkg.sha512"
   ],
   "logs": []
 }

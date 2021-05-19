@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.Query.Interface {
-    public interface ISQLQueryCondition<T> : DefinableConstraint<T> {
+    public interface ISQLQueryCondition<T> : DefinableConstraint {
         String getColumnName();
         void setColumnName( String aColumnName );
 

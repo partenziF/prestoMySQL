@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace prestoMySQL.Extension {
     public static class PropertyInfoExtension {
 
-        public static String ColumnName( this PropertyInfo f , GenericColumn<SQLTypeWrapper<object>> o ) {
+        public static String ColumnName( this PropertyInfo f , GenericSQLColumn<SQLTypeWrapper<object>> o ) {
 
             String ColumnName = "";
 

@@ -8,7 +8,6 @@ namespace prestoMySQL.SQL.Interface {
     public interface ISQLTypeWrapper {
         
         bool IsNull { get; }
-
         object ToObject();
         bool IsInteger(out TypeCode code);
         bool IsBoolean();
@@ -17,5 +16,4 @@ namespace prestoMySQL.SQL.Interface {
         bool IsLitteral( out TypeCode code );
 
 
-    };
-}
+    }}

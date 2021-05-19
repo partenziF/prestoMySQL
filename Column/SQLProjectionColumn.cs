@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.Column {
-    public class SQLProjectionColumn<T> : MySQLColumn<T>, QueryableColumn<T> where T : ISQLTypeWrapper {
+    public class SQLProjectionColumn<T> : SQLColumn<T>, QueryableColumn<T> where T : ISQLTypeWrapper {
 
         public SQLProjectionColumn( string aDeclaredVariableName ) :
             base( aDeclaredVariableName ,

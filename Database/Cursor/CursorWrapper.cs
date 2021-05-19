@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 //IReadableResultSet<MySqlDataReader>
 //MySQResultSet
 namespace prestoMySQL.Database.Cursor {
-    public class CursorWrapper<T, U> : ICursorWrapper, IEnumerator<T>, IEnumerable where T : IReadableResultSet<U> where U : DbDataReader {
+    public class CursorWrapper<T, U> : ICursorWrapper, IEnumerator<T>, IEnumerable where T : ReadableResultSet<U> where U : DbDataReader {
 
         public T mResultSet;
 
@@ -54,7 +54,7 @@ namespace prestoMySQL.Database.Cursor {
     }
 
 
-    public class CursorWrapperAsync<T, U> : ICursorWrapper, IAsyncEnumerator<T>, IAsyncEnumerable<T> where T : IReadableResultSet<U> where U : DbDataReader {
+    public class CursorWrapperAsync<T, U> : ICursorWrapper, IAsyncEnumerator<T>, IAsyncEnumerable<T> where T : ReadableResultSet<U> where U : DbDataReader {
 
         public T mResultSet;
 

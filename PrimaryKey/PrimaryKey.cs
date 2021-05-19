@@ -9,21 +9,33 @@ using prestoMySQL.Entity;
 namespace prestoMySQL.PrimaryKey {
     public abstract class PrimaryKey {
 
-        private prestoMySQL.Entity.GenericEntity mTable;
-        public GenericEntity Table { get => this.mTable; set => this.mTable = value; }
+        private prestoMySQL.Entity.AbstractEntity mTable;
+        public AbstractEntity Table { get => this.mTable; set => this.mTable = value; }
 
         public KeyState mKeyState = KeyState.Unset;
-        public KeyState KeyState { get => mKeyState; }
+        public KeyState KeyState { get => mKeyState; set => mKeyState = value; }
 
-        protected IDictionary<String , FieldInfo> primaryKeyColumns;
+        protected IDictionary<string , PropertyInfo> primaryKeyColumns;
+        public PropertyInfo this[string index] {
+
+            get {
+                if ( primaryKeyColumns.ContainsKey( index ) ) {
+                    return primaryKeyColumns[index];
+                } else {
+                    return null;
+                }
+            }
+
+        }
 
 
-        private bool mAutoIncrement = true;
+
+        protected bool mAutoIncrement = true;
         public bool isAutoIncrement { get => mAutoIncrement; }
 
         protected PrimaryKey( KeyState aKeyState ) {
             this.mKeyState = aKeyState;
-            this.primaryKeyColumns = new Dictionary<String , FieldInfo>();
+            this.primaryKeyColumns = new Dictionary<String , PropertyInfo>();
         }
 
     }

@@ -9,19 +9,26 @@ using System.Threading;
 using System.Threading.Tasks;
 using prestoMySQL.Extension;
 using System.Collections;
+using System.Data;
 
 namespace PrestoMySQL.Database.MySQL {
-    public class MySQResultSet : IReadableResultSet<MySqlDataReader> {
 
-        //private Task<MySqlDataReader> mResultSet;
-        private MySqlDataReader mResultSet;
+
+    public class ReadableResultSet<T> : IReadableResultSet where T : DbDataReader {
+
+        //private Task<T> mResultSet;
+        private T mResultSet;
         private Random rand;
 
-        //public MySQResultSet( Task<MySqlDataReader> aResultSet ) {
-        public MySQResultSet( MySqlDataReader aResultSet ) {
+        public object this[string name] => mResultSet[name] ?? throw new NullReferenceException( "Invalid resultset" );
+
+        //public MySQResultSet( Task<T> aResultSet ) {
+        public ReadableResultSet( T aResultSet ) {
             this.mResultSet = aResultSet;
             this.rand = new Random();
         }
+
+
 
         public void close() {
             //throw new NotImplementedException();
@@ -145,6 +152,31 @@ namespace PrestoMySQL.Database.MySQL {
 
         public bool isEmpty() {
             return ( !mResultSet.HasRows );
+        }
+
+
+        public object ResultSetSchemaTable() {
+            DataTable schema = mResultSet.GetSchemaTable();
+            foreach ( DataRow rdrColumn in schema.Rows ) {
+                String columnName = rdrColumn[schema.Columns["ColumnName"]].ToString();
+                String dataType = rdrColumn[schema.Columns["DataType"]].ToString();
+                string tablename = rdrColumn[schema.Columns["BaseTableName"]].ToString();
+
+            }
+            return null;
+            //Dictionary<int , String> columnNames = new Dictionary<int , string>();
+            //int index = 0;
+            //foreach ( DataRow row in schema.Rows ) {
+            //    columnNames.Add( index , row[schema.Columns["ColumnName"]].ToString() );
+            //    index++;
+            //}
+
+        }
+
+    }
+
+    public class MySQResultSet : ReadableResultSet<MySqlDataReader>  {
+        public MySQResultSet( MySqlDataReader aResultSet ) : base( aResultSet ) {
         }
     }
 }

@@ -1,6 +1,12 @@
-﻿using prestoMySQL.Column.Interface;
+﻿using MySqlConnector;
+using prestoMySQL.Adapter.Enum;
+using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity;
+using prestoMySQL.Extension;
+using prestoMySQL.ForeignKey;
+using prestoMySQL.Helper;
 using prestoMySQL.Query;
+using prestoMySQL.Query.SQL;
 using prestoMySQL.SQL;
 using PrestoMySQL.Database.Interface;
 using PrestoMySQL.Database.MySQL;
@@ -8,37 +14,47 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
+using System.Reflection;
 
 namespace prestoMySQL.Adapter {
-    public abstract class EntityAdapter<T> : TableAdapter, IList<T> where T : GenericEntity {
 
+    public abstract class EntityAdapter<T> : TableAdapter, IList<T> where T : AbstractEntity {
 
         public EntityAdapter( MySQLDatabase aMySQLDatabase ) {
-            this.mDatabase = aMySQLDatabase;
 
-            //if ( this.listener != null ) {
-            //    listener.onInitData();
-            //}
+            this.mDatabase = aMySQLDatabase;
 
         }
 
-        private List<GenericEntity> foreignKeyTables = new List<GenericEntity>();
+        #region sezione eventi
+        public event EventHandler InitData;
+        public virtual void OnInitData( EventArgs e ) {
+            EventHandler handler = InitData;
+            handler?.Invoke( this , e );
+        }
 
-        //delegati
-        //protected CreatePrimaryKey<T> createPrimaryKey;
 
-        //protected CreateForeignKey<T> createForeignKey;
+        public delegate void BindDataFromEventHandler( Object sender , BindDataFromEventArgs<T> e );
+        public event BindDataFromEventHandler BindDataFrom;
+        protected virtual void OnBindDataFrom( BindDataFromEventArgs<T> e ) {
+            BindDataFromEventHandler handler = BindDataFrom;
+            handler?.Invoke( this , e );
+        }
+
+
+        public delegate void BindDataToEventHandler( Object sender , BindDataToEventArgs<T> e );
+        public event BindDataToEventHandler BindDataTo;
+        protected virtual void OnBindDataTo( BindDataToEventArgs<T> e ) {
+            BindDataToEventHandler handler = BindDataTo;
+            handler?.Invoke( this , e );
+        }
+
+        #endregion
+
+        private List<AbstractEntity> foreignKeyTables = new List<AbstractEntity>();
 
         public MySQLDatabase mDatabase;
-
-
-        //////////////////////////////////////////////////////////////////////////////
-        // Gestore degli eventi
-        //public EntityAdapterListener<T> listener;
-
-        //public void setEntityAdapterListener( EntityAdapterListener<T> aListener ) {
-        //    this.listener = aListener;
-        //}
 
         /////////////////////////////////////////////////////////////////////////////
         //Transazione
@@ -57,22 +73,18 @@ namespace prestoMySQL.Adapter {
         //Implementare IEnumerable<T>?
         private List<T> mEntities = new List<T>();
         private T mCurrentEntity;
-
         private void SetEntity( T value ) {
             mEntities.Add( value );
             mCurrentEntity = value;
         }
         protected T Entity { get => mCurrentEntity; set => SetEntity( value ); }
 
-
-
-
         /////////////////////////////////////////////////////////////////////////////////////////////////////
         ///
         public string getAssociativeEntity( Type entity ) {
 
             new NotImplementedException( $"EntityAdapter.{nameof( getAssociativeEntity )}" );
-            foreach ( GenericEntity e in foreignKeyTables ) {
+            foreach ( AbstractEntity e in foreignKeyTables ) {
 
                 if ( e.GetType().Equals( entity ) ) {
                     return e.TableName;
@@ -85,114 +97,341 @@ namespace prestoMySQL.Adapter {
 
             throw new System.Exception( "Invalid entity" );
 
-
         }
 
-        public abstract GenericEntity createEntity();
-
-        public void bindData( IReadableResultSet<DbDataReader> rs ) {
-
-            new NotImplementedException();
+        public void BindData( IReadableResultSet rs ) {
 
             //if (definitionColumns == null)
-            //	definitionColumns = SQLTableEntityHelper.getColumnDefinitionInstance(this.getEntity());
 
-            foreach ( DefinableColumn<SQLTypeWrapper<Object>> column in definitionColumns ) {
-                //column.TypeClass
-                //object p = rs.getValueAs<>( column.ColumnName );
-                //this.getEntity().put( column.ColumnName, rs.getValueAs< column.TypeClass>( column.TypeClass, column.ColumnName));
-            }
-
-        }
+            var _definitionColumns = SQLTableEntityHelper.getDefinitionColumn<T>( Entity , true );
 
 
-        protected override bool Select( params object[] values ) {
-            
-            SQLQueryParams outparam = null;
-            
-            String sqlQuery = SQLBuilder.sqlSelect<T>( Entity , ref  outparam );
-            MySQResultSet rs = mDatabase.ExecuteQuery( sqlQuery , outparam );
-            if (rs != null) {
-                if ( rs.fetch() ) {
+            //_ = rs.ResultSetSchemaTable();
+            foreach ( var column in _definitionColumns ) {
+
+                //need explicit conversion to work
+                if ( rs[( string ) column.ColumnName].IsDBNull() ) {
+
+                    var o = typeof( SQLTypeWrapper<> ).MakeGenericType( column.GenericType );
+                    var p = o.GetField( "NULL" , BindingFlags.Static | BindingFlags.Public );
+                    column.TypeWrapper = p.GetValue( null );
 
                 } else {
-                    return false;
+
+                    MethodInfo method = typeof( MySQResultSet ).GetMethod( nameof( MySQResultSet.getValueAs ) , new Type[] { typeof( string ) } );
+                    MethodInfo generic = method.MakeGenericMethod( column.GenericType );
+                    var o = generic.Invoke( rs , new object[] { ( string ) column.ColumnName } );
+                    column.AssignValue( o );
+
                 }
-            } else {
-                return false;
+
             }
-            
-
-
-
-            return false;
-
 
         }
 
 
-        protected override bool Insert() {
-            throw new NotImplementedException();
+
+        public override OperationResult DropTable( bool ifExists ) {
+
+            var s = SQLBuilder.sqlDrop<T>();
+            int? i = -1;
+            try {
+
+                i = mDatabase.ExecuteQuery( s ) ?? null;
+
+                if ( i != -1 ) return OperationResult.OK;
+                else return OperationResult.Fail;
+
+            } catch ( MySqlException ex ) {
+                return OperationResult.Error;
+            } catch ( System.Exception e ) {
+
+                throw new System.Exception( "Error insert query " + mDatabase.LastError?.ToString() ?? e.Message );
+            }
+
+            //return ( i != -1 ) ? true : false;
+
         }
 
-        protected override bool Update() {
-            throw new NotImplementedException();
+        public override OperationResult CreateTable( bool ifExists ) {
+
+            var s = SQLBuilder.sqlCreate<T>();
+            int? i = -1;
+
+            try {
+
+                i = mDatabase.ExecuteQuery( s ) ?? null;
+
+                if ( i != -1 ) return OperationResult.OK;
+                else return OperationResult.Fail;
+
+            } catch ( MySqlException ex ) {
+
+                return OperationResult.Error;
+
+            } catch ( System.Exception e ) {
+                i = -1;
+                throw new System.Exception( "Error insert query " + mDatabase.LastError?.ToString() ?? e.Message );
+            }
+        }
+
+        public override OperationResult Create( EntityConditionalExpression Constraint = null , params object[] KeyValues ) {
+
+            this.Entity = ( T ) CreateEntity();
+
+            if ( KeyValues?.Length == 0 ) {
+
+                CreateNew();
+                return OperationResult.OK;
+
+            } else {
+
+                int i = 0;
+                if ( KeyValues.Length == Entity.PrimaryKey.KeyLength ) {
+
+                    foreach ( KeyValuePair<string , PropertyInfo> kvp in this.Entity.PrimaryKey ) {
+
+                        dynamic x = kvp.Value.GetValue( Entity );
+                        x.AssignValue( KeyValues[i++] );
+                    }
+
+                    return this.Select( Constraint , Entity.PrimaryKey.getKeyValues() );
+
+                } else {
+                    throw new ArgumentOutOfRangeException( "Invalid key valus length for primary key" );
+                }
+
+            }
+
+        }
+
+
+        protected override OperationResult Select( EntityConditionalExpression Constraint , params object[] values ) {
+
+            SQLQueryParams outparam = null;
+            //this.Entity
+            var s = SQLBuilder.sqlSelect<T>( Entity , ref outparam , "@" , Constraint );
+            var rs = mDatabase.ReadQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+
+            if ( rs != null ) {
+
+                if ( rs.fetch() ) {
+
+                    BindData( rs );
+
+                    OnBindDataFrom( new BindDataFromEventArgs<T>() { Entity = this.Entity } );
+
+                    if ( rs.fetch() ) {
+                        Entity.State = prestoMySQL.Entity.Interface.EntityState.Undefined;
+                        throw new System.Exception( "Primary key entity violation" );
+                    } else {
+                        Entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
+                        return OperationResult.OK;
+                    }
+
+
+                } else {
+                    return OperationResult.Fail;
+                }
+
+            } else {
+                return OperationResult.Error;
+            }
+
+
+        }
+
+        protected override OperationResult Insert() {
+
+            if ( Entity == null ) throw new System.Exception( "entity is null, call create method." );
+            SQLQueryParams outparam = null;
+
+            var args = new BindDataToEventArgs<T> { Entity = this.Entity };
+            OnBindDataTo( args );
+
+            if ( Entity.State == prestoMySQL.Entity.Interface.EntityState.Changed ) {
+
+                var s = SQLBuilder.sqlInsert<T>( Entity , ref outparam , "@" );
+
+                int? rowInserted = -1;
+                try {
+
+                    rowInserted = mDatabase.ExecuteQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
+
+                } catch ( MySqlException ex ) {
+                    return OperationResult.Error;
+                } catch ( System.Exception e ) {
+                    rowInserted = -1;
+                    throw new System.Exception( "Error insert query " + mDatabase.LastError?.ToString() ?? e.Message );
+                }
+
+                if ( rowInserted != -1 ) {
+
+                    object[] primaryKeyValues = null;
+                    if ( Entity.PrimaryKey.isAutoIncrement ) {
+                        primaryKeyValues = this.Entity.PrimaryKey.doCreatePrimaryKey();
+                    } else {
+                        primaryKeyValues = this.Entity.PrimaryKey.getKeyValues();
+                    }
+
+                    SetPrimaryKey( primaryKeyValues );
+
+                    Entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
+
+                    return OperationResult.OK;
+
+                } else {
+                    return OperationResult.Fail;
+                        
+                }
+
+            } else {
+                return OperationResult.OK; //Unchanged data
+            }
+
+        }
+
+        protected override OperationResult Update() {
+
+            if ( Entity == null ) throw new System.Exception( "entity is null, call create method." );
+            SQLQueryParams outparam = null;
+
+            var args = new BindDataToEventArgs<T> { Entity = this.Entity };
+            OnBindDataTo( args );
+
+            if ( Entity.State == prestoMySQL.Entity.Interface.EntityState.Changed ) {
+
+                var s = SQLBuilder.sqlUpdate<T>( Entity , ref outparam , "@" );
+                int? rowChanged = -1;
+                try {
+
+                    rowChanged = mDatabase.ExecuteQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
+
+                } catch ( MySqlException ex ) {
+                
+                    return OperationResult.Error;
+                
+                } catch ( System.Exception e ) {
+
+                    throw new System.Exception( "Error insert query " + mDatabase.LastError?.ToString() ?? e.Message );
+                }
+
+
+                if ( rowChanged != -1 ) {
+                    Entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
+                    return OperationResult.OK;
+                } else {
+                    return OperationResult.Fail;
+                }
+
+            } else {
+                return OperationResult.Fail;
+            }
+
         }
 
         public override bool Save() {
-            throw new NotImplementedException();
+
+            this.mEntities.First();
+            bool result = false;
+
+            if ( this.Entity == null ) {
+                throw new System.Exception( "entity is null, call create method." );
+
+            }
+
+            foreach ( T aEntity in this.mEntities ) {
+
+                switch ( aEntity.PrimaryKey.KeyState ) {
+
+                    case KeyState.Created:
+                    result = Insert() == OperationResult.OK;
+
+                    break;
+
+                    case KeyState.Set:
+                    result = Update() == OperationResult.OK;
+                    break;
+
+                    case KeyState.Unset:
+                    result = false;
+                    throw new System.Exception( "Unset primary key" );
+                }
+            }
+
+            return result;
         }
 
         public override U SelectLastInsertId<U>() {
-            throw new NotImplementedException();
+            return mDatabase.ExecuteScalar<U>( SQLBuilder.sqlastInsertId<T>() );
         }
 
         public override U SelectSingleValue<U>( string aSqlQuery ) {
-            throw new NotImplementedException();
+            return mDatabase.ExecuteScalar<U>( aSqlQuery );
         }
 
-        public override object[] SelectSingleRow( string aSqlQuery ) {
-            throw new NotImplementedException();
+        public override object[] SelectSingleRow( string aSqlQuery , EntityConditionalExpression Constraint , params object[] values ) {
+
+            object[] result = null;
+            SQLQueryParams outparam = null;
+            var s = SQLBuilder.sqlSelect<T>( Entity , ref outparam , "@" , Constraint );
+            var rs = mDatabase.ReadQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+            if ( rs != null ) {
+
+                if ( rs.fetch() ) {
+
+                    int? c = rs.columnCount();
+                    if ( c != null ) {
+                        result = new object[( int ) c];
+                        for ( int i = 0; i < c; i++ ) {
+                            result[i - 1] = rs.getObject( i );
+                        }
+                    }
+                }
+
+                rs.close();
+                return result;
+
+            } else
+                return result;
+
         }
 
-        public override bool DropTable( bool ifExists ) {
-            throw new NotImplementedException();
-        }
-
-        public override bool CreateTable( bool ifExists ) {
-            throw new NotImplementedException();
-        }
 
         public override void SetPrimaryKey( params object[] values ) {
-            throw new NotImplementedException();
+            this.Entity.PrimaryKey.setKeyValues( values );
         }
 
         public override object[] CreatePrimaryKey() {
-            throw new NotImplementedException();
+            return Entity.PrimaryKey.createKey();
         }
 
         public override void createForeignKey() {
-            throw new NotImplementedException();
-        }
-
-        public override GenericEntity CreateEntity() {
-            throw new NotImplementedException();
+            if ( this.Entity.ForeignKey != null ) {
+                foreach ( EntityForeignKey fk in this.Entity.foreignKeys ) {
+                    fk.addEntities( foreignKeyTables );
+                }
+            }
         }
 
         protected override void CreateNew() {
-            throw new NotImplementedException();
+            createForeignKey();
+            CreatePrimaryKey();
         }
 
-        public override bool Create( params object[] aKeyValues ) {
-            throw new NotImplementedException();
+        public void newEntity() {
+
+            var args = new BindDataToEventArgs<T> { Entity = this.Entity };
+            OnBindDataTo( args );
+
+            Clear();
+
+            OnInitData( EventArgs.Empty );
+
         }
 
 
-
-        /////////////////////////////////////////////////////////////////////////////////////////////////////
-        // List Implementation
-        /////////////////////////////////////////////////////////////////////////////////////////////////////
-
+        #region List implementation
         public T this[int index] { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
 
         public int Count => throw new System.NotImplementedException();
@@ -238,5 +477,16 @@ namespace prestoMySQL.Adapter {
         IEnumerator IEnumerable.GetEnumerator() {
             throw new System.NotImplementedException();
         }
+        #endregion
     }
+
+
+    public class BindDataFromEventArgs<U> : EventArgs {
+        public U Entity { get; set; }
+    }
+
+    public class BindDataToEventArgs<U> : EventArgs {
+        public U Entity { get; set; }
+    }
+
 }

@@ -18,6 +18,9 @@ namespace prestoMySQL.Query.SQL {
 			return this.@operator;
 		}
 
+		public static SQLBinaryOperator assign() {
+			return new SQLBinaryOperator( "=" );
+		}
 
 		public static SQLBinaryOperator equal() {
 			return new SQLBinaryOperator( "=" );

@@ -8,10 +8,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.Query.SQL {
-    public class GenericEntityConstraint<T> : DefinableConstraint<T> {
+    public class GenericEntityConstraint<T> : DefinableConstraint {
 
 
-        public GenericEntityConstraint( DefinitionColumn<SQLTypeWrapper<T>> columnDefinition , EvaluableBinaryOperator mBinaryOperator , IQueryParams aQueryPararms , string paramPlaceHolder = "" ) {
+        public GenericEntityConstraint( MySQLDefinitionColumn<SQLTypeWrapper<T>> columnDefinition , EvaluableBinaryOperator mBinaryOperator , IQueryParams aQueryPararms , string paramPlaceHolder = "" ) {
 
             this.columnDefinition = columnDefinition ?? throw new ArgumentNullException( nameof( columnDefinition ) );
             this.mBinaryOperator = mBinaryOperator;
@@ -19,11 +19,12 @@ namespace prestoMySQL.Query.SQL {
             this.mQueryParams = ( SQLQueryParams ) ( aQueryPararms ?? throw new ArgumentNullException( nameof( aQueryPararms ) ) );
         }
 
+
         private SQLQueryParams mQueryParams;
         public SQLQueryParams QueryParams { get => mQueryParams; set => mQueryParams = value; }
 
 
-        protected DefinitionColumn<SQLTypeWrapper<T>> columnDefinition;
+        protected MySQLDefinitionColumn<SQLTypeWrapper<T>> columnDefinition;
 
 
         protected EvaluableBinaryOperator mBinaryOperator = SQLBinaryOperator.equal();

@@ -1,12 +1,15 @@
 ﻿using prestoMySQL.Entity;
+using System;
 
 namespace prestoMySQL.Adapter.Interface {
-    public interface IEntityAdapterListener<U> where U : GenericEntity {
-        void onBindDataFrom( U entity );
+    public interface IEntityAdapterListener<U> where U : AbstractEntity {
 
-        void onBindDataTo( U entity );
+        public void onBindDataFrom( object sender , BindDataFromEventArgs<U> e );
 
-        void onInitData();
+        public void onBindDataTo( object sender ,  BindDataToEventArgs<U> e );
+
+        public void onInitData( object sender , EventArgs e );
+
 
     }
 }

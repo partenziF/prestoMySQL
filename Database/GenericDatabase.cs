@@ -125,5 +125,7 @@ namespace PrestoMySQ.Database {
         public abstract bool Begin();
         public abstract bool Commit();
         public abstract bool Rollback();
+
+        protected abstract Task<bool> DoOpenConnectionAsync();
     }
 }

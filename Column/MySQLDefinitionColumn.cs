@@ -51,7 +51,7 @@ namespace prestoMySQL.Column {
             object value;
 
 
-            if ( a.TypeWrapper?.IsNull ?? true ) {
+            if ( a.TypeWrapperValue?.IsNull ?? true ) {
 
                 return new MySQLQueryParam( null , a.ColumnName );
 

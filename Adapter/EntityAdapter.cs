@@ -259,13 +259,17 @@ namespace prestoMySQL.Adapter {
                     rowInserted = mDatabase.ExecuteQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
 
                 } catch ( MySqlException ex ) {
-                    return OperationResult.Error;
+                    return OperationResult.Exception;
                 } catch ( System.Exception e ) {
                     rowInserted = -1;
                     throw new System.Exception( "Error insert query " + mDatabase.LastError?.ToString() ?? e.Message );
                 }
 
-                if ( rowInserted != -1 ) {
+                if ( rowInserted is null ) {
+
+                    return OperationResult.Error;
+
+                } else if ( rowInserted != -1 ) {
 
                     object[] primaryKeyValues = null;
                     if ( Entity.PrimaryKey.isAutoIncrement ) {
@@ -309,7 +313,7 @@ namespace prestoMySQL.Adapter {
 
                 } catch ( MySqlException ex ) {
                 
-                    return OperationResult.Error;
+                    return OperationResult.Exception;
                 
                 } catch ( System.Exception e ) {
 
@@ -317,7 +321,12 @@ namespace prestoMySQL.Adapter {
                 }
 
 
-                if ( rowChanged != -1 ) {
+                if ( rowChanged is null ) {
+
+                    return OperationResult.Error;
+
+                } else if ( rowChanged != -1 ) {
+
                     Entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
                     return OperationResult.OK;
                 } else {

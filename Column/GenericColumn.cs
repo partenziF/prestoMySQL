@@ -66,7 +66,7 @@ namespace prestoMySQL.Column {
 
 
         private T mTypeWrapperValue;
-        public T TypeWrapper { get => mTypeWrapperValue; set => SetValue( value ); }
+        public T TypeWrapperValue { get => mTypeWrapperValue; set => SetValue( value ); }
 
 
         private void SetValue( T value ) {

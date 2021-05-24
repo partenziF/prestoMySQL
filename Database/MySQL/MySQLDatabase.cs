@@ -427,6 +427,9 @@ namespace PrestoMySQL.Database.MySQL {
 
         }
 
+        protected override Task<bool> DoOpenConnectionAsync() {
+            throw new NotImplementedException();
+        }
     }
 
 }

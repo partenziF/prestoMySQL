@@ -5,7 +5,7 @@ namespace prestoMySQL.Column.Interface {
     public interface DefinableColumn<T>  where T : ISQLTypeWrapper { //where T :struct 
 
 
-        public T TypeWrapper { get; set; }
+        public T TypeWrapperValue { get; set; }
 
         object DefaultValue { get; }
 

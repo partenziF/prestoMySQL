@@ -63,7 +63,7 @@ namespace prestoMySQL.PrimaryKey {
                     try {
 
                         var col = ( MySQLDefinitionColumn<SQLTypeWrapper<T>> ) f.GetValue( this.Table );
-                        col.TypeWrapper = ( aValue );
+                        col.TypeWrapperValue = ( aValue );
 
                     } catch ( System.Exception e )  {
                         throw new System.Exception( "Error while " + nameof( setKeyValue ) );
@@ -131,7 +131,7 @@ namespace prestoMySQL.PrimaryKey {
                 try {
                     PropertyInfo p = primaryKeyColumns[aKey];
                     var col = ( MySQLDefinitionColumn<SQLTypeWrapper<T>> ) p?.GetValue( this.Table );
-                    return ( T ) col.TypeWrapper;
+                    return ( T ) col.TypeWrapperValue;
 
                 } catch (System.Exception) {
                     throw new System.Exception( "Error while read key value" );

@@ -50,6 +50,17 @@ namespace prestoMySQL.Column.Attribute {
         public SignType Signed { get; set; }
     }
 
+    public sealed class DDColumnBooleanAttribute : DDColumnAttribute {
+        public DDColumnBooleanAttribute( string aName , bool Unique = false , NullValue NullValue = NullValue.Null , object DefaultValue = null ) : base( aName , MySQLDataType.dbtTinyInt ,  Unique , NullValue , DefaultValue ) {
+            this.Size = 1;
+            this.Signed = SignType.Unsigned;
+        }
+
+        public byte Size { get; set; }
+        public SignType Signed { get; set; }
+    }
+
+
     public sealed class DDColumnStringAttribute : DDColumnAttribute {
 
         public byte Length { get; set; }

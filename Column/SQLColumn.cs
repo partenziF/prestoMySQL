@@ -63,7 +63,7 @@ namespace prestoMySQL.Column {
 
         public override object ValueAsParamType() {
 
-            return MySQLUtils.convertFromMySQLDataTypeToObject<T>( TypeWrapper.ToObject() , SQLDataType );
+            return MySQLUtils.convertFromMySQLDataTypeToObject<T>( TypeWrapperValue.ToObject() , SQLDataType );
 
             //object Params = null;
 
@@ -106,52 +106,52 @@ namespace prestoMySQL.Column {
         }
 
         TypeCode IConvertible.GetTypeCode() {
-            return Type.GetTypeCode( TypeWrapper.GetType() );
+            return Type.GetTypeCode( TypeWrapperValue.GetType() );
 
         }
 
         bool IConvertible.ToBoolean( IFormatProvider provider ) {
-            throw new NotImplementedException();
+            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToBoolean )}" );
         }
 
         byte IConvertible.ToByte( IFormatProvider provider ) {
-            throw new NotImplementedException();
+            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToByte )}" );
         }
 
         char IConvertible.ToChar( IFormatProvider provider ) {
 
             TypeCode code;
-            if ( TypeWrapper is null ) {
+            if ( TypeWrapperValue is null ) {
                 return isNotNull ? default( char ) : throw new ArgumentNullException();
-            } else if ( TypeWrapper.IsInteger( out code ) ) {
+            } else if ( TypeWrapperValue.IsInteger( out code ) ) {
                 if ( code == TypeCode.Byte ) {
-                    return Convert.ToChar( Convert.ChangeType( TypeWrapper , typeof( Byte ) ) );
+                    return Convert.ToChar( Convert.ChangeType( TypeWrapperValue , typeof( Byte ) ) );
                 } else {
                     throw new InvalidCastException( "Unable to convert " + code + " to char" );
                 }
                 //return ( ( long ) Convert.ChangeType( Value , typeof( long ) ) ).ToString();
-            } else if ( TypeWrapper.IsFloatingPoint( out code ) ) {
+            } else if ( TypeWrapperValue.IsFloatingPoint( out code ) ) {
                 throw new InvalidCastException( "Unable to convert " + code + " to char" );
                 //return ( ( decimal ) Convert.ChangeType( Value , typeof( decimal ) ) ).ToString();
-            } else if ( TypeWrapper.IsLitteral( out code ) ) {
+            } else if ( TypeWrapperValue.IsLitteral( out code ) ) {
 
                 switch ( code ) {
                     case TypeCode.Char:
-                    return ( char ) Convert.ChangeType( TypeWrapper , typeof( char ) );
+                    return ( char ) Convert.ChangeType( TypeWrapperValue , typeof( char ) );
                     default:
-                    if ( TypeWrapper.ToString().Length == 1 ) {
-                        return ( char ) TypeWrapper.ToString()[0];
+                    if ( TypeWrapperValue.ToString().Length == 1 ) {
+                        return ( char ) TypeWrapperValue.ToString()[0];
                     } else
                         throw new InvalidCastException( "Unable to convert " + code + " to char" );
                 }
 
-            } else if ( TypeWrapper.IsDateTime() ) {
+            } else if ( TypeWrapperValue.IsDateTime() ) {
 
                 throw new InvalidCastException( "Unable to convert DateTime to char" );
 
                 //return ( ( DateTime ) Convert.ChangeType( Value , typeof( DateTime ) ) ).ToString( CultureInfo.InvariantCulture.DateTimeFormat.UniversalSortableDateTimePattern );
-            } else if ( TypeWrapper.IsBoolean() ) {
-                return ( ( bool ) Convert.ChangeType( TypeWrapper , typeof( bool ) ) ) ? 'Y' : 'N';
+            } else if ( TypeWrapperValue.IsBoolean() ) {
+                return ( ( bool ) Convert.ChangeType( TypeWrapperValue , typeof( bool ) ) ) ? 'Y' : 'N';
             } else {
                 throw new InvalidCastException( "Uknow type" );
             }
@@ -160,27 +160,27 @@ namespace prestoMySQL.Column {
         DateTime IConvertible.ToDateTime( IFormatProvider provider ) {
 
             TypeCode code;
-            if ( TypeWrapper is null ) {
+            if ( TypeWrapperValue is null ) {
                 return isNotNull ? default( DateTime ) : throw new ArgumentNullException();
-            } else if ( TypeWrapper.IsInteger( out code ) ) {
-                return DateTimeOffset.FromUnixTimeSeconds( ( long ) Convert.ChangeType( TypeWrapper , typeof( long ) ) ).DateTime;
-            } else if ( TypeWrapper.IsFloatingPoint( out code ) ) {
-                DateTime a = DateTime.FromOADate( ( double ) Convert.ChangeType( TypeWrapper , typeof( double ) ) );
+            } else if ( TypeWrapperValue.IsInteger( out code ) ) {
+                return DateTimeOffset.FromUnixTimeSeconds( ( long ) Convert.ChangeType( TypeWrapperValue , typeof( long ) ) ).DateTime;
+            } else if ( TypeWrapperValue.IsFloatingPoint( out code ) ) {
+                DateTime a = DateTime.FromOADate( ( double ) Convert.ChangeType( TypeWrapperValue , typeof( double ) ) );
                 return new DateTime( a.Year , a.Month , a.Day , a.Hour , a.Minute , a.Second );
-            } else if ( TypeWrapper.IsLitteral( out code ) ) {
+            } else if ( TypeWrapperValue.IsLitteral( out code ) ) {
                 switch ( code ) {
 
                     case TypeCode.String: {
-                        return DateTime.ParseExact( TypeWrapper.ToString() , MySQLQueryParam.MYSQL_DATE_FORMAT , CultureInfo.InvariantCulture );
+                        return DateTime.ParseExact( TypeWrapperValue.ToString() , MySQLQueryParam.MYSQL_DATE_FORMAT , CultureInfo.InvariantCulture );
                     }
 
                     default: {
                         throw new InvalidCastException( "unable to convert char to datetime" );
                     }
                 }
-            } else if ( TypeWrapper.IsDateTime() ) {
-                return ( ( DateTime ) Convert.ChangeType( TypeWrapper , typeof( DateTime ) ) );
-            } else if ( TypeWrapper.IsBoolean() ) {
+            } else if ( TypeWrapperValue.IsDateTime() ) {
+                return ( ( DateTime ) Convert.ChangeType( TypeWrapperValue , typeof( DateTime ) ) );
+            } else if ( TypeWrapperValue.IsBoolean() ) {
                 throw new InvalidCastException( "unable to convert boolean to datetime" );
             } else {
                 throw new InvalidCastException( "Uknow type" );
@@ -190,87 +190,123 @@ namespace prestoMySQL.Column {
 
         decimal IConvertible.ToDecimal( IFormatProvider provider ) {
             TypeCode code;
-            if ( TypeWrapper is null ) {
+            if ( TypeWrapperValue is null ) {
                 return isNotNull ? default( Decimal ) : throw new ArgumentNullException();
-            } else if ( TypeWrapper.IsInteger( out code ) ) {
-                return ( Decimal ) Convert.ChangeType( TypeWrapper , typeof( Decimal ) );
-            } else if ( TypeWrapper.IsFloatingPoint( out code ) ) {
-                return ( Decimal ) Convert.ChangeType( TypeWrapper , typeof( Decimal ) );
-            } else if ( TypeWrapper.IsLitteral( out code ) ) {
+            } else if ( TypeWrapperValue.IsInteger( out code ) ) {
+                return ( Decimal ) Convert.ChangeType( TypeWrapperValue , typeof( Decimal ) );
+            } else if ( TypeWrapperValue.IsFloatingPoint( out code ) ) {
+                return ( Decimal ) Convert.ChangeType( TypeWrapperValue , typeof( Decimal ) );
+            } else if ( TypeWrapperValue.IsLitteral( out code ) ) {
 
                 switch ( code ) {
                     case TypeCode.Char: {
-                        var c = ( char ) Convert.ChangeType( TypeWrapper , typeof( char ) );
+                        var c = ( char ) Convert.ChangeType( TypeWrapperValue , typeof( char ) );
                         return ( decimal ) Convert.ToByte( c );
                     }
 
                     default: {
-                        if ( !decimal.TryParse( TypeWrapper.ToString() , out decimal r ) ) {
-                            throw new InvalidCastException( "Unable to convert " + TypeWrapper.ToString() + " to " + SQLDataType.ToString() );
+                        if ( !decimal.TryParse( TypeWrapperValue.ToString() , out decimal r ) ) {
+                            throw new InvalidCastException( "Unable to convert " + TypeWrapperValue.ToString() + " to " + SQLDataType.ToString() );
                         } else {
                             return ( decimal ) r;
                         }
                     }
                 }
 
-            } else if ( TypeWrapper.IsDateTime() ) {
-                return ( decimal ) ( ( DateTime ) Convert.ChangeType( TypeWrapper , typeof( DateTime ) ) ).ToOADate();
-            } else if ( TypeWrapper.IsBoolean() ) {
-                return ( decimal ) ( ( ( bool ) Convert.ChangeType( TypeWrapper , typeof( bool ) ) ) ? 1.0 : 0.0 );
+            } else if ( TypeWrapperValue.IsDateTime() ) {
+                return ( decimal ) ( ( DateTime ) Convert.ChangeType( TypeWrapperValue , typeof( DateTime ) ) ).ToOADate();
+            } else if ( TypeWrapperValue.IsBoolean() ) {
+                return ( decimal ) ( ( ( bool ) Convert.ChangeType( TypeWrapperValue , typeof( bool ) ) ) ? 1.0 : 0.0 );
             } else {
                 throw new InvalidCastException( "Uknow type" );
             }
         }
 
         double IConvertible.ToDouble( IFormatProvider provider ) {
-            throw new NotImplementedException();
+            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToDouble )}" );
         }
 
         short IConvertible.ToInt16( IFormatProvider provider ) {
-            throw new NotImplementedException();
+            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToInt16 )}" );
         }
 
         int IConvertible.ToInt32( IFormatProvider provider ) {
-            throw new NotImplementedException();
+            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToInt32 )}" );
         }
 
         long IConvertible.ToInt64( IFormatProvider provider ) {
-            throw new NotImplementedException();
+            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToInt64 )}" );
         }
 
         sbyte IConvertible.ToSByte( IFormatProvider provider ) {
-            throw new NotImplementedException();
+
+
+            TypeCode code;
+            if ( TypeWrapperValue is null ) {
+                return isNotNull ? default( sbyte ) : throw new ArgumentNullException();
+            } else if ( TypeWrapperValue.IsInteger( out code ) ) {
+                return Convert.ToSByte( TypeWrapperValue );
+            } else if ( TypeWrapperValue.IsFloatingPoint( out code ) ) {
+                //return ( sbyte ) Convert.ChangeType( TypeWrapperValue , typeof( sbyte ) );
+                throw new InvalidCastException( $"{this.ColumnName} not converted {nameof( IConvertible.ToSByte )}" );
+            } else if ( TypeWrapperValue.IsLitteral( out code ) ) {
+                switch ( code ) {
+                    case TypeCode.Char: {
+                        var c = ( char ) Convert.ChangeType( TypeWrapperValue , typeof( char ) );
+                        return ( sbyte ) Convert.ToByte( c );
+                    }
+
+                    default: {
+                        //if ( !uint.TryParse( TypeWrapperValue.ToString() , out uint r ) ) {
+                        //    throw new InvalidCastException( "Unable to convert " + TypeWrapperValue.ToString() + " to " + SQLDataType.ToString() );
+                        //} else {
+                        //    return ( sbyte ) r;
+                        //}
+                        throw new InvalidCastException( $"{this.ColumnName} not converted {nameof( IConvertible.ToSByte )}" );
+                    }
+                }
+
+            } else if ( TypeWrapperValue.IsDateTime() ) {
+                //return ( sbyte ) new DateTimeOffset( ( ( DateTime ) Convert.ChangeType( TypeWrapperValue , typeof( DateTime ) ) ) ).ToUnixTimeSeconds();
+                throw new InvalidCastException( $"{this.ColumnName} not converted {nameof( IConvertible.ToSByte )}" );
+            } else if ( TypeWrapperValue.IsBoolean() ) {
+                return ( sbyte ) ( ( ( bool ) Convert.ChangeType( TypeWrapperValue , typeof( bool ) ) ) ? 1 : 0 );
+            } else {
+                throw new InvalidCastException( "Unknow type for value " + TypeWrapperValue.ToString() );
+            }
+
+            //
         }
 
         float IConvertible.ToSingle( IFormatProvider provider ) {
-            throw new NotImplementedException();
+            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToSingle )}" );
         }
 
         string IConvertible.ToString( IFormatProvider provider ) {
             TypeCode code;
-            if ( TypeWrapper is null ) {
+            if ( TypeWrapperValue is null ) {
                 return isNotNull ? default( string ) : throw new ArgumentNullException();
-            } else if ( TypeWrapper.IsInteger( out code ) ) {
-                return ( ( long ) Convert.ChangeType( TypeWrapper , typeof( long ) ) ).ToString();
-            } else if ( TypeWrapper.IsFloatingPoint( out code ) ) {
-                return ( ( decimal ) Convert.ChangeType( TypeWrapper , typeof( decimal ) ) ).ToString();
-            } else if ( TypeWrapper.IsLitteral( out code ) ) {
-                return TypeWrapper.ToString();
-            } else if ( TypeWrapper.IsDateTime() ) {
-                return ( ( DateTime ) Convert.ChangeType( TypeWrapper , typeof( DateTime ) ) ).ToString( MySQLQueryParam.MYSQL_DATE_FORMAT ); // ToString( CultureInfo.InvariantCulture.DateTimeFormat.UniversalSortableDateTimePattern );
-            } else if ( TypeWrapper.IsBoolean() ) {
-                return ( ( bool ) Convert.ChangeType( TypeWrapper , typeof( bool ) ) ) ? "True" : "False";
+            } else if ( TypeWrapperValue.IsInteger( out code ) ) {
+                return ( ( long ) Convert.ChangeType( TypeWrapperValue , typeof( long ) ) ).ToString();
+            } else if ( TypeWrapperValue.IsFloatingPoint( out code ) ) {
+                return ( ( decimal ) Convert.ChangeType( TypeWrapperValue , typeof( decimal ) ) ).ToString();
+            } else if ( TypeWrapperValue.IsLitteral( out code ) ) {
+                return TypeWrapperValue.ToString();
+            } else if ( TypeWrapperValue.IsDateTime() ) {
+                return ( ( DateTime ) Convert.ChangeType( TypeWrapperValue , typeof( DateTime ) ) ).ToString( MySQLQueryParam.MYSQL_DATE_FORMAT ); // ToString( CultureInfo.InvariantCulture.DateTimeFormat.UniversalSortableDateTimePattern );
+            } else if ( TypeWrapperValue.IsBoolean() ) {
+                return ( ( bool ) Convert.ChangeType( TypeWrapperValue , typeof( bool ) ) ) ? "True" : "False";
             } else {
                 throw new InvalidCastException( "Uknow type" );
             }
         }
 
         object IConvertible.ToType( Type conversionType , IFormatProvider provider ) {
-            throw new NotImplementedException();
+            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToType )}" );
         }
 
         ushort IConvertible.ToUInt16( IFormatProvider provider ) {
-            throw new NotImplementedException();
+            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToUInt16 )}" );
         }
 
         //sbyte => short, int, long, float, double, decimal o nint
@@ -285,45 +321,44 @@ namespace prestoMySQL.Column {
 
         uint IConvertible.ToUInt32( IFormatProvider provider ) {
             TypeCode code;
-            if ( TypeWrapper is null ) {
+            if ( TypeWrapperValue is null ) {
                 return isNotNull ? default( uint ) : throw new ArgumentNullException();
-            } else if ( TypeWrapper.IsInteger( out code ) ) {
-                return Convert.ToUInt32( TypeWrapper );
-            } else if ( TypeWrapper.IsFloatingPoint( out code ) ) {
-                return ( uint ) Convert.ChangeType( TypeWrapper , typeof( uint ) );
-            } else if ( TypeWrapper.IsLitteral( out code ) ) {
+            } else if ( TypeWrapperValue.IsInteger( out code ) ) {
+                return Convert.ToUInt32( TypeWrapperValue );
+            } else if ( TypeWrapperValue.IsFloatingPoint( out code ) ) {
+                return ( uint ) Convert.ChangeType( TypeWrapperValue , typeof( uint ) );
+            } else if ( TypeWrapperValue.IsLitteral( out code ) ) {
                 switch ( code ) {
                     case TypeCode.Char: {
-                        var c = ( char ) Convert.ChangeType( TypeWrapper , typeof( char ) );
+                        var c = ( char ) Convert.ChangeType( TypeWrapperValue , typeof( char ) );
                         return ( uint ) Convert.ToByte( c );
                     }
 
                     default: {
-                        if ( !uint.TryParse( TypeWrapper.ToString() , out uint r ) ) {
-                            throw new InvalidCastException( "Unable to convert " + TypeWrapper.ToString() + " to " + SQLDataType.ToString() );
+                        if ( !uint.TryParse( TypeWrapperValue.ToString() , out uint r ) ) {
+                            throw new InvalidCastException( "Unable to convert " + TypeWrapperValue.ToString() + " to " + SQLDataType.ToString() );
                         } else {
                             return ( uint ) r;
                         }
                     }
                 }
 
-            } else if ( TypeWrapper.IsDateTime() ) {
-                return ( uint ) new DateTimeOffset( ( ( DateTime ) Convert.ChangeType( TypeWrapper , typeof( DateTime ) ) ) ).ToUnixTimeSeconds();
-            } else if ( TypeWrapper.IsBoolean() ) {
-                return ( uint ) ( ( ( bool ) Convert.ChangeType( TypeWrapper , typeof( bool ) ) ) ? 1 : 0 );
+            } else if ( TypeWrapperValue.IsDateTime() ) {
+                return ( uint ) new DateTimeOffset( ( ( DateTime ) Convert.ChangeType( TypeWrapperValue , typeof( DateTime ) ) ) ).ToUnixTimeSeconds();
+            } else if ( TypeWrapperValue.IsBoolean() ) {
+                return ( uint ) ( ( ( bool ) Convert.ChangeType( TypeWrapperValue , typeof( bool ) ) ) ? 1 : 0 );
             } else {
-                throw new InvalidCastException( "Unknow type for value " + TypeWrapper.ToString() );
+                throw new InvalidCastException( "Unknow type for value " + TypeWrapperValue.ToString() );
             }
         }
 
         ulong IConvertible.ToUInt64( IFormatProvider provider ) {
-            throw new NotImplementedException();
+            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToUInt64 )}" );
         }
 
         public override void AssignValue( object x ) {
 
             //Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
-
             //Type[] types = new Type[4];
             //types[0] = ( aColumnDefinition.GetType() );
             //types[1] = typeof( EvaluableBinaryOperator );
@@ -331,15 +366,12 @@ namespace prestoMySQL.Column {
             //types[3] = typeof( string );
             //Type myParameterizedSomeClass = typeof( EntityConstraint<> ).MakeGenericType( generic );
             //ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
-
             //DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition , SQLBinaryOperator.equal() , new SQLQueryParams( new[] { ( MySQLQueryParam ) aColumnDefinition } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
-
             //return o;
 
             var genericType = typeof( T ).GetGenericArguments()[0];
-
             ConstructorInfo ctor = typeof( T ).GetConstructor( new Type[] { genericType } );
-            TypeWrapper = ( T ) ctor?.Invoke( new object[] { Convert.ChangeType( x , genericType ) } );
+            TypeWrapperValue = ( T ) ctor?.Invoke( new object[] { Convert.ChangeType( x , genericType ) } );
 
             //SQLTypeWrapper<uint> b = new SQLTypeWrapper<uint>();
             //uint y = x.ConvertTo<uint>();

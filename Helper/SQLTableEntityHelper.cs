@@ -130,10 +130,10 @@ namespace prestoMySQL.Helper {
 
                 String ColumName = "";
 
-                ColumName = f.ColumnName( null );
+                ColumName = '`' + f.ColumnName( null ) + '`';
 
                 if ( withTableNameAsPrefix )
-                    ColumName = String.Concat( prefix , '.' , ColumName );
+                    ColumName = String.Concat( '`'+prefix+ '`' , '.' ,  ColumName );
 
                 if ( aExcludePrimaryKey ) {
                     if ( !Attribute.IsDefined( f , typeof( DDPrimaryKey ) ) ) {

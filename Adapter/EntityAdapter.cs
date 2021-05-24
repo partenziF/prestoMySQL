@@ -259,6 +259,7 @@ namespace prestoMySQL.Adapter {
                     rowInserted = mDatabase.ExecuteQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
 
                 } catch ( MySqlException ex ) {
+                   
                     return OperationResult.Exception;
                 } catch ( System.Exception e ) {
                     rowInserted = -1;
@@ -329,6 +330,7 @@ namespace prestoMySQL.Adapter {
 
                     Entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
                     return OperationResult.OK;
+
                 } else {
                     return OperationResult.Fail;
                 }
@@ -354,12 +356,41 @@ namespace prestoMySQL.Adapter {
                 switch ( aEntity.PrimaryKey.KeyState ) {
 
                     case KeyState.Created:
-                    result = Insert() == OperationResult.OK;
+
+                        switch ( Insert() ) {
+                            case OperationResult.OK:
+                            return true;
+                            case OperationResult.Fail:
+                            return false;
+                        
+                            case OperationResult.Error:
+                            return false;
+                        
+                            case OperationResult.Exception:
+                            return false;
+                        
+                        }
+
 
                     break;
 
                     case KeyState.Set:
-                    result = Update() == OperationResult.OK;
+                    //result = Update() == OperationResult.OK;
+
+                        switch ( Update() ) {
+                            case OperationResult.OK:
+                            return true;
+                            case OperationResult.Fail:
+                            return false;
+
+                            case OperationResult.Error:
+                            return false;
+
+                            case OperationResult.Exception:
+                            return false;
+
+                        }
+
                     break;
 
                     case KeyState.Unset:

@@ -48,6 +48,10 @@
               "target": "Package",
               "version": "[5.0.0, )"
             },
+            "Microsoft.Extensions.Logging.Log4Net.AspNetCore": {
+              "target": "Package",
+              "version": "[5.0.1, )"
+            },
             "MySqlConnector": {
               "target": "Package",
               "version": "[1.3.7, )"
@@ -55,6 +59,14 @@
             "MySqlConnector.Logging.Microsoft.Extensions.Logging": {
               "target": "Package",
               "version": "[1.0.0, )"
+            },
+            "MySqlConnector.Logging.log4net": {
+              "target": "Package",
+              "version": "[1.0.0, )"
+            },
+            "log4net": {
+              "target": "Package",
+              "version": "[2.0.12, )"
             }
           },
           "imports": [

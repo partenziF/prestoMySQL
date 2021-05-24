@@ -132,7 +132,7 @@ namespace prestoMySQL.SQL {
 
             sb.Append( "INSERT INTO " );
             sb.Append( SQLTableEntityHelper.getTableName( aTableInstance ) );
-            sb.Append( string.Concat( " ( " , string.Join( "," , columnDefinition.Select( x => ( string ) x.ColumnName ).ToList() ) , " ) " ) );
+            sb.Append( string.Concat( " ( " , string.Join( "," , columnDefinition.Select( x => String.Concat( '`', ( string ) x.ColumnName, '`') ).ToList() ) , " ) " ) );
             sb.Append( " VALUES " );
             sb.Append( string.Concat( " ( " , string.Join( "," , outParams.asArray().Select( x => x.AsQueryParam( aParamPlaceholder ) ) ) , " ) " ) );
 

@@ -15,13 +15,10 @@ using System.Diagnostics;
 using System.Reflection;
 
 namespace prestoMySQL.Column {
-    public class MySQLDefinitionColumn<T> : SQLColumn<T> where T : ISQLTypeWrapper { //where T : struct 
-        public MySQLDefinitionColumn( string aDeclaredVariableName, PropertyInfo aMethodBase , AbstractEntity abstractEntity ) :
-            base( aDeclaredVariableName , aMethodBase ) 
-                //new System.Diagnostics.StackTrace()?.GetFrame( 1 )?.GetMethod().ReflectedType?.GetProperty( aDeclaredVariableName ) ) 
-            {
 
-            //Type? x = new System.Diagnostics.StackTrace()?.GetFrame( 1 )?.GetMethod().ReflectedType;
+    public class MySQLDefinitionColumn<T> : SQLColumn<T> where T : ISQLTypeWrapper { //where T : struct 
+
+        public MySQLDefinitionColumn( string aDeclaredVariableName, PropertyInfo aMethodBase , AbstractEntity abstractEntity ) : base( aDeclaredVariableName , aMethodBase ) {
 
             MethodInfo m1 = typeof( AbstractEntity ).GetMethod( "Entity_PropertyChanged" , BindingFlags.NonPublic | BindingFlags.Instance );
             Delegate dlg = Delegate.CreateDelegate( typeof( PropertyChangedEventHandler ) , abstractEntity , m1 );
@@ -32,7 +29,6 @@ namespace prestoMySQL.Column {
             addHandler.Invoke( this , addHandlerArgs );
 
         }
-
 
 
         public override string ToString() {

@@ -25,11 +25,18 @@ namespace prestoMySQL.Adapter {
 
         public abstract OperationResult DropTable( bool ifExists );
         public abstract OperationResult CreateTable( bool ifExists );
+
+        public abstract OperationResult TruncateTable();
+        public abstract OperationResult ExistsTable();
+        protected abstract OperationResult CheckTable();
+
         public abstract OperationResult Create( EntityConditionalExpression Constraint = null , params Object[] aKeyValues );
         protected abstract OperationResult Select( EntityConditionalExpression Constraint = null , params Object[] values );
         protected abstract OperationResult Insert();
         protected abstract OperationResult Update();
+
         public abstract bool Save();
+        public abstract bool Check();
 
 
         public abstract void SetPrimaryKey( params object[] values );

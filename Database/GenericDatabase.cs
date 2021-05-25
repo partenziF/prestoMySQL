@@ -13,10 +13,9 @@ namespace PrestoMySQ.Database {
         public string Message { get; init; } = e.Message;
 
         public override string ToString() {
-            return  Message;
+            return Message;
         }
     }
-
 
     public abstract class GenericDatabase : IDatabase {
         protected readonly string mConnectionString;
@@ -38,11 +37,11 @@ namespace PrestoMySQ.Database {
 
 
         private ILastErrorInfo mLastErrorInfo;
-        public virtual ILastErrorInfo LastError { get => this.mLastErrorInfo; set => this.mLastErrorInfo =  value ; }
+        public virtual ILastErrorInfo LastError { get => this.mLastErrorInfo; set => this.mLastErrorInfo = value; }
 
 
         private bool mIsAutoCommit;
-        public bool IsAutoCommit { get => this.mIsAutoCommit; set => this.mIsAutoCommit =  value ; }
+        public bool IsAutoCommit { get => this.mIsAutoCommit; set => this.mIsAutoCommit = value; }
 
 
         public GenericDatabase( string aConnectionString , ILogger aLogger = null ) {
@@ -66,7 +65,13 @@ namespace PrestoMySQ.Database {
         }
 
         protected abstract bool DoOpenConnection();
+
+        protected abstract Task<bool> DoOpenConnectionAsync();
+
         protected abstract bool DoCloseConnection();
+
+        protected abstract Task<bool> DoCloseConnectionAsync();
+
 
         public bool OpenConnection() {
 
@@ -112,8 +117,55 @@ namespace PrestoMySQ.Database {
             return mIsConnected;
         }
 
+
+        public async Task<bool> OpenConnectionAsync() {
+
+            Logger?.LogTrace( $"{nameof( OpenConnection )} {{0}}" , new { isConnected } );
+
+            if ( isConnected ) {
+
+                try {
+                    if ( await DoCloseConnectionAsync() ) {
+                        mIsConnected = false;
+                    } else {
+                        throw new Exception( "Error while try close connection" );
+                    }
+                } catch ( Exception e ) {
+
+                    LastError = new LastErrorInfo( e );
+
+                    Logger?.LogWarning( $"{nameof( OpenConnection )} Exception message : {{0}}" , e.Message );
+
+                    throw new Exception( "Error while try close connection" , e );
+                }
+            }
+
+            if ( !isConnected ) {
+
+                try {
+
+                    if ( await DoOpenConnectionAsync() ) {
+                        mIsConnected = true;
+                    } else {
+                        throw new Exception( "Error while try to open connection " );
+                    }
+
+                } catch ( Exception e ) {
+                    Logger?.LogWarning( $"{nameof( OpenConnection )} Exception message : {{0}}" , e.Message );
+                    throw new Exception( "Error while try to open connection" , e );
+                }
+
+            }
+
+            Logger?.LogTrace( $"{nameof( OpenConnection )} result {{0}}" , new { isConnected } );
+
+            return mIsConnected;
+        }
+
+
+
         public virtual bool Close() {
-            if (isConnected) {
+            if ( isConnected ) {
                 DoCloseConnection();
                 return true;
             }
@@ -122,10 +174,21 @@ namespace PrestoMySQ.Database {
 
         }
 
+        public virtual async Task<bool> CloseAsync() {
+            if ( isConnected ) {
+                await DoCloseConnectionAsync();
+                return true;
+            }
+
+            return false;
+
+        }
+
+
         public abstract bool Begin();
         public abstract bool Commit();
         public abstract bool Rollback();
 
-        protected abstract Task<bool> DoOpenConnectionAsync();
+
     }
 }

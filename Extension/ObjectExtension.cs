@@ -16,10 +16,10 @@ namespace prestoMySQL.Extension {
                 if ( source == null ) {
                     return default( T );
                 } else {
-                    return (T) Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
+                    return ( T ) Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
                 }
             } else {
-                return (T) Convert.ChangeType( source , t );
+                return ( T ) Convert.ChangeType( source , t );
             }
 
             //return (T)Convert.ChangeType( source, typeof( T ) );
@@ -37,10 +37,10 @@ namespace prestoMySQL.Extension {
                             //return (T)(object)null;
                             return defaultvalue;
                         } else {
-                            return (T) Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
+                            return ( T ) Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
                         }
                     } else {
-                        return (T) Convert.ChangeType( source , t );
+                        return ( T ) Convert.ChangeType( source , t );
                     }
 
                 } catch {
@@ -60,10 +60,10 @@ namespace prestoMySQL.Extension {
                     if ( source == null ) {
                         result = default( T );
                     } else {
-                        result = (T) Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
+                        result = ( T ) Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
                     }
                 } else {
-                    result = (T) Convert.ChangeType( source , t );
+                    result = ( T ) Convert.ChangeType( source , t );
                 }
 
                 return true;
@@ -109,7 +109,7 @@ namespace prestoMySQL.Extension {
             return ( code == TypeCode.DBNull );
         }
         public static bool IsDBNull( this object o ) {
-            var t = (byte) Convert.GetTypeCode( o );
+            var t = ( byte ) Convert.GetTypeCode( o );
             return ( t == 2 );
         }
 
@@ -118,7 +118,7 @@ namespace prestoMySQL.Extension {
             return ( code == TypeCode.Boolean );
         }
         public static bool IsBoolean( this object o ) {
-            var t = (byte) Convert.GetTypeCode( o );
+            var t = ( byte ) Convert.GetTypeCode( o );
             return ( t == 3 );
         }
 
@@ -128,7 +128,7 @@ namespace prestoMySQL.Extension {
             return ( code == TypeCode.DateTime );
         }
         public static bool IsDateTime( this object o ) {
-            var t = (byte) Convert.GetTypeCode( o );
+            var t = ( byte ) Convert.GetTypeCode( o );
             return ( t == 16 );
         }
 
@@ -136,9 +136,9 @@ namespace prestoMySQL.Extension {
             TypeCode code = Type.GetTypeCode( typeof( T ) );
             return ( ( code >= TypeCode.SByte ) && ( code <= TypeCode.UInt64 ) );
         }
-        
+
         public static bool IsInteger( this object o ) {
-            var t = (byte) Convert.GetTypeCode( o );
+            var t = ( byte ) Convert.GetTypeCode( o );
             return ( ( t >= 5 ) && ( t <= 12 ) );
         }
 
@@ -147,7 +147,7 @@ namespace prestoMySQL.Extension {
             return ( ( code >= TypeCode.Single ) && ( code <= TypeCode.Decimal ) );
         }
         public static bool IsFloatingPoint( this object o ) {
-            var t = (byte) Convert.GetTypeCode( o );
+            var t = ( byte ) Convert.GetTypeCode( o );
             return ( ( t >= 13 ) && ( t <= 15 ) );
         }
 
@@ -156,10 +156,21 @@ namespace prestoMySQL.Extension {
             return ( ( code == TypeCode.Char ) || ( code <= TypeCode.String ) );
         }
         public static bool IsLitteral( this object o ) {
-            var t = (byte) Convert.GetTypeCode( o );
+            var t = ( byte ) Convert.GetTypeCode( o );
             return ( ( t == 4 ) || ( t == 18 ) );
         }
 
 
     }
+
+    public static class StringExtension {
+
+        public static string RemoveAllWhitespace( this string input ) {
+            return new string( input.ToCharArray()
+                .Where( c => !Char.IsWhiteSpace( c ) )
+                .ToArray() );
+        }
+
+    }
+
 }

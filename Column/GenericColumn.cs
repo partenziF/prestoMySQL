@@ -40,8 +40,10 @@ namespace prestoMySQL.Column {
 
             mColumnName = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().Name;
             mNotNull = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().NullValue == NullValue.NotNull;
-            mUnique = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().Unique;
             mDefaultValue = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().DefaultValue;
+
+            DDIndexAttribute ddIndex = this.mPropertyInfo?.GetCustomAttribute<DDIndexAttribute>();
+            mUnique = ( ddIndex == null ) ? false : true;
 
             DDPrimaryKey ddPrimaryKey = this.mPropertyInfo?.GetCustomAttribute<DDPrimaryKey>();
 

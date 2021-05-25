@@ -1,5 +1,6 @@
 ﻿using MySqlConnector;
 using prestoMySQL.Adapter.Enum;
+using prestoMySQL.Column.Attribute;
 using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity;
 using prestoMySQL.Extension;
@@ -20,6 +21,9 @@ using System.Reflection;
 namespace prestoMySQL.Adapter {
 
     public abstract class EntityAdapter<T> : TableAdapter, IList<T> where T : AbstractEntity {
+
+        private const string ERROR_EXECUTE_QUERY = "Error execute query ";
+
 
         public EntityAdapter( MySQLDatabase aMySQLDatabase ) {
 
@@ -49,6 +53,7 @@ namespace prestoMySQL.Adapter {
             BindDataToEventHandler handler = BindDataTo;
             handler?.Invoke( this , e );
         }
+
 
         #endregion
 
@@ -138,18 +143,16 @@ namespace prestoMySQL.Adapter {
             try {
 
                 i = mDatabase.ExecuteQuery( s ) ?? null;
-
-                if ( i != -1 ) return OperationResult.OK;
+                if ( i is null ) return OperationResult.Error;
+                else if ( i == 0 ) return OperationResult.OK;
                 else return OperationResult.Fail;
 
             } catch ( MySqlException ex ) {
                 return OperationResult.Error;
             } catch ( System.Exception e ) {
 
-                throw new System.Exception( "Error insert query " + mDatabase.LastError?.ToString() ?? e.Message );
+                throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
             }
-
-            //return ( i != -1 ) ? true : false;
 
         }
 
@@ -161,8 +164,8 @@ namespace prestoMySQL.Adapter {
             try {
 
                 i = mDatabase.ExecuteQuery( s ) ?? null;
-
-                if ( i != -1 ) return OperationResult.OK;
+                if ( i is null ) return OperationResult.Error;
+                else if ( i == 0 ) return OperationResult.OK;
                 else return OperationResult.Fail;
 
             } catch ( MySqlException ex ) {
@@ -170,10 +173,147 @@ namespace prestoMySQL.Adapter {
                 return OperationResult.Error;
 
             } catch ( System.Exception e ) {
-                i = -1;
-                throw new System.Exception( "Error insert query " + mDatabase.LastError?.ToString() ?? e.Message );
+
+                throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
             }
         }
+
+
+        public override OperationResult ExistsTable() {
+
+            var s = SQLBuilder.sqlExistsTable<T>();
+            string? r;
+
+            try {
+
+                r = mDatabase.ExecuteScalar<string>( s ) ?? null;
+                //the function can return a null value even if there, not an error
+                if ( r is null ) return OperationResult.Fail;
+                else if ( !String.IsNullOrWhiteSpace( r ) && ( r.Equals( SQLTableEntityHelper.getTableName<T>() , StringComparison.InvariantCultureIgnoreCase ) ) ) return OperationResult.OK;
+                else return OperationResult.Fail;
+
+            } catch ( MySqlException ex ) {
+
+                return OperationResult.Error;
+
+            } catch ( System.Exception e ) {
+                throw new System.Exception( ERROR_EXECUTE_QUERY + e.Message );
+            }
+
+        }
+
+        protected override OperationResult CheckTable() {
+
+            var rs = mDatabase.ReadQuery( SQLBuilder.sqlDescribeTable<T>() );
+            var allFieldsExists = true;
+
+            if ( rs != null ) {
+
+                var properties = SQLTableEntityHelper.getPropertyIfColumnDefinition<T>();
+                Dictionary<string,DDColumnAttribute> attributes = new Dictionary<string , DDColumnAttribute>();
+                foreach ( var p in properties ) {
+
+                    if ( Attribute.IsDefined( p , typeof( DDColumnFloatingPointAttribute ) ) ) {
+                        attributes.Add( p.GetCustomAttribute<DDColumnFloatingPointAttribute>().Name, p.GetCustomAttribute<DDColumnFloatingPointAttribute>() );
+
+                    } else if ( Attribute.IsDefined( p , typeof( DDColumnStringAttribute ) ) ) {
+                        attributes.Add( p.GetCustomAttribute<DDColumnStringAttribute>().Name , p.GetCustomAttribute<DDColumnStringAttribute>() );
+                    
+                    } else if ( Attribute.IsDefined( p , typeof( DDColumnBooleanAttribute ) ) ) {
+                        attributes.Add( p.GetCustomAttribute<DDColumnBooleanAttribute>().Name , p.GetCustomAttribute<DDColumnBooleanAttribute>() );
+                    
+                    } else if ( Attribute.IsDefined( p , typeof( DDColumnNumericAttribute ) ) ) {
+                        attributes.Add( p.GetCustomAttribute<DDColumnNumericAttribute>().Name , p.GetCustomAttribute<DDColumnNumericAttribute>() );
+
+                    } else if ( Attribute.IsDefined( p , typeof( DDColumnAttribute ) ) ) {
+                        attributes.Add( p.GetCustomAttribute<DDColumnAttribute>().Name , p.GetCustomAttribute<DDColumnAttribute>() );
+                    }
+
+                }
+
+                if ( rs.fetch() ) {
+
+                    do {
+
+                        if ( attributes.ContainsKey( rs.getValueAs<string>( "Field" ) ) ) {
+                            var a = attributes[rs.getValueAs<string>( "Field" )];
+                            var sClassType = a.BulldTypeString().RemoveAllWhitespace();
+                            var sDbType = rs.getValueAs<string>( "Type" ).RemoveAllWhitespace();
+                            if ( sClassType.Equals( sDbType , StringComparison.InvariantCultureIgnoreCase ) ) {
+                                //ok
+                            } else {
+                                //fail
+                            }
+
+                            if ( ( rs.getValueAs<string>( "Null" ).Equals("YES",StringComparison.InvariantCultureIgnoreCase ) ) && (a.NullValue == NullValue.Null) )  {
+                                //ok
+                            } else {
+                                //fail
+                            }
+
+                            var sDbNull = rs.getValueAs<string>( "Null" );
+
+                            if ( ( rs.getValueAs<string>( "Null" ).Equals( "NO" , StringComparison.InvariantCultureIgnoreCase ) ) && ( a.NullValue == NullValue.NotNull ) ) {
+                                //ok
+                            } else {
+                                //fail
+                            }
+
+                            if ( a.GetDefaultValueClause().Equals( rs.getValueAs<string>( "Default" ) , StringComparison.InvariantCultureIgnoreCase ) ) {
+
+                            }
+
+
+                        } else {
+                            allFieldsExists = false;
+                        }
+
+
+                    } while ( rs.fetch() );
+
+
+                    return OperationResult.OK;
+
+                } else {
+                    return OperationResult.Fail;
+                }
+
+            } else {
+                return OperationResult.Error;
+            }
+
+        }
+
+        public override bool Check() {
+            if ( !( ExistsTable() == OperationResult.OK ) ) {
+                return ( CreateTable( true ) == OperationResult.OK );
+            } else {
+                //Check difference between database and class
+                return CheckTable() == OperationResult.OK;
+            }
+        }
+
+
+        public override OperationResult TruncateTable() {
+
+            var s = SQLBuilder.sqlTruncate<T>();
+            int? i = -1;
+            try {
+
+                i = mDatabase.ExecuteQuery( s ) ?? null;
+                if ( i is null ) return OperationResult.Error;
+                else if ( i != -1 ) return OperationResult.OK;
+                else return OperationResult.Fail;
+
+            } catch ( MySqlException ex ) {
+                return OperationResult.Error;
+            } catch ( System.Exception e ) {
+
+                throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
+            }
+        }
+
+
 
         public override OperationResult Create( EntityConditionalExpression Constraint = null , params object[] KeyValues ) {
 
@@ -258,36 +398,38 @@ namespace prestoMySQL.Adapter {
 
                     rowInserted = mDatabase.ExecuteQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
 
-                } catch ( MySqlException ex ) {
-                   
-                    return OperationResult.Exception;
-                } catch ( System.Exception e ) {
-                    rowInserted = -1;
-                    throw new System.Exception( "Error insert query " + mDatabase.LastError?.ToString() ?? e.Message );
-                }
+                    if ( rowInserted is null ) {
 
-                if ( rowInserted is null ) {
+                        return OperationResult.Error;
 
-                    return OperationResult.Error;
+                    } else if ( rowInserted != -1 ) {
 
-                } else if ( rowInserted != -1 ) {
+                        object[] primaryKeyValues = null;
+                        if ( Entity.PrimaryKey.isAutoIncrement ) {
+                            primaryKeyValues = this.Entity.PrimaryKey.doCreatePrimaryKey();
+                        } else {
+                            primaryKeyValues = this.Entity.PrimaryKey.getKeyValues();
+                        }
 
-                    object[] primaryKeyValues = null;
-                    if ( Entity.PrimaryKey.isAutoIncrement ) {
-                        primaryKeyValues = this.Entity.PrimaryKey.doCreatePrimaryKey();
+                        SetPrimaryKey( primaryKeyValues );
+
+                        Entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
+
+                        return OperationResult.OK;
+
                     } else {
-                        primaryKeyValues = this.Entity.PrimaryKey.getKeyValues();
+                        return OperationResult.Fail;
+
                     }
 
-                    SetPrimaryKey( primaryKeyValues );
+                } catch ( MySqlException ex ) {
 
-                    Entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
+                    return OperationResult.Exception;
 
-                    return OperationResult.OK;
+                } catch ( System.Exception e ) {
 
-                } else {
-                    return OperationResult.Fail;
-                        
+                    throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
+
                 }
 
             } else {
@@ -312,27 +454,27 @@ namespace prestoMySQL.Adapter {
 
                     rowChanged = mDatabase.ExecuteQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
 
+                    if ( rowChanged is null ) {
+
+                        return OperationResult.Error;
+
+                    } else if ( rowChanged != -1 ) {
+
+                        Entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
+                        return OperationResult.OK;
+
+                    } else {
+                        return OperationResult.Fail;
+                    }
+
+
                 } catch ( MySqlException ex ) {
-                
+
                     return OperationResult.Exception;
-                
+
                 } catch ( System.Exception e ) {
 
-                    throw new System.Exception( "Error insert query " + mDatabase.LastError?.ToString() ?? e.Message );
-                }
-
-
-                if ( rowChanged is null ) {
-
-                    return OperationResult.Error;
-
-                } else if ( rowChanged != -1 ) {
-
-                    Entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
-                    return OperationResult.OK;
-
-                } else {
-                    return OperationResult.Fail;
+                    throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
                 }
 
             } else {
@@ -357,19 +499,19 @@ namespace prestoMySQL.Adapter {
 
                     case KeyState.Created:
 
-                        switch ( Insert() ) {
-                            case OperationResult.OK:
-                            return true;
-                            case OperationResult.Fail:
-                            return false;
-                        
-                            case OperationResult.Error:
-                            return false;
-                        
-                            case OperationResult.Exception:
-                            return false;
-                        
-                        }
+                    switch ( Insert() ) {
+                        case OperationResult.OK:
+                        return true;
+                        case OperationResult.Fail:
+                        return false;
+
+                        case OperationResult.Error:
+                        return false;
+
+                        case OperationResult.Exception:
+                        return false;
+
+                    }
 
 
                     break;
@@ -377,19 +519,19 @@ namespace prestoMySQL.Adapter {
                     case KeyState.Set:
                     //result = Update() == OperationResult.OK;
 
-                        switch ( Update() ) {
-                            case OperationResult.OK:
-                            return true;
-                            case OperationResult.Fail:
-                            return false;
+                    switch ( Update() ) {
+                        case OperationResult.OK:
+                        return true;
+                        case OperationResult.Fail:
+                        return false;
 
-                            case OperationResult.Error:
-                            return false;
+                        case OperationResult.Error:
+                        return false;
 
-                            case OperationResult.Exception:
-                            return false;
+                        case OperationResult.Exception:
+                        return false;
 
-                        }
+                    }
 
                     break;
 

@@ -16,6 +16,12 @@ using System.Reflection;
 using System.Text;
 
 namespace prestoMySQL.SQL {
+
+    public static class Constant {
+        public static char COLUMN_NAME_QUALIFIER = '`';
+        public static char TABLE_NAME_QUALIFIER = '`';
+        public static char TABLE_PARAM_STRING_QUALIFIER = '"';
+    }
     public static class SQLBuilder {
 
         public static string sqlCreate<T>( bool ifNotExists = true ) where T : AbstractEntity {
@@ -24,7 +30,7 @@ namespace prestoMySQL.SQL {
             List<String> pk = null;
             List<String> result = new List<String>();
 
-            sb.Append( string.Format( "CREATE TABLE {0} \"{1}\" (\n" , ( ifNotExists ? "IF NOT EXISTS" : "" ) , SQLTableEntityHelper.getTableName<T>() ) );
+            sb.Append( $"CREATE TABLE {( ifNotExists ? "IF NOT EXISTS" : "" )} {prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER}{SQLTableEntityHelper.getTableName<T>()}{prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER} (\n" );
             bool autoIncrementKey = false;
             try {
 
@@ -35,23 +41,28 @@ namespace prestoMySQL.SQL {
                     DDColumnAttribute a = f.GetCustomAttribute<DDColumnAttribute>();
 
                     if ( a != null ) {
+
+                        var s = a.ToString();
+
+                        result.Add( a.ToString() );
+
                         string column = ( !string.IsNullOrWhiteSpace( a.Name ) ) ? a.Name : throw new System.Exception( "Column name not present" );
 
-                        SQLColumnDataType dataType = null;
-                        if ( a.DataType != null ) {
-                            dataType = new SQLColumnDataType( ( MySQLDataType ) a.DataType );
-                        } else {
-                            throw new System.Exception( "Column type not present" );
-                        }
-
-                        string sNotNull = ( a.NullValue == NullValue.NotNull ) ? " NOT NULL" : "";
-                        string sUnique = ( a.Unique ) ? " UNIQUE" : "";
+                        //SQLColumnDataType dataType = null;
+                        //if ( a.DataType != null ) {
+                        //    dataType = new SQLColumnDataType( ( MySQLDataType ) a.DataType );
+                        //} else {
+                        //    throw new System.Exception( "Column type not present" );
+                        //}) ? " NOT NULL" : "";
+                        //string sUnique = ( a.Unique ) ? " UNIQUE" : "";
 
                         string sPrimaryKey = "";
                         string sAutoIncrement = "";
 
                         DDPrimaryKey ddp = f.GetCustomAttribute<DDPrimaryKey>();
                         if ( ddp != null ) {
+
+                            //string sNotNull = ( a.NullValue == NullValue.NotNull 
                             sPrimaryKey = " PRIMARY KEY";
                             if ( ddp.Autoincrement ) {
                                 sAutoIncrement = " AUTOINCREMENT";
@@ -61,19 +72,19 @@ namespace prestoMySQL.SQL {
                                     throw new SQLiteTableException( "Only one autoincrement key is allowed." );
                                 }
 
-                                result.Add( "\t" + $"\"{column}\" {dataType.ToString()}{sNotNull}{sUnique}{sPrimaryKey}{sAutoIncrement}".Trim() );
-                                //String.Format( "\"%s\" %s%s%s%s%s" , column , dataType.ToString() , sNotNull , sUnique ,sPrimaryKey , sAutoIncrement ).trim() );
+                                //result.Add( "\t" + $"\"{column}\" {dataType.ToString()}{sNotNull}{sUnique}{sPrimaryKey}{sAutoIncrement}".Trim() );
+                                ////String.Format( "\"%s\" %s%s%s%s%s" , column , dataType.ToString() , sNotNull , sUnique ,sPrimaryKey , sAutoIncrement ).trim() );
 
                             } else {
-                                result.Add( "\t" + $"\"{column}\"  {dataType.ToString()}{sNotNull}{sUnique}{sAutoIncrement}".Trim() );
-                                //result.Add( "\t" + String.Format( "\"%s\" %s%s%s%s" , column , dataType.ToString() , sNotNull , sUnique , sAutoIncrement ).trim() );
+                                //result.Add( "\t" + $"\"{column}\"  {dataType.ToString()}{sNotNull}{sUnique}{sAutoIncrement}".Trim() );
+                                ////result.Add( "\t" + String.Format( "\"%s\" %s%s%s%s" , column , dataType.ToString() , sNotNull , sUnique , sAutoIncrement ).trim() );
                             }
 
                             if ( pk == null ) pk = new List<string>();
-                            pk.Add( $"\"{column}\"" );
+                            pk.Add( $"`{column}`" );
 
                         } else {
-                            result.Add( "\t" + $"\"{column}\" {dataType.ToString()}{sNotNull}{sUnique}".Trim() );
+                            //result.Add( "\t" + $"\"{column}\" {dataType.ToString()}{sNotNull}{sUnique}".Trim() );
                             //String.Format( "\"%s\" %s%s%s" , column , dataType.ToString() , sNotNull , sUnique ).Trim() 
                         }
 
@@ -106,6 +117,28 @@ namespace prestoMySQL.SQL {
             return sb.ToString();
         }
 
+        public static string sqlTruncate<T>() where T : AbstractEntity {
+            StringBuilder sb = new StringBuilder();
+            sb.Append( "TRUNCATE TABLE " );
+            sb.Append( prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER );
+            return sb.ToString();
+        }
+
+        public static string sqlExistsTable<T>() where T : AbstractEntity {
+            StringBuilder sb = new StringBuilder();
+            sb.Append( "SHOW TABLES LIKE " );
+            sb.Append( prestoMySQL.SQL.Constant.TABLE_PARAM_STRING_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.Constant.TABLE_PARAM_STRING_QUALIFIER );
+            return sb.ToString();
+        }
+
+        public static string sqlDescribeTable<T>() where T : AbstractEntity {
+            StringBuilder sb = new StringBuilder();
+            sb.Append( "DESCRIBE " );
+            sb.Append( prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER );
+            return sb.ToString();
+        }
+
+
         public static string sqlDelete<T>() where T : AbstractEntity {
             StringBuilder sb = new StringBuilder().Append( string.Format( "DELETE FROM {0}" , SQLTableEntityHelper.getTableName<T>() ) );
             return sb.ToString();
@@ -132,7 +165,7 @@ namespace prestoMySQL.SQL {
 
             sb.Append( "INSERT INTO " );
             sb.Append( SQLTableEntityHelper.getTableName( aTableInstance ) );
-            sb.Append( string.Concat( " ( " , string.Join( "," , columnDefinition.Select( x => String.Concat( '`', ( string ) x.ColumnName, '`') ).ToList() ) , " ) " ) );
+            sb.Append( string.Concat( " ( " , string.Join( "," , columnDefinition.Select( x => String.Concat( '`' , ( string ) x.ColumnName , '`' ) ).ToList() ) , " ) " ) );
             sb.Append( " VALUES " );
             sb.Append( string.Concat( " ( " , string.Join( "," , outParams.asArray().Select( x => x.AsQueryParam( aParamPlaceholder ) ) ) , " ) " ) );
 

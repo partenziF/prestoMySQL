@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace prestoMySQL.Column.DataType {
     public class SQLColumnDataType : DefinableDataType {
 
-        private MySQLDataType mSqlType;
+        protected MySQLDataType mSqlType;
 
 
         public MySQLDataType SqlType { get => this.mSqlType; set => this.mSqlType = value; }
@@ -106,13 +106,13 @@ namespace prestoMySQL.Column.DataType {
             }
 
             if ( ( state == 3 ) || ( state == 1 ) ) {
-                
-                if ( result.Equals( "INTEGER" ,StringComparison.OrdinalIgnoreCase) ) {
-                    this.SqlType = MySQLDataType.dbtInteger ;
+
+                if ( result.Equals( "INTEGER" , StringComparison.OrdinalIgnoreCase ) ) {
+                    this.SqlType = MySQLDataType.dbtInteger;
                 } else if ( result.Equals( "NVARCHAR" , StringComparison.OrdinalIgnoreCase ) ) {
-                    this.SqlType = MySQLDataType.dbtText ;
+                    this.SqlType = MySQLDataType.dbtText;
                 } else if ( result.Equals( "NUMERIC" , StringComparison.OrdinalIgnoreCase ) ) {
-                    this.SqlType = MySQLDataType.dbtNumeric ;
+                    this.SqlType = MySQLDataType.dbtNumeric;
                 } else {
                     throw new System.Exception( "invali type name" );
                 }
@@ -168,4 +168,73 @@ namespace prestoMySQL.Column.DataType {
 
     }
 
+
+    public class MySQLColumnDataType : SQLColumnDataType {
+        public MySQLColumnDataType( MySQLDataType aSQLType ) : base( aSQLType ) {
+        }
+
+        public MySQLColumnDataType( string aType ) : base( aType ) {
+        }
+
+        public override String ToString() {
+
+            switch ( mSqlType ) {
+
+                //Integer Types (Exact Value)
+                case MySQLDataType.dbtTinyInt: return "TINYINT";
+                case MySQLDataType.dbtSmallInt: return "SMALLINT";
+                case MySQLDataType.dbtMediumInt: return "MEDIUMINT";
+                case MySQLDataType.dbtInteger: return "INT";
+                case MySQLDataType.dbtBigInt: return "BIGINT";
+
+                //Fixed-Point Types (Exact Value) 
+                case MySQLDataType.dbtDecimal: return "DECIMAL";
+                case MySQLDataType.dbtNumeric: return "NUMERIC";
+
+                //Floating-Point Types (Approximate Value) 
+                case MySQLDataType.dbtFloat: return "FLOAT";
+                case MySQLDataType.dbtReal: return "REAL";
+                case MySQLDataType.dbtDoublePrecision: return "DOUBLE";
+
+
+                //Bit-Value Type
+                case MySQLDataType.dbtBit: return "BIT";
+
+                //Datetime
+                case MySQLDataType.dbtDate: return "DATE";
+                case MySQLDataType.dbtTime: return "TIME";
+                case MySQLDataType.dbtDateTime: return "DATETIME";
+                case MySQLDataType.dbtTimestamp: return "TIMESTAMP";
+                case MySQLDataType.dbtYear: return "YEAR";
+
+                //The string data types 
+                case MySQLDataType.dbtChar: return "CHAR";
+                case MySQLDataType.dbtVarChar: return "VARCHAR";
+                case MySQLDataType.dbtBinary: return "BINARY";
+                case MySQLDataType.dbtVarBinary: return "VARBINARY";
+
+                //they store byte strings rather than character strings.
+                case MySQLDataType.dbtTinyBlob: return "TINYBLOB";
+                case MySQLDataType.dbtBlob: return "BLOB";
+                case MySQLDataType.dbtMediumBlob: return "MEDIUMBLOB";
+                case MySQLDataType.dbtLongBlob: return "LONGBLOB";
+
+                case MySQLDataType.dbtTinyText: return "TINYTEXT";
+                case MySQLDataType.dbtText: return "TEXT";
+                case MySQLDataType.dbtMediumText: return "MEDIUMTEXT";
+                case MySQLDataType.dbtLongText: return "LONGTEXT";
+                case MySQLDataType.dbtEnum: return "ENUM";
+
+                //A SET column can have a maximum of 64 distinct members.
+                case MySQLDataType.dbtSet: return "SET";
+                
+                //11.4.1 Spatial Data Types : GEOMETRY, POINT, LINESTRING, POLYGON,MULTIPOINT,MULTILINESTRING,MULTIPOLYGON,GEOMETRYCOLLECTION
+                case MySQLDataType.dbtJSON: return "JSON";
+
+            }
+            return "";
+
+        }
+
+    }
 }

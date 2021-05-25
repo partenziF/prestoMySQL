@@ -158,6 +158,28 @@ namespace PrestoMySQL.Database.MySQL {
             }
         }
 
+        protected override async Task<bool> DoOpenConnectionAsync() {
+            Logger?.LogTrace( $"{nameof( DoOpenConnection ) } {{0}}" , new { mConnection } );
+
+            try {
+
+                if ( mConnection == null )
+                    mConnection = new MySqlConnection( this.ConnectionString );
+
+                if ( ( mConnection.State == ConnectionState.Closed ) || ( mConnection.State == ConnectionState.Broken ) )
+                    await mConnection.OpenAsync();
+
+                return true;
+
+            } catch ( MySqlException e ) {
+
+                LastError = new MySqlLastErrorInfo( e );
+                Logger?.LogWarning( $"{ nameof( DoOpenConnection )} Exception message : {{0}} " , LastError );
+                return false;
+            }
+        }
+
+
         protected override bool DoCloseConnection() {
 
             Logger?.LogTrace( $"{nameof( DoCloseConnection )} {{0}}" , new { mConnection } );
@@ -176,10 +198,22 @@ namespace PrestoMySQL.Database.MySQL {
         }
 
 
-        //public MySQResultSet ExecuteQuery( string aSQLQuery ) {
+        protected override async Task<bool> DoCloseConnectionAsync() {
 
+            Logger?.LogTrace( $"{nameof( DoCloseConnection )} {{0}}" , new { mConnection } );
 
-        //}
+            try {
+                if ( ( mConnection != null ) && ( mConnection.State == ConnectionState.Open ) )
+                    await mConnection.CloseAsync();
+                return true;
+            } catch ( MySqlException e ) {
+
+                Logger?.LogWarning( $"{nameof( DoOpenConnection )} Exception message : {{0}} : {{1}}" , e.ErrorCode , e.Message );
+                LastError = new MySqlLastErrorInfo( e );
+                return false;
+            }
+        }
+
         public int? ExecuteQuery( string aSQLQuery , params MySqlParameter[] args ) {
 
              int? result = null;
@@ -427,9 +461,7 @@ namespace PrestoMySQL.Database.MySQL {
 
         }
 
-        protected override Task<bool> DoOpenConnectionAsync() {
-            throw new NotImplementedException();
-        }
+      
     }
 
 }

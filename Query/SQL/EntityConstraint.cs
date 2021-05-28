@@ -27,7 +27,6 @@ namespace prestoMySQL.Query.SQL {
 
             return o;
         }
-
         public static DefinableConstraint MakeAssignement( dynamic aColumnDefinition , string aParamPlaceHolder = "" ) {
 
             Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
@@ -52,10 +51,6 @@ namespace prestoMySQL.Query.SQL {
         public EntityConstraint( MySQLDefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition , EvaluableBinaryOperator aOperator , IQueryParams aQueryPararm , string aParamPlaceHolder = "" ) :
             base( aColumnDefinition , aOperator , aQueryPararm , aParamPlaceHolder ) {
         }
-
-        //public EntityConstraint( DefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition , EvaluableBinaryOperator aOperator , GenericQueryParam<T> aQueryPararm , string aParamPlaceHolder = "" ) :
-        //    base( aColumnDefinition , aOperator , aQueryPararm , aParamPlaceHolder ) {
-        //}
 
     }
 

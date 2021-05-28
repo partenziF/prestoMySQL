@@ -45,7 +45,6 @@ namespace prestoMySQL.Query {
                 return mValue;
         }
 
-
     }
 
 }

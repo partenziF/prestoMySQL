@@ -1,67 +1,146 @@
 ﻿using prestoMySQL.Column.Attribute;
+using prestoMySQL.Column.DataType;
 using prestoMySQL.Column.Interface;
+using prestoMySQL.Entity;
+using prestoMySQL.Entity.Attributes;
 using prestoMySQL.Helper;
+using prestoMySQL.Query;
+using prestoMySQL.Query.Attribute;
 using prestoMySQL.SQL.Interface;
 using prestoMySQL.Table;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.Column {
-    public class SQLProjectionColumn<T> : SQLColumn<T>, QueryableColumn<T> where T : ISQLTypeWrapper {
 
-        public SQLProjectionColumn( string aDeclaredVariableName ) :
-            base( aDeclaredVariableName ,
-            new System.Diagnostics.StackTrace()?.GetFrame( 1 )?.GetMethod().ReflectedType?.GetProperty( aDeclaredVariableName ) ) {
 
-            DALProjectionColumn columnAttribute = this.mPropertyInfo?.GetCustomAttribute<DALProjectionColumn>( false );
-            this.mAlias = columnAttribute?.Alias ?? "";
+    public abstract class GenericQueryColumn : QueryableColumn {
 
-            if ( string.IsNullOrWhiteSpace( columnAttribute.Table ) ) {
-                //TableReference t = 
-            }
+        public GenericQueryColumn( PropertyInfo aPropertyInfo = null ) {
 
-            //TableReference t = this.getTableReference( a.Table() , aClazz );
-            //columnAttribute.Table = 
+
+            this.mPropertyInfo = aPropertyInfo;
+
+            DALQueryEntity dalQueryEntity = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALQueryEntity>();
+            if ( dalQueryEntity == null ) throw new ArgumentNullException();
+            Type entity = dalQueryEntity.value;
+            DALTable dalTable = entity?.GetCustomAttribute<DALTable>();
+            if ( dalTable == null ) throw new ArgumentNullException();
+            mTable = new TableReference( dalTable.TableName );
+
+
+            DALProjectionColumn dalProjectionColumn = this.mPropertyInfo?.GetCustomAttribute<DALProjectionColumn>();
+            if ( dalProjectionColumn == null ) throw new ArgumentNullException();
+
+
+            mSQLDataType = ( MySQLDataType ) ( dalProjectionColumn as DALProjectionColumn ).DataType;
+
+            mColumnName = dalProjectionColumn.Name;
+
+            mColumnAlias = dalProjectionColumn.Alias;
 
         }
 
-        string mAlias;
-        public string Alias { get => mAlias; set => mAlias = value; }
 
-        bool mIsNullValue;
-        public bool isNullValue { get => mIsNullValue; set => mIsNullValue = value; }
+        protected PropertyInfo mPropertyInfo;
 
-        TableReference mTable;
-        public TableReference Table { get => mTable; set => mTable = value; }
 
-        public string ColumnName => throw new NotImplementedException();
+        public abstract Type GenericType { get; }
 
-        public T Value { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        private readonly MySQLDataType mSQLDataType;
 
-        private TableReference getTableReference<U>( String aTableName ) {
+        protected readonly TableReference mTable;
 
-            foreach ( TableReference t in SQLTableEntityHelper.getQueryTableName<U>() ) {
+        protected readonly string mColumnName;
 
-                if ( t.TableName.Equals( aTableName ) ) {
-                    return t;
-                }
+        protected readonly string mColumnAlias;
+
+        public abstract TableReference Table { get; }
+
+
+        public abstract string ColumnName { get; }
+
+        public abstract string ColumnAlias { get; }
+    }
+
+    public class QueryColumn<T> : GenericQueryColumn where T : ISQLTypeWrapper {
+        public QueryColumn( string aDeclaredVariableName , PropertyInfo aMethodBase = null ) : base( aMethodBase ) {
+            if ( string.IsNullOrEmpty( aDeclaredVariableName ) ) {
+                throw new ArgumentException( $"'{nameof( aDeclaredVariableName )}' non può essere null o vuoto." , nameof( aDeclaredVariableName ) );
             }
 
-            foreach ( TableReference t in SQLTableEntityHelper.getQueryJoinTableName<U>( ) ) {
-                if ( t.TableName.Equals( aTableName ) ) {
-                    return t;
-                }
-            }
-            //		}
+            mDeclaredVariableName = aDeclaredVariableName;
 
-            throw new System.Exception( "Invalid table name" );
+            mGenericType = typeof( T ).GetGenericArguments()[0];
+
+        }
+
+        private Type mGenericType;
+
+
+        private readonly string mDeclaredVariableName;
+
+
+        public override TableReference Table => mTable;
+
+        public override string ColumnName => mColumnName;
+
+        public override Type GenericType => mGenericType;
+
+        public override string ColumnAlias => mColumnAlias;
+
+
+        private T mTypeWrapperValue;
+        public T TypeWrapperValue { get => mTypeWrapperValue; set => SetValue( value ); }
+
+
+        private void SetValue( T value ) {
+
+            this.mTypeWrapperValue = value;
+
+        }
+
+        public object Value() {
+            if ( mTypeWrapperValue.IsNull )
+                return null;
+            else
+                return ( ( object ) ( ( dynamic ) mTypeWrapperValue ).Value );
+        }
+
+
+        public void AssignValue( object x ) {
+
+            var genericType = typeof( T ).GetGenericArguments()[0];
+            ConstructorInfo ctor = typeof( T ).GetConstructor( new Type[] { genericType } );
+            TypeWrapperValue = ( T ) ctor?.Invoke( new object[] { Convert.ChangeType( x , genericType ) } );
 
         }
 
     }
+
+
+
+
+    public class SQLProjectionColumn<T> : QueryColumn<T> where T : ISQLTypeWrapper {
+
+        public SQLProjectionColumn( string aDeclaredVariableName , PropertyInfo aMethodBase , SQLQuery sqlQuery ) : base( aDeclaredVariableName , aMethodBase ) {
+
+        }
+
+
+
+        public override string ToString() {
+            return this.Table.getResultColumn( ColumnName , ColumnAlias );
+            //return this.getTableReference().getResultColumn( getColumnName() , getAlias() );
+        }
+
+
+    }
+
 
 }

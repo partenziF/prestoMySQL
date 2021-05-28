@@ -42,7 +42,7 @@ namespace prestoMySQL.SQL {
 
                     if ( a != null ) {
 
-                        var s = a.ToString();
+                        //var s = a.ToString();
 
                         result.Add( a.ToString() );
 
@@ -187,7 +187,7 @@ namespace prestoMySQL.SQL {
         }
 
 
-        //public static string sqlSelect<T>( ref SQLQueryParams outParams , params dynamic[] Constraint ) where T : AbstractEntity {
+
         public static string sqlSelect<T>( ref SQLQueryParams outParams , EntityConditionalExpression Constraint = null ) where T : AbstractEntity {
 
 
@@ -266,12 +266,44 @@ WHERE
             return "SELECT LAST_INSERT_ID()";
         }
 
-        public static String sqlSelect<T>( T aQueryInstance ) where T : SQLQuery {
-            throw new NotImplementedException();
+
+        public static String sqlSelect( ISQLQuery aQueryInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" , EntityConditionalExpression values = null ) {
+
+            //Count total params
+            outParams ??= new SQLQueryParams( ( ( SQLQuery ) aQueryInstance ).getParam );
+
+            return aQueryInstance.ToString();
+
         }
 
-        public static SQLQuery SELECT( SQLQuery aQuery ) {
-            throw new NotImplementedException();
+
+        public static SQLQuery SELECT<T>( T myQuery ) where T : SQLQuery {
+
+            myQuery.Initialize();
+            myQuery.SelectExpression = SQLTableEntityHelper.getProjectionColumnName<T>( myQuery );
+
+            //List<Field> f = SQLTableEntityHelper.getProjectionFields( myQuery.getClass() );
+            //myQuery.setJoinTables( f );
+
+            ////Auto Join tables 
+            //ArrayList<DALQueryEntity> entityQuery = SQLTableEntityHelper.getQueryEntity( myQuery.getClass() );
+            //ArrayList<DALQueryJoinEntity> entityJoin = SQLTableEntityHelper.getQueryJoinEntity( myQuery.getClass() );
+
+            //for ( DALQueryJoinEntity a : entityJoin ) {
+            //    myQuery.createJoin( a , entityQuery.get( 0 ) );
+            //}
+
+
+            //for ( int i = 0; i < entityJoin.size(); i++ )
+            //    for ( int j = i + 1; j < entityJoin.size(); j++ )
+            //        myQuery.createJoin( entityJoin.get( i ) , entityJoin.get( j ) );
+
+            ////end 
+
+            //myQuery.setOrderBy( f );
+            //myQuery.setGroupBy( f );
+
+            return myQuery;
         }
 
     }

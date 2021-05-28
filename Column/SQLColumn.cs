@@ -53,12 +53,13 @@ namespace prestoMySQL.Column {
 
         private readonly string mDeclaredVariableName;
 
+
         private readonly byte mSize;
         public byte Size { get => mSize; }
 
+        
         private readonly SignType mSigned;
         public SignType Signed { get => mSigned; }
-
 
 
         public override object ValueAsParamType() {

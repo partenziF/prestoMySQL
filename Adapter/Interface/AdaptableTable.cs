@@ -37,8 +37,6 @@ namespace prestoMySQL.Adapter.Interface {
         }
 
         void createForeignKey();
-
-
-
+        void CreateEvents();
     }
 }

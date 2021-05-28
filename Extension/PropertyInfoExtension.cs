@@ -38,7 +38,8 @@ namespace prestoMySQL.Extension {
                     if ( string.IsNullOrWhiteSpace( apc.Name ) ) {
 
                         if ( o != null ) {
-                            ColumnName = ( (SQLProjectionColumn<SQLTypeWrapper<object>>) o ).ColumnName;
+                            throw new NotImplementedException();
+                            //ColumnName = ( (SQLProjectionColumn<SQLTypeWrapper<object>>) o ).ColumnName;
                         } else {
 
                         }

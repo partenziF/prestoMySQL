@@ -1,4 +1,5 @@
-﻿using prestoMySQL.Entity;
+﻿using prestoMySQL.Column.DataType;
+using prestoMySQL.Entity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +21,7 @@ namespace prestoMySQL.Column.Attribute {
         public String Table { get; set; }//default "";
         public AbstractEntity Entity { get; set; }// () default void.class;
         public String Alias { get; set; }// () default ""; 
-        public SQLiteDataType Type { get; set; }
+        public MySQLDataType DataType { get; set; }
         public int OrderBy { get; set; }// () default  0;
         public OrderType Sort { get; set; }//() default OrderType.DESC; 
         public int GroupBy { get; set; }

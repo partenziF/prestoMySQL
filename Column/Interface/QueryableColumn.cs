@@ -1,4 +1,5 @@
 ﻿using prestoMySQL.SQL.Interface;
+using prestoMySQL.Table;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,11 +7,18 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.Column.Interface {
-    public interface QueryableColumn<T> : ConstructibleColumn where T : ISQLTypeWrapper {
-        public T Value { get; set; }
+    public interface QueryableColumn  {
 
-        string Alias { get; set; }
-        bool isNullValue { get; set; }
+        Type GenericType { get; }
+
+        public TableReference Table { get; }
+
+        ///////////////////////////////////////////
+        public string ColumnName { get; }
+
+        public string ColumnAlias { get; }
+
 
     }
+
 }

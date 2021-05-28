@@ -11,10 +11,10 @@ namespace prestoMySQL.Query.Attribute {
         public string Alias;
 
 
-        public DALQueryEntity( Type value , String Alias = "" ) {
-            this.value = value;
-            this.Alias = Alias;
-        }
+        //public DALQueryEntity( Type value , String Alias = "" ) {
+        //    this.value = value;
+        //    this.Alias = Alias;
+        //}
     }
 
 }

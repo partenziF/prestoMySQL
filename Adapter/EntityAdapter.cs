@@ -1,4 +1,5 @@
-﻿using MySqlConnector;
+﻿using Microsoft.Extensions.Logging;
+using MySqlConnector;
 using prestoMySQL.Adapter.Enum;
 using prestoMySQL.Column.Attribute;
 using prestoMySQL.Column.Interface;
@@ -25,10 +26,12 @@ namespace prestoMySQL.Adapter {
         private const string ERROR_EXECUTE_QUERY = "Error execute query ";
 
 
-        public EntityAdapter( MySQLDatabase aMySQLDatabase ) {
+        public EntityAdapter( MySQLDatabase aMySQLDatabase, ILogger logger ) {
 
             this.mDatabase = aMySQLDatabase;
+            this.mLogger = logger;
 
+            CreateEvents();
         }
 
         #region sezione eventi
@@ -59,7 +62,10 @@ namespace prestoMySQL.Adapter {
 
         private List<AbstractEntity> foreignKeyTables = new List<AbstractEntity>();
 
-        public MySQLDatabase mDatabase;
+        public readonly MySQLDatabase mDatabase;
+        private readonly ILogger mLogger;
+
+
 
         /////////////////////////////////////////////////////////////////////////////
         //Transazione
@@ -119,7 +125,7 @@ namespace prestoMySQL.Adapter {
 
                     var o = typeof( SQLTypeWrapper<> ).MakeGenericType( column.GenericType );
                     var p = o.GetField( "NULL" , BindingFlags.Static | BindingFlags.Public );
-                    column.TypeWrapper = p.GetValue( null );
+                    column.TypeWrapperValue = p.GetValue( null );
 
                 } else {
 
@@ -148,9 +154,10 @@ namespace prestoMySQL.Adapter {
                 else return OperationResult.Fail;
 
             } catch ( MySqlException ex ) {
+                mLogger?.LogError( "Exception " + ex.Message + " in " + nameof( DropTable ) );
                 return OperationResult.Error;
             } catch ( System.Exception e ) {
-
+                mLogger?.LogError( "Last error : "+ mDatabase.LastError?.ToString() ?? ""+" Exception " + e.Message + " in " + nameof( DropTable ) );
                 throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
             }
 
@@ -169,11 +176,11 @@ namespace prestoMySQL.Adapter {
                 else return OperationResult.Fail;
 
             } catch ( MySqlException ex ) {
-
+                mLogger?.LogError( "Exception " + ex.Message + " in " + nameof( CreateTable ) );
                 return OperationResult.Error;
 
             } catch ( System.Exception e ) {
-
+                mLogger?.LogError( "Last error : " + mDatabase.LastError?.ToString() ?? "" + " Exception " + e.Message + " in " + nameof( DropTable ) );
                 throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
             }
         }
@@ -193,10 +200,11 @@ namespace prestoMySQL.Adapter {
                 else return OperationResult.Fail;
 
             } catch ( MySqlException ex ) {
-
+                mLogger?.LogError( "Exception " + ex.Message + " in " + nameof( ExistsTable ) );
                 return OperationResult.Error;
 
             } catch ( System.Exception e ) {
+                mLogger?.LogError( "Last error : " + mDatabase.LastError?.ToString() ?? "" + " Exception " + e.Message + " in " + nameof( DropTable ) );
                 throw new System.Exception( ERROR_EXECUTE_QUERY + e.Message );
             }
 
@@ -306,9 +314,10 @@ namespace prestoMySQL.Adapter {
                 else return OperationResult.Fail;
 
             } catch ( MySqlException ex ) {
+                mLogger?.LogError( "Exception " + ex.Message + " in " + nameof( TruncateTable ) );
                 return OperationResult.Error;
             } catch ( System.Exception e ) {
-
+                mLogger?.LogError( "Last error : " + mDatabase.LastError?.ToString() ?? "" + " Exception " + e.Message + " in " + nameof( DropTable ) );
                 throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
             }
         }
@@ -352,7 +361,7 @@ namespace prestoMySQL.Adapter {
             //this.Entity
             var s = SQLBuilder.sqlSelect<T>( Entity , ref outparam , "@" , Constraint );
             var rs = mDatabase.ReadQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
-
+            
             if ( rs != null ) {
 
                 if ( rs.fetch() ) {
@@ -424,10 +433,11 @@ namespace prestoMySQL.Adapter {
 
                 } catch ( MySqlException ex ) {
 
+                    mLogger?.LogError( "Exception " + ex.Message + " in " + nameof( Insert ) );
                     return OperationResult.Exception;
 
                 } catch ( System.Exception e ) {
-
+                    mLogger?.LogError( "Last error : " + mDatabase.LastError?.ToString() ?? "" + " Exception " + e.Message + " in " + nameof( DropTable ) );
                     throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
 
                 }
@@ -470,10 +480,11 @@ namespace prestoMySQL.Adapter {
 
                 } catch ( MySqlException ex ) {
 
+                    mLogger?.LogError( "Exception " + ex.Message + " in " + nameof( Update ) );
                     return OperationResult.Exception;
 
                 } catch ( System.Exception e ) {
-
+                    mLogger?.LogError( "Last error : " + mDatabase.LastError?.ToString() ?? "" + " Exception " + e.Message + " in " + nameof( DropTable ) );
                     throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
                 }
 
@@ -659,6 +670,8 @@ namespace prestoMySQL.Adapter {
         IEnumerator IEnumerable.GetEnumerator() {
             throw new System.NotImplementedException();
         }
+
+
         #endregion
     }
 

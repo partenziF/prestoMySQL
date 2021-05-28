@@ -133,7 +133,7 @@ namespace prestoMySQL.PrimaryKey {
                     var col = ( MySQLDefinitionColumn<SQLTypeWrapper<T>> ) p?.GetValue( this.Table );
                     return ( T ) col.TypeWrapperValue;
 
-                } catch (System.Exception) {
+                } catch (System.Exception e) {
                     throw new System.Exception( "Error while read key value" );
                 }
             } else {

@@ -19,8 +19,7 @@ namespace prestoMySQL.Extension {
         }
 
         public static DALTable GetAttributeDALTable<T>() where T : AbstractEntity => (DALTable) Attribute.GetCustomAttribute( typeof( T ) , typeof( DALTable ) );
-        
 
-
+        public static DALTable GetAttributeDALTable( Type T ) => ( DALTable ) Attribute.GetCustomAttribute( T.GetType() , typeof( DALTable ) );
     }
 }

@@ -216,7 +216,7 @@ namespace PrestoMySQL.Database.MySQL {
 
         public int? ExecuteQuery( string aSQLQuery , params MySqlParameter[] args ) {
 
-             int? result = null;
+            int? result = null;
 
             if ( isConnected ) {
 
@@ -266,6 +266,11 @@ namespace PrestoMySQL.Database.MySQL {
                     }
 
                     var rs = Command.ExecuteReader();
+                    
+                    if ( ( Logger is not null ) && ( args.Length > 0 ) ) {
+                        args.ToList().ForEach( a => Logger?.LogDebug( a.ParameterName + " " + a.Value ) );
+                    }
+
 
                     return new MySQResultSet( rs );
 
@@ -420,7 +425,7 @@ namespace PrestoMySQL.Database.MySQL {
         }
 
 
-        public T? ExecuteScalar<T>( string aSQLQuery , params MySqlParameter[] args ) where T :notnull {
+        public T? ExecuteScalar<T>( string aSQLQuery , params MySqlParameter[] args ) where T : notnull {
 
             T? result = default;
 
@@ -442,7 +447,7 @@ namespace PrestoMySQL.Database.MySQL {
                     }
 
 
-                    
+
                     var id = Command.ExecuteScalar();
                     result = id.ConvertTo<T>();
 
@@ -461,7 +466,7 @@ namespace PrestoMySQL.Database.MySQL {
 
         }
 
-      
+
     }
 
 }

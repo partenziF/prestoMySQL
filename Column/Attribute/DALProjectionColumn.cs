@@ -14,7 +14,7 @@ namespace prestoMySQL.Column.Attribute {
 
     [AttributeUsage( AttributeTargets.Property , AllowMultiple = false , Inherited = false )]
 
-    public sealed class DALProjectionColumn : System.Attribute {
+    public class DALProjectionColumn : System.Attribute {
 
         public String Name { get; set; }
 
@@ -28,4 +28,43 @@ namespace prestoMySQL.Column.Attribute {
         //() default  0;
 
     }
+
+
+    [AttributeUsage( AttributeTargets.Property , AllowMultiple = false , Inherited = false )]
+    public  class DALNumericProjectionColumnAttribute : DALProjectionColumn {
+
+        public byte Size { get; set; }
+        public SignType Signed { get; set; }
+
+
+    }
+
+
+    [AttributeUsage( AttributeTargets.Property , AllowMultiple = false , Inherited = false )]
+    public sealed class DALStringProjectionColumnAttribute : DALProjectionColumn {        
+
+        public byte Length { get; set; }
+        public string Charset { get; set; }
+
+
+
+    }
+    
+    public sealed class DALFloatingPointProjectionColumnAttribute : DALProjectionColumn {
+
+        public byte Size { get; set; }
+        public byte Precision { get; set; }
+    }
+
+    public sealed class DALProjectionColumnBooleanAttribute : DALNumericProjectionColumnAttribute{
+
+        public DALProjectionColumnBooleanAttribute() {
+            DataType = MySQLDataType.dbtTinyInt;
+            Size = 1;
+            Signed = SignType.Unsigned;
+        }
+    }
+
+
 }
+

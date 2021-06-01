@@ -467,6 +467,48 @@ namespace PrestoMySQL.Database.MySQL {
         }
 
 
+        public async Task<T?> ExecuteScalarAsync<T>( string aSQLQuery , params MySqlParameter[] args ) where T : notnull {
+
+            T? result = default;
+
+            if ( isConnected ) {
+
+                try {
+
+                    Command.CommandText = aSQLQuery;
+
+                    if ( mTransaction != null )
+                        this.mCommand.Transaction = mTransaction;
+
+                    mCommand.Parameters.Clear();
+
+                    if ( args.Length > 0 ) {
+                        //    for ( int i = 0; i < args.Length; i++ ) {
+                        mCommand.Parameters.AddRange( args );
+                        //  }
+                    }
+
+
+
+                    var id = await Command.ExecuteScalarAsync();
+                    result = id.ConvertTo<T>();
+
+                    //return new MySQResultSet( rs );
+
+                } catch ( MySqlException ex ) {
+                    Logger?.LogWarning( $"{nameof( ExecuteQueryAsync )} {{0}}" , ex.Message );
+                    this.LastError = new LastErrorInfo( ex );
+                }
+
+            } else {
+                throw new Exception( "Connection is closed" );
+            }
+
+            return result;
+
+        }
+
+
     }
 
 }

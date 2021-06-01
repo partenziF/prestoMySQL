@@ -267,12 +267,122 @@ WHERE
         }
 
 
-        public static String sqlSelect( ISQLQuery aQueryInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" , EntityConditionalExpression values = null ) {
+        public static String sqlQuery<X>( X aQueryInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" ) where X : SQLQuery {
 
             //Count total params
             outParams ??= new SQLQueryParams( ( ( SQLQuery ) aQueryInstance ).getParam );
 
-            return aQueryInstance.ToString();
+            //    return aQueryInstance.ToString();ù
+
+            StringBuilder sb = new StringBuilder();
+
+            try {
+
+
+                sb.Append( String.Format( "SELECT\r\n\t{0} " , String.Join( ',' , aQueryInstance.SelectExpression ) ) );
+                sb.Append( String.Format( "\r\nFROM\r\n\t{0} " , String.Join( ',' , aQueryInstance.TablesReferences ) ) );
+
+                //    if ( !mJoinTable.isEmpty() ) {
+                //        String[] j = new String[mJoinTable.size()];
+                //        int i = 0;
+                //        for ( SQLQueryJoinTable jt : mJoinTable ) {
+                //            j[i++] = jt.toString();
+                //        }
+                //        sb.append( String.format( "\r\n %s " , String.join( "\r\n\t" , j ) ) );
+
+                //    }
+
+
+                //SQLQueryConditionExpression
+
+                /*            
+                 *          EntityConditionalExpression constraintExpression = null;
+                            if ( Constraint?.Length > 0 ) {
+
+                                constraintExpression = new EntityConditionalExpression( LogicOperator.AND ,
+
+                                new EntityConditionalExpression( LogicOperator.AND ,
+                                     new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() ) ,
+                                     new EntityConditionalExpression( LogicOperator.AND , Constraint )
+                                    ) );
+
+                            } else {
+                                constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() );
+                            }
+
+                            outParams ??= new SQLQueryParams( constraintExpression.getParam() );
+                */
+
+                List<string> where = new List<string>();
+
+                if ( aQueryInstance.WhereCondition.Count > 0 ) {
+
+                    aQueryInstance.WhereCondition.ForEach( x => where.Add( x.ToString() ) );
+
+                    //int i = 0;
+                    //foreach( SQLQueryConditionExpression sc in aQueryInstance.WhereCondition) {
+                    //    i += sc.countParam();
+
+                    //    var p = sc.getParam();
+
+                    //    var c = sc.ToString();
+
+                    //}
+
+
+
+                    //EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
+
+                    //outParams ??= new SQLQueryParams( expr.getParam() );
+
+
+                    //String[] c = new string[aQueryInstance.WhereCondition.Count];
+                    //int i = 0;
+                    //foreach ( SQLQueryConditionExpression sc in aQueryInstance.WhereCondition ) {
+                    //    c[i++] = sc.ToString();
+                    //}
+
+                    //sb.Append( String.Format( "\r\nWHERE\r\n\t( {0} )" , String.Join( " AND " , c ) ) );
+
+                }
+
+                sb.Append( String.Format( "\r\nWHERE\r\n\t( {0} )" , String.Join( " AND " , where.ToArray() ) ) );
+
+                //    if ( !mGroupBy.isEmpty() ) {
+                //        String[] c = new String[mGroupBy.size()];
+                //        int i = 0;
+                //        for ( SQLQueryGroupBy sc : mGroupBy ) {
+                //            c[i++] = sc.toString();
+                //        }
+
+                //        sb.append( String.format( "\r\nGROUP BY\r\n\t%s " , String.join( "," , c ) ) );
+
+                //    }
+
+                //    if ( !mOrderBy.isEmpty() ) {
+                //        String[] c = new String[mOrderBy.size()];
+                //        int i = 0;
+                //        for ( SQLQueryOrderBy sc : mOrderBy ) {
+                //            c[i++] = sc.toString();
+                //        }
+
+                //        sb.append( String.format( "\r\nORDER BY\r\n\t%s " , String.join( "," , c ) ) );
+                //    }
+
+                if ( ( aQueryInstance.Offset is not null ) && ( aQueryInstance.RowCount is not null ) ) {
+                    sb.Append( String.Format( $"LIMIT {aQueryInstance.RowCount} OFFSET {aQueryInstance.Offset}" ) );
+                } else if ( ( aQueryInstance.Offset is null ) && ( aQueryInstance.RowCount is not null ) ) {
+                    sb.Append( String.Format( $"LIMIT {aQueryInstance.RowCount}" ) );
+                } else if ( ( aQueryInstance.Offset is not null ) && ( aQueryInstance.RowCount is null ) ) {
+                    throw new ArgumentException( "Invalid argument RowCount can't be null." );
+                }
+
+            } catch ( System.Exception e ) {
+                //    // TODO Auto-generated catch block
+                //    e.printStackTrace();
+            }
+            return sb.ToString();
+
 
         }
 

@@ -17,10 +17,17 @@ using System.Threading.Tasks;
 namespace prestoMySQL.Database.Cursor {
     public class CursorWrapper<T, U> : ICursorWrapper, IEnumerator<T>, IEnumerable where T : ReadableResultSet<U> where U : DbDataReader {
 
+        private ILastErrorInfo mLastErrorInfo;
+        public virtual ILastErrorInfo LastError { get => this.mLastErrorInfo; set => this.mLastErrorInfo = value; }
+
+
         public T mResultSet;
 
-        public CursorWrapper( T aResultSet ) {
+        public CursorWrapper( T aResultSet, ILastErrorInfo lastErrorInfo = null ) {
+
+            mLastErrorInfo = lastErrorInfo;
             this.mResultSet = aResultSet;
+
         }
 
         public T Current => mResultSet;
@@ -32,11 +39,11 @@ namespace prestoMySQL.Database.Cursor {
         }
 
         public IEnumerator GetEnumerator() {
-            return (IEnumerator) this;
+            return ( IEnumerator ) this;
         }
 
         public bool MoveNext() {
-            return this.mResultSet.fetch();
+            return ( bool ) ( this.mResultSet?.fetch() );
         }
 
         public void Reset() {
@@ -44,11 +51,11 @@ namespace prestoMySQL.Database.Cursor {
         }
 
         public bool isEmpty() {
-            return mResultSet.isEmpty();
+            return ( bool ) ( mResultSet?.isEmpty() );
         }
 
         public void Close() {
-            mResultSet.close();
+            mResultSet?.close();
         }
 
     }
@@ -66,7 +73,7 @@ namespace prestoMySQL.Database.Cursor {
 
 
         public void Close() {
-            mResultSet.close();
+            mResultSet?.close();
         }
 
         public ValueTask DisposeAsync() {
@@ -75,17 +82,17 @@ namespace prestoMySQL.Database.Cursor {
         }
 
         public IAsyncEnumerator<T> GetAsyncEnumerator( CancellationToken cancellationToken = default ) {
-            return (IAsyncEnumerator<T>) this;
+            return ( IAsyncEnumerator<T> ) this;
         }
 
         public bool isEmpty() {
-            return mResultSet.isEmpty();
+            return ( bool ) ( mResultSet?.isEmpty() );
         }
 
         public ValueTask<bool> MoveNextAsync() {
             //.ConfigureAwait(false)
             //Task.Delay();
-            var b = this.mResultSet.fetchAsync();
+            var b = this.mResultSet?.fetchAsync();
             return new ValueTask<bool>( b );
         }
     }

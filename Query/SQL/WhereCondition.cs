@@ -13,7 +13,7 @@ namespace prestoMySQL.Query.SQL {
 
     public static class FactoryWhereCondition {
 
-        public static DefinableConstraint MakeWhereEqual( dynamic aColumnDefinition , string aParamPlaceHolder = "" ) {
+        public static DefinableConstraint MakeColumnEqual( dynamic aColumnDefinition , MySQLQueryParam p, string aParamPlaceHolder = "" ) {
 
             Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
 
@@ -25,7 +25,7 @@ namespace prestoMySQL.Query.SQL {
             Type myParameterizedSomeClass = typeof( WhereCondition<> ).MakeGenericType( generic );
             ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
 
-            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition , SQLBinaryOperator.equal() , new SQLQueryParams( new[] { ( MySQLQueryParam ) aColumnDefinition } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
+            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition , SQLBinaryOperator.equal() , new SQLQueryParams( new[] { p } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
 
             return o;
 

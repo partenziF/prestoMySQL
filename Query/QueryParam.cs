@@ -17,7 +17,7 @@ namespace prestoMySQL.Query {
         }
 
         protected object mValue;
-        public object Value { get => GetValue(); }
+        public object Value { get => GetValue(); set => mValue = value; }
 
         private string mName;
         public string Name { get => mName; }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using prestoMySQL.SQL;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,23 +18,23 @@ namespace prestoMySQL.Table {
 
         public String getResultColumn( String aColumnName , String aColumnAlias ) {
             if ( string.IsNullOrWhiteSpace( TableAlias ) ) {
-                if ( !string.IsNullOrWhiteSpace( aColumnAlias ) ) {
-                    return string.Format( "{0}.{1} AS {2}" , this.TableName , aColumnName , aColumnAlias );
+                if ( !string.IsNullOrWhiteSpace( aColumnAlias ) ) {                    
+                    return string.Format( "{0}."+ Constant.COLUMN_NAME_QUALIFIER+"{1}"+ Constant.COLUMN_NAME_QUALIFIER+" AS "+ Constant.COLUMN_NAME_QUALIFIER+"{2}" + Constant.COLUMN_NAME_QUALIFIER , this.TableName , aColumnName , aColumnAlias );
                 } else {
-                    return string.Format( "{0}.{1}" , this.TableName , aColumnName );
+                    return string.Format( "{0}."+ Constant.COLUMN_NAME_QUALIFIER+"{1}"+ Constant.COLUMN_NAME_QUALIFIER , this.TableName , aColumnName );
                 }
             } else {
                 if ( !string.IsNullOrWhiteSpace( aColumnAlias ) ) {
-                    return string.Format( "{0}.{1} AS {2}" , this.TableAlias , aColumnName , aColumnAlias );
+                    return string.Format( "{0}."+ Constant.COLUMN_NAME_QUALIFIER+"{1}"+ Constant.COLUMN_NAME_QUALIFIER+" AS "+Constant.COLUMN_NAME_QUALIFIER+"{2}" + Constant.COLUMN_NAME_QUALIFIER , this.TableAlias , aColumnName , aColumnAlias );
                 } else {
-                    return string.Format( "{0}.{1}" , this.TableAlias , aColumnName );
+                    return string.Format( "{0}."+ Constant.COLUMN_NAME_QUALIFIER+"{1}"+ Constant.COLUMN_NAME_QUALIFIER , this.TableAlias , aColumnName );
                 }
             }
         }
 
         public String getColumnName( String aColumnName ) => string.IsNullOrWhiteSpace( TableAlias )
-                ? string.Format( "{0}.{1}" , this.TableName , aColumnName )
-                : string.Format( "{0}.{1}" , this.TableAlias , aColumnName );
+                ? string.Format( "{0}."+ Constant.COLUMN_NAME_QUALIFIER+"{1}"+ Constant.COLUMN_NAME_QUALIFIER , this.TableName , aColumnName )
+                : string.Format( "{0}."+ Constant.COLUMN_NAME_QUALIFIER+"{1}"+ Constant.COLUMN_NAME_QUALIFIER , this.TableAlias , aColumnName );
 
         public String getActualName() => string.IsNullOrWhiteSpace( TableAlias ) ? TableName : TableAlias;
 

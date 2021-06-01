@@ -7,8 +7,7 @@ using System.Threading.Tasks;
 namespace prestoMySQL.Query.Interface {
     public interface ISQLQuery {
 
-        public String getSQLQuery();
-
+        public void Prepare();
         public int countParam { get; }
         public int execute();
 

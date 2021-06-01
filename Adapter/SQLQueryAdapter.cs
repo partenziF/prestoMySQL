@@ -3,33 +3,49 @@ using prestoMySQL.Database.Cursor;
 using prestoMySQL.Extension;
 using prestoMySQL.Helper;
 using prestoMySQL.Query;
+using prestoMySQL.Query.Attribute;
 using prestoMySQL.Query.Interface;
 using prestoMySQL.SQL;
+using PrestoMySQL.Database.Interface;
 using PrestoMySQL.Database.MySQL;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace prestoMySQL.Adapter {
 
-    public abstract class SQLiteQueryAdapter<T, X> : QueryAdapter,  IEnumerable<X> where T : SQLQuery where X : IInstantiableAdapterRow {
+    public abstract class SQLQueryAdapter<T, X> : QueryAdapter, IEnumerable<X> where T : SQLQuery where X : IInstantiableAdapterRow {
 
-        public SQLiteQueryAdapter( MySQLDatabase db ) {
+
+        public SQLQueryAdapter( MySQLDatabase db ) {
             mDatabase = db;
             mSqlQuery = ( T ) createSqlQuery();
         }
 
-        public override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
+        protected override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
 
         protected T mSqlQuery;
         public T sqlQuery { get => mSqlQuery; }
+        public override int SQLCount {
+            get {
+                sqlQuery.UpdateValueToQueryParam();
 
-        //protected IQueryParams myParams;
+                SQLQueryParams outparam = null;
+                sqlQuery.Prepare();
+                sqlQuery.SelectExpression.Clear();
+                sqlQuery.SelectExpression.Add( "COUNT(*)" );
+                var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+                return mDatabase.ExecuteScalar<int?>( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
+
+            }
+        }
+
         public readonly MySQLDatabase mDatabase;
 
-        public virtual T createSqlQuery() {
+        protected virtual T createSqlQuery() {
             return ( T ) Activator.CreateInstance( typeof( T ) );
         }
 
@@ -46,10 +62,11 @@ namespace prestoMySQL.Adapter {
             object IEnumerator.Current => throw new NotImplementedException();
 
             public void Dispose() {
-                throw new NotImplementedException();
+                mAdapter.Cursor.Close();
             }
 
             public bool MoveNext() {
+
                 try {
 
                     if ( mAdapter.Cursor.MoveNext() ) {
@@ -80,11 +97,18 @@ namespace prestoMySQL.Adapter {
 
             AdapterIterator<X> ai = null;
 
+            ILastErrorInfo message = null;
+
             try {
 
-                Cursor = new CursorWrapper<MySQResultSet , MySqlDataReader>( ExecuteQuery() );
+                Cursor = new CursorWrapper<MySQResultSet , MySqlDataReader>( ExecuteQuery( out message ) , message );
                 ai = new AdapterIterator<X>( this );
+                if ( Cursor.mResultSet is null ) {
+                    throw new ArgumentNullException( "Invalid resultset. " + Cursor.LastError.ToString() );
+                }
 
+            } catch (ArgumentNullException ex ) {
+                throw new System.Exception( "Invalid resultset." );              
             } catch ( System.Exception e ) {
                 throw new System.Exception( "Error while reading data." );
             }
@@ -92,32 +116,22 @@ namespace prestoMySQL.Adapter {
             return ai;
 
         }
-        //Count
-        IEnumerator<X> IEnumerable<X>.GetEnumerator() {
-            var l = new List<X>( 100 );
-            return l.GetEnumerator();
 
-        }
 
-        public List<X> asList() {
+        //public IEnumerable<X> GetAll() {
+        //    var result = new List<X>();
+        //    ProjectionColumns?.Clear();
+        //    ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( sqlQuery );            
+        //    IEnumerator<X> i = ( IEnumerator<X> ) this.GetEnumerator();
+        //    while ( i.MoveNext() )
+        //        result.Add( i.Current );
+        //    Cursor.Close();
+        //    return ( List<X> ) result;
+        //}
 
-            var result = new List<X>();
+        protected override void BindData( MySQResultSet resultSet ) {
 
-            projectionColumns?.Clear();
-            projectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( sqlQuery );
-
-            IEnumerator<X> i = ( IEnumerator<X> ) this.GetEnumerator();
-            while ( i.MoveNext() )
-                result.Add( i.Current );
-
-            Cursor.Close();
-
-            return ( List<X> ) result;
-        }
-
-        public override void BindData( MySQResultSet resultSet ) {
-
-            foreach ( var column in projectionColumns ) {
+            foreach ( var column in ProjectionColumns ) {
 
                 //need explicit conversion to work
                 if ( resultSet[( string ) ( column.ColumnAlias ?? column.ColumnName )].IsDBNull() ) {
@@ -139,16 +153,23 @@ namespace prestoMySQL.Adapter {
 
         }
 
-        public override MySQResultSet ExecuteQuery() {
-            
-            SQLQueryParams outparam = null;
-            PrepareQuery();
-            
-            sqlQuery.LIMIT( Offset , RowCount );
-            
-            var sql = SQLBuilder.sqlSelect( sqlQuery , ref outparam , "@" );
+        public override MySQResultSet ExecuteQuery( out ILastErrorInfo Message ) {
 
-            return mDatabase.ReadQuery( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+            sqlQuery.UpdateValueToQueryParam();
+
+            SQLQueryParams outparam = null;
+
+            sqlQuery.Prepare();
+
+            sqlQuery.LIMIT( Offset , RowCount );
+
+            var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+
+            var result = mDatabase.ReadQuery( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+
+            Message = mDatabase.LastError;
+
+            return result;
 
             //return null;
 
@@ -190,6 +211,14 @@ namespace prestoMySQL.Adapter {
             //return rs;
 
 
+        }
+
+        IEnumerator<X> IEnumerable<X>.GetEnumerator() {
+
+            ProjectionColumns?.Clear();
+            ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( sqlQuery );
+
+            return ( IEnumerator<X> ) this.GetEnumerator();
         }
     }
 

@@ -1,4 +1,5 @@
-﻿using prestoMySQL.Column;
+﻿using prestoMySQL.Adapter;
+using prestoMySQL.Column;
 using prestoMySQL.Column.Attribute;
 using prestoMySQL.Helper;
 using prestoMySQL.Query.Attribute;
@@ -6,9 +7,11 @@ using prestoMySQL.Query.Interface;
 using prestoMySQL.Query.SQL;
 using prestoMySQL.SQL;
 using prestoMySQL.Table;
+using prestoMySQL.Query.Attribute;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -16,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace prestoMySQL.Query {
 
-    public class SQLQuery : ISQLQuery { //IDictionary<string , object> 
+    public abstract class SQLQuery : ISQLQuery, IDictionary<string , MySQLQueryParam> {
 
         public SQLQuery() {
 
@@ -27,6 +30,8 @@ namespace prestoMySQL.Query {
                 p.SetValue( this , ctors.Invoke( new object[] { p.Name , p , this } ) , null );
             }
 
+
+
             // TODO Auto-generated constructor stub
             mSelectExpression = new List<string>();
             mWhereCondition = new List<SQLQueryConditionExpression>();
@@ -35,11 +40,23 @@ namespace prestoMySQL.Query {
             mOrderBy = new PriorityQueue<SQLQueryOrderBy>();
             mGroupBy = new PriorityQueue<SQLQueryGroupBy>();
 
+            mDictionary = new Dictionary<string , MySQLQueryParam>();
+
+
+            var InstantiableFields = this.GetType().GetFields().Where( x => System.Attribute.IsDefined( x , typeof( DALQueryParamAttribute ) ) );
+            InstantiableFields?.ToList().ForEach( x => this[x.Name] = new MySQLQueryParam( x.GetValue( this ) , x.GetCustomAttribute<DALQueryParamAttribute>().Name ) );
 
         }
 
+        private Dictionary<string , MySQLQueryParam> mDictionary;
+
         private int? mRowCount = null;
+        public int? RowCount { get => this.mRowCount; set => this.mRowCount = value; }
+
+
         private int? mOffset = null;
+        public int? Offset { get => this.mOffset; set => this.mOffset = value; }
+
 
 
         public class OrderByEntityComparator : IComparer<SQLQueryOrderBy> {
@@ -71,8 +88,14 @@ namespace prestoMySQL.Query {
         }
 
 
+        public virtual string[] TablesReferences {
+            get {
+                return mHashOfSQLQueryTableReference.Select( x => x.Value.ToString() ).ToArray();
+            }
+        }
+
         private List<SQLQueryConditionExpression> mWhereCondition;
-        protected virtual List<SQLQueryConditionExpression> WhereCondition {
+        public virtual List<SQLQueryConditionExpression> WhereCondition {
             get {
                 return mWhereCondition;
             }
@@ -114,6 +137,40 @@ namespace prestoMySQL.Query {
                 return l.ToArray();
             }
 
+        }
+
+        public ICollection<string> Keys => mDictionary.Keys;
+
+        public ICollection<MySQLQueryParam> Values => mDictionary.Values;
+
+        public int Count => mDictionary.Count;
+
+        public bool IsReadOnly => throw new NotImplementedException();
+
+        internal void UpdateValueToQueryParam() => this.GetType()
+                                                       .GetFields()
+                                                       .Where( x => System.Attribute.IsDefined( x , typeof( DALQueryParamAttribute ) ) )
+                                                       .ToList()
+                                                       .ForEach( x => {
+                                                           if ( this.ContainsKey( x.Name ) ) {
+                                                               MySQLQueryParam o;
+                                                               if ( this.TryGetValue( x.Name , out o ) ) {
+                                                                   o.Value = x.GetValue( this );
+                                                               }
+                                                           } else {
+                                                               this.Add( x.Name , new MySQLQueryParam( x.GetValue( this ) , x.GetCustomAttribute<DALQueryParamAttribute>().Name ) );
+                                                           }
+                                                       } );
+
+        public MySQLQueryParam this[string key] {
+            get => mDictionary[key];
+            set {
+                if ( mDictionary.ContainsKey( key ) ) {
+                    mDictionary[key] = value;
+                } else {
+                    mDictionary.Add( key , value );
+                }
+            }
         }
 
         private IDictionary<string , TableReference> mHashOfSQLQueryTableReference;
@@ -177,77 +234,74 @@ namespace prestoMySQL.Query {
 
         }
 
-        public override string ToString() {
-            StringBuilder sb = new StringBuilder();
+        //public override string ToString() {
 
-            try {
+        //    StringBuilder sb = new StringBuilder();
+
+        //    try {
 
 
-                sb.Append( String.Format( "SELECT\r\n\t{0} " , String.Join( ',' , SelectExpression ) ) );
-                sb.Append( String.Format( "\r\nFROM\r\n\t{0} " , String.Join( ',' , mHashOfSQLQueryTableReference.Select( x => x.Value.ToString() ).ToArray() ) ) );
+        //        sb.Append( String.Format( "SELECT\r\n\t{0} " , String.Join( ',' , SelectExpression ) ) );
+        //        sb.Append( String.Format( "\r\nFROM\r\n\t{0} " , String.Join( ',' , mHashOfSQLQueryTableReference.Select( x => x.Value.ToString() ).ToArray() ) ) );
 
-                //    if ( !mJoinTable.isEmpty() ) {
-                //        String[] j = new String[mJoinTable.size()];
-                //        int i = 0;
-                //        for ( SQLQueryJoinTable jt : mJoinTable ) {
-                //            j[i++] = jt.toString();
-                //        }
-                //        sb.append( String.format( "\r\n %s " , String.join( "\r\n\t" , j ) ) );
+        //        //    if ( !mJoinTable.isEmpty() ) {
+        //        //        String[] j = new String[mJoinTable.size()];
+        //        //        int i = 0;
+        //        //        for ( SQLQueryJoinTable jt : mJoinTable ) {
+        //        //            j[i++] = jt.toString();
+        //        //        }
+        //        //        sb.append( String.format( "\r\n %s " , String.join( "\r\n\t" , j ) ) );
 
-                //    }
+        //        //    }
 
-                if ( ( mWhereCondition.Count > 0 ) ) {
-                    
-                    String[] c = new String[mWhereCondition.Count];
-                    int i = 0;
-                    foreach ( SQLQueryConditionExpression sc in mWhereCondition ) {
-                        c[i++] = sc.ToString();
-                    }
+        //        if ( ( mWhereCondition.Count > 0 ) ) {
 
-                    sb.Append( String.Format( "\r\nWHERE\r\n\t( {0} )" , String.Join( " AND " , c ) ) );
+        //            String[] c = new String[mWhereCondition.Count];
+        //            int i = 0;
+        //            foreach ( SQLQueryConditionExpression sc in mWhereCondition ) {
+        //                c[i++] = sc.ToString();
+        //            }
 
-                }
+        //            sb.Append( String.Format( "\r\nWHERE\r\n\t( {0} )" , String.Join( " AND " , c ) ) );
 
-                //    if ( !mGroupBy.isEmpty() ) {
-                //        String[] c = new String[mGroupBy.size()];
-                //        int i = 0;
-                //        for ( SQLQueryGroupBy sc : mGroupBy ) {
-                //            c[i++] = sc.toString();
-                //        }
+        //        }
 
-                //        sb.append( String.format( "\r\nGROUP BY\r\n\t%s " , String.join( "," , c ) ) );
+        //        //    if ( !mGroupBy.isEmpty() ) {
+        //        //        String[] c = new String[mGroupBy.size()];
+        //        //        int i = 0;
+        //        //        for ( SQLQueryGroupBy sc : mGroupBy ) {
+        //        //            c[i++] = sc.toString();
+        //        //        }
 
-                //    }
+        //        //        sb.append( String.format( "\r\nGROUP BY\r\n\t%s " , String.join( "," , c ) ) );
 
-                //    if ( !mOrderBy.isEmpty() ) {
-                //        String[] c = new String[mOrderBy.size()];
-                //        int i = 0;
-                //        for ( SQLQueryOrderBy sc : mOrderBy ) {
-                //            c[i++] = sc.toString();
-                //        }
+        //        //    }
 
-                //        sb.append( String.format( "\r\nORDER BY\r\n\t%s " , String.join( "," , c ) ) );
-                //    }
+        //        //    if ( !mOrderBy.isEmpty() ) {
+        //        //        String[] c = new String[mOrderBy.size()];
+        //        //        int i = 0;
+        //        //        for ( SQLQueryOrderBy sc : mOrderBy ) {
+        //        //            c[i++] = sc.toString();
+        //        //        }
 
-                if ( ( mOffset is not null ) && ( mRowCount is not null ) ) {
-                    sb.Append( String.Format( $"LIMIT {mRowCount} OFFSET {mOffset}" ) );
-                } else if ( ( mOffset is null ) && ( mRowCount is not null ) ) {
-                    sb.Append( String.Format( $"LIMIT {mRowCount}" ) );
-                } else if ( ( mOffset is not null ) && ( mRowCount is null ) ) {
-                    throw new ArgumentException( "Invalid argument RowCount can't be null." );
-                }
+        //        //        sb.append( String.format( "\r\nORDER BY\r\n\t%s " , String.join( "," , c ) ) );
+        //        //    }
 
-                } catch ( System.Exception e ) {
-                //    // TODO Auto-generated catch block
-                //    e.printStackTrace();
-            }
-            return sb.ToString();
-        }
+        //        if ( ( mOffset is not null ) && ( mRowCount is not null ) ) {
+        //            sb.Append( String.Format( $"LIMIT {mRowCount} OFFSET {mOffset}" ) );
+        //        } else if ( ( mOffset is null ) && ( mRowCount is not null ) ) {
+        //            sb.Append( String.Format( $"LIMIT {mRowCount}" ) );
+        //        } else if ( ( mOffset is not null ) && ( mRowCount is null ) ) {
+        //            throw new ArgumentException( "Invalid argument RowCount can't be null." );
+        //        }
 
-        public virtual string getSQLQuery() {
-            return null;
+        //    } catch ( System.Exception e ) {
+        //        //    // TODO Auto-generated catch block
+        //        //    e.printStackTrace();
+        //    }
+        //    return sb.ToString();
+        //}
 
-        }
 
         public int execute() {
             return 0;
@@ -469,7 +523,52 @@ namespace prestoMySQL.Query {
             throw new NotImplementedException();
         }
 
+        public abstract void Prepare();
 
+        public void Add( string key , MySQLQueryParam value ) {
+            mDictionary.Add( key , value );
+        }
+
+        public bool ContainsKey( string key ) {
+            return mDictionary.ContainsKey( key );
+        }
+
+        public bool Remove( string key ) {
+            return mDictionary.Remove( key );
+        }
+
+        public bool TryGetValue( string key , [MaybeNullWhen( false )] out MySQLQueryParam value ) {
+            return mDictionary.TryGetValue( key , out value );
+        }
+
+        public void Add( KeyValuePair<string , MySQLQueryParam> item ) {
+            mDictionary.Add( item.Key , item.Value );
+        }
+
+        public void Clear() {
+            mDictionary.Clear();
+        }
+
+        public bool Contains( KeyValuePair<string , MySQLQueryParam> item ) {
+            return mDictionary.Contains( item );
+        }
+
+        public void CopyTo( KeyValuePair<string , MySQLQueryParam>[] array , int arrayIndex ) {
+            throw new NotImplementedException();
+        }
+
+        public bool Remove( KeyValuePair<string , MySQLQueryParam> item ) {
+
+            throw new NotImplementedException();
+        }
+
+        public IEnumerator<KeyValuePair<string , MySQLQueryParam>> GetEnumerator() {
+            return mDictionary.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() {
+            return mDictionary.GetEnumerator();
+        }
     }
 
 }

@@ -14,12 +14,13 @@ namespace prestoMySQL.Extension {
                 throw new ArgumentNullException( nameof( entity ) );
             }
 
-            return (DALTable) Attribute.GetCustomAttribute( entity.GetType() , typeof( DALTable ) );
+            return ( DALTable ) Attribute.GetCustomAttribute( entity.GetType() , typeof( DALTable ) );
 
         }
 
-        public static DALTable GetAttributeDALTable<T>() where T : AbstractEntity => (DALTable) Attribute.GetCustomAttribute( typeof( T ) , typeof( DALTable ) );
+        public static DALTable GetAttributeDALTable<T>() where T : AbstractEntity => ( DALTable ) Attribute.GetCustomAttribute( typeof( T ) , typeof( DALTable ) );
 
-        public static DALTable GetAttributeDALTable( Type T ) => ( DALTable ) Attribute.GetCustomAttribute( T.GetType() , typeof( DALTable ) );
+        public static DALTable GetAttributeDALTable( Type t ) => ( DALTable ) Attribute.GetCustomAttribute( t , typeof( DALTable ) );
+
     }
 }

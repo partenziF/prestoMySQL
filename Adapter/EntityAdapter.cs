@@ -344,7 +344,14 @@ namespace prestoMySQL.Adapter {
                         x.AssignValue( KeyValues[i++] );
                     }
 
-                    return this.Select( Constraint , Entity.PrimaryKey.getKeyValues() );
+                    var r = this.Select( Constraint , Entity.PrimaryKey.getKeyValues() );
+                    if (r == OperationResult.OK ) {
+                        Entity.PrimaryKey.KeyState = KeyState.Set;
+                    } else {
+                        Entity.PrimaryKey.KeyState = KeyState.Unset;
+                    }
+
+                    return r;
 
                 } else {
                     throw new ArgumentOutOfRangeException( "Invalid key valus length for primary key" );
@@ -372,18 +379,22 @@ namespace prestoMySQL.Adapter {
 
                     if ( rs.fetch() ) {
                         Entity.State = prestoMySQL.Entity.Interface.EntityState.Undefined;
+                        rs?.close();
                         throw new System.Exception( "Primary key entity violation" );
                     } else {
                         Entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
+                        rs?.close();
                         return OperationResult.OK;
                     }
 
 
                 } else {
+                    rs?.close();
                     return OperationResult.Fail;
                 }
 
             } else {
+                rs?.close();
                 return OperationResult.Error;
             }
 

@@ -490,7 +490,7 @@ namespace PrestoMySQL.Database.MySQL {
 
 
 
-                    var id = await Command.ExecuteScalarAsync();
+                    var id = await Command.ExecuteScalarAsync();                    
                     result = id.ConvertTo<T>();
 
                     //return new MySQResultSet( rs );

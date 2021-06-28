@@ -155,21 +155,46 @@ namespace PrestoMySQL.Database.MySQL {
         }
 
 
-        public object ResultSetSchemaTable() {
+        public Dictionary<string , Dictionary<string , int>> ResultSetSchemaTable() {
+            Dictionary<string , Dictionary<string , int>> result = new Dictionary<string , Dictionary<string , int>>( StringComparer.OrdinalIgnoreCase );
             DataTable schema = mResultSet.GetSchemaTable();
+
             foreach ( DataRow rdrColumn in schema.Rows ) {
+                
                 String columnName = rdrColumn[schema.Columns["ColumnName"]].ToString();
-                String dataType = rdrColumn[schema.Columns["DataType"]].ToString();
+                //String dataType = rdrColumn[schema.Columns["DataType"]].ToString();
                 string tablename = rdrColumn[schema.Columns["BaseTableName"]].ToString();
+                int index = ( int ) rdrColumn[schema.Columns["ColumnOrdinal"]];
+
+                if ( result.ContainsKey( tablename ) ) {
+                    if ( result[tablename].ContainsKey( columnName ) ) {
+                        result[tablename][columnName] = index;
+                    } else {
+                        result[tablename].Add( columnName , index );
+                    }
+                } else {
+                    result.Add( tablename , new Dictionary<string , int>( StringComparer.OrdinalIgnoreCase ) );
+                    result[tablename].Add( columnName , index );
+                }
 
             }
-            return null;
+
+            return result;
             //Dictionary<int , String> columnNames = new Dictionary<int , string>();
             //int index = 0;
             //foreach ( DataRow row in schema.Rows ) {
             //    columnNames.Add( index , row[schema.Columns["ColumnName"]].ToString() );
             //    index++;
             //}
+
+        }
+
+        public U getValueAs<U>( int Index ) {
+            if ( ( this.mResultSet != null ) && ( !this.mResultSet.IsClosed ) ) {                
+                return this.mResultSet[Index].ConvertTo<U>();
+            } else {
+                throw new Exception( "Invalid Resultset" );
+            }
 
         }
 

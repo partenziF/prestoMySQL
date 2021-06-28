@@ -19,7 +19,18 @@ namespace prestoMySQL.Extension {
                     return ( T ) Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
                 }
             } else {
-                return ( T ) Convert.ChangeType( source , t );
+                // Encoding.ASCII.GetString
+                // Encoding.UTF8.GetString(binaryString);
+                // Encoding.Unicode.GetString(binaryString);
+
+
+                if ( ( source is not null ) && ( ( source.GetType().IsArray ) && ( source.GetType() == typeof( byte[] ) ) ) && ( t == typeof( string ) ) ) {
+
+                    return ( T ) Convert.ChangeType( Encoding.UTF8.GetString( ( byte[] ) source ) , t );
+
+                } else {
+                    return ( T ) Convert.ChangeType( source , t );
+                }
             }
 
             //return (T)Convert.ChangeType( source, typeof( T ) );

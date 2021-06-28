@@ -40,7 +40,7 @@ namespace prestoMySQL.Column {
 
             //DDColumnAttribute columnAttribute = this.mPropertyInfo?.GetCustomAttribute<DDColumnAttribute>( false );
             this.mSQLDataType = ( MySQLDataType ) ( columnAttribute as DDColumnAttribute ).DataType;
-
+            
 
             
         }
@@ -50,8 +50,8 @@ namespace prestoMySQL.Column {
         //private readonly MySqlDbType mDataType;
 
         public MySQLDataType SQLDataType { get => this.mSQLDataType; }
-
         private readonly string mDeclaredVariableName;
+
 
 
         private readonly byte mSize;
@@ -116,7 +116,40 @@ namespace prestoMySQL.Column {
         }
 
         byte IConvertible.ToByte( IFormatProvider provider ) {
-            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToByte )}" );
+            TypeCode code;
+            if ( TypeWrapperValue is null ) {
+                return isNotNull ? default( byte ) : throw new ArgumentNullException();
+            } else if ( TypeWrapperValue.IsInteger( out code ) ) {
+                return Convert.ToByte( TypeWrapperValue );
+            } else if ( TypeWrapperValue.IsFloatingPoint( out code ) ) {
+                //return ( sbyte ) Convert.ChangeType( TypeWrapperValue , typeof( sbyte ) );
+                throw new InvalidCastException( $"{this.ColumnName} not converted {nameof( IConvertible.ToByte )}" );
+            } else if ( TypeWrapperValue.IsLitteral( out code ) ) {
+                switch ( code ) {
+                    case TypeCode.Char: {
+                        var c = ( char ) Convert.ChangeType( TypeWrapperValue , typeof( char ) );
+                        return ( byte ) Convert.ToByte( c );
+                    }
+
+                    default: {
+                        //if ( !uint.TryParse( TypeWrapperValue.ToString() , out uint r ) ) {
+                        //    throw new InvalidCastException( "Unable to convert " + TypeWrapperValue.ToString() + " to " + SQLDataType.ToString() );
+                        //} else {
+                        //    return ( sbyte ) r;
+                        //}
+                        throw new InvalidCastException( $"{this.ColumnName} not converted {nameof( IConvertible.ToByte )}" );
+                    }
+                }
+
+            } else if ( TypeWrapperValue.IsDateTime() ) {
+                //return ( sbyte ) new DateTimeOffset( ( ( DateTime ) Convert.ChangeType( TypeWrapperValue , typeof( DateTime ) ) ) ).ToUnixTimeSeconds();
+                throw new InvalidCastException( $"{this.ColumnName} not converted {nameof( IConvertible.ToByte )}" );
+            } else if ( TypeWrapperValue.IsBoolean() ) {
+                return ( byte ) ( ( ( bool ) Convert.ChangeType( TypeWrapperValue , typeof( bool ) ) ) ? 1 : 0 );
+            } else {
+                throw new InvalidCastException( "Unknow type for value " + TypeWrapperValue.ToString() );
+            }
+
         }
 
         char IConvertible.ToChar( IFormatProvider provider ) {
@@ -232,7 +265,36 @@ namespace prestoMySQL.Column {
         }
 
         int IConvertible.ToInt32( IFormatProvider provider ) {
-            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToInt32 )}" );
+            TypeCode code;
+            if ( TypeWrapperValue is null ) {
+                return isNotNull ? default( int ) : throw new ArgumentNullException();
+            } else if ( TypeWrapperValue.IsInteger( out code ) ) {
+                return Convert.ToInt32( TypeWrapperValue );
+            } else if ( TypeWrapperValue.IsFloatingPoint( out code ) ) {
+                return ( int ) Convert.ChangeType( TypeWrapperValue , typeof( int ) );
+            } else if ( TypeWrapperValue.IsLitteral( out code ) ) {
+                switch ( code ) {
+                    case TypeCode.Char: {
+                        var c = ( char ) Convert.ChangeType( TypeWrapperValue , typeof( char ) );
+                        return ( int ) Convert.ToByte( c );
+                    }
+
+                    default: {
+                        if ( !uint.TryParse( TypeWrapperValue.ToString() , out uint r ) ) {
+                            throw new InvalidCastException( "Unable to convert " + TypeWrapperValue.ToString() + " to " + SQLDataType.ToString() );
+                        } else {
+                            return ( int ) r;
+                        }
+                    }
+                }
+
+            } else if ( TypeWrapperValue.IsDateTime() ) {
+                return ( int ) new DateTimeOffset( ( ( DateTime ) Convert.ChangeType( TypeWrapperValue , typeof( DateTime ) ) ) ).ToUnixTimeSeconds();
+            } else if ( TypeWrapperValue.IsBoolean() ) {
+                return ( int ) ( ( ( bool ) Convert.ChangeType( TypeWrapperValue , typeof( bool ) ) ) ? 1 : 0 );
+            } else {
+                throw new InvalidCastException( "Unknow type for value " + TypeWrapperValue.ToString() );
+            }
         }
 
         long IConvertible.ToInt64( IFormatProvider provider ) {
@@ -297,8 +359,10 @@ namespace prestoMySQL.Column {
                 return ( ( DateTime ) Convert.ChangeType( TypeWrapperValue , typeof( DateTime ) ) ).ToString( MySQLQueryParam.MYSQL_DATE_FORMAT ); // ToString( CultureInfo.InvariantCulture.DateTimeFormat.UniversalSortableDateTimePattern );
             } else if ( TypeWrapperValue.IsBoolean() ) {
                 return ( ( bool ) Convert.ChangeType( TypeWrapperValue , typeof( bool ) ) ) ? "True" : "False";
+            } else if ( TypeWrapperValue.ValueIsNull() ) {
+                throw new ArgumentNullException();
             } else {
-                throw new InvalidCastException( "Uknow type" );
+                throw new InvalidCastException( "Uknown type for column "+ColumnName+" defined in "+mPropertyInfo.Name );
             }
         }
 

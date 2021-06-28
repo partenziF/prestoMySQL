@@ -1,4 +1,5 @@
-﻿using prestoMySQL.PrimaryKey;
+﻿using prestoMySQL.Entity;
+using prestoMySQL.PrimaryKey;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,21 +8,21 @@ using System.Threading.Tasks;
 
 namespace prestoMySQL.ForeignKey.Interface {
 
-	public delegate object[] DelegateCreateForeignKey();
+	public delegate void DelegateCreateForeignKey(EntityForeignKey e);
 
 	public interface IForeignKey {
 
-		public KeyState getKeyState();
-
+		public KeyState keyState { get; set; }
+		
 		public Object[] getKeyValues();
 
 		void setKeyValues( params Object[] values );
 
-		public Object[] createKey();
+		public void createKey();
 
 		public void setDoCreateForeignKey( DelegateCreateForeignKey doCreateForeignKey );
 
-		IDictionary<String , EntityPrimaryKey> peekPrimaryKey();
+		//Dictionary<String , EntityPrimaryKey> peekPrimaryKey();
 
 	}
 }

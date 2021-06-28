@@ -7,38 +7,26 @@ using System.Threading.Tasks;
 
 namespace prestoMySQL.Query.SQL {
     public class EntityConditionalExpression : DefinableConditionalExpression {
-        public EntityConditionalExpression( LogicOperator logicOperator , params dynamic[] aSqlQueryConditions ) {
+        public EntityConditionalExpression( LogicOperator logicOperator , params dynamic[] aEntityConstraint ) {
+            
             this.mLogicOperator = logicOperator;
-
-
-            mConditions = aSqlQueryConditions.Where( x => ( x != null )).ToArray() ?? null;
-            //if ( aSqlQueryConditions.Length > 0 ) {
-            //    List<dynamic> l = new List<dynamic>();
-
-            //    this.mConditions = new dynamic[aSqlQueryConditions.Length]; // new GenericEntityConstraint[aSqlQueryConditions.Length];
-            //    int i = 0;
-            //    foreach ( dynamic sc in aSqlQueryConditions ) {
-            //        this.mConditions[i++] = sc;
-            //    }
-            //} else {
-            //    mConditions = null;
-            //}
+            mConditions = aEntityConstraint.Where( x => ( x != null )).ToArray() ?? null;
 
         }
 
-        public EntityConditionalExpression( LogicOperator aLogicOperator , EntityConditionalExpression aSQLQueryConditionExpression1 , EntityConditionalExpression aSQLQueryConditionExpression2 ) {
+        public EntityConditionalExpression( LogicOperator aLogicOperator , EntityConditionalExpression aEntityConditionalExpressionLeft , EntityConditionalExpression aEntityConditionalExpressionRight ) {
 
             this.mLogicOperator = aLogicOperator;
 
-            if ( ( aSQLQueryConditionExpression1 == null ) || ( aSQLQueryConditionExpression2 == null ) ) throw new System.Exception( "Condition must not be null" );
+            if ( ( aEntityConditionalExpressionLeft == null ) || ( aEntityConditionalExpressionRight == null ) ) throw new System.Exception( "Condition must not be null" );
 
             this.mConditionExpressions = new EntityConditionalExpression[2];
-            this.mConditionExpressions[0] = aSQLQueryConditionExpression1;
-            this.mConditionExpressions[1] = aSQLQueryConditionExpression2;
+            this.mConditionExpressions[0] = aEntityConditionalExpressionLeft;
+            this.mConditionExpressions[1] = aEntityConditionalExpressionRight;
 
         }
 
-
+        //GenericEntityConstraint
         private dynamic[] mConditions; //GenericEntityConstraint
         private EntityConditionalExpression[] mConditionExpressions;
         private LogicOperator mLogicOperator;

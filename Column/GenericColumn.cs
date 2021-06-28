@@ -20,10 +20,31 @@ namespace prestoMySQL.Column {
     //    }
     //}
 
+    public interface IObservableColumn {
+        void Attach( IObserverColumn observer );
 
-    public abstract class GenericSQLColumn<T> : ConstructibleColumn, INotifyPropertyChanged, DefinableColumn<T> where T : ISQLTypeWrapper {
+        // Detach an observer from the subject.
+        void Detach( IObserverColumn observer );
+
+        // Notify all observers about an event.
+        void NotifyObserver();
+
+
+    }
+
+
+
+    public interface IObserverColumn {
+
+        void Update( IObservableColumn subjectColumn );
+    }
+
+
+    public abstract class GenericSQLColumn<T> : ConstructibleColumn, INotifyPropertyChanged, IObservableColumn, DefinableColumn<T> where T : ISQLTypeWrapper {
 
         // INotifyPropertyChanged https://stackoverflow.com/questions/32302733/can-c-sharp-implicit-operators-be-used-to-set-a-property where T:struct
+
+        private List<IObserverColumn> mObserverColumns = new List<IObserverColumn>();
 
         public GenericSQLColumn( PropertyInfo aPropertyInfo = null ) {
 
@@ -39,6 +60,9 @@ namespace prestoMySQL.Column {
             if ( ddColumnAttribute == null ) throw new ArgumentNullException();
 
             mColumnName = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().Name;
+            mAlias = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().Alias;
+
+
             mNotNull = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().NullValue == NullValue.NotNull;
             mDefaultValue = this.mPropertyInfo.GetCustomAttribute<DDColumnAttribute>().DefaultValue;
 
@@ -67,27 +91,34 @@ namespace prestoMySQL.Column {
         public string ColumnName { get => this.mColumnName; }
 
 
+
         private T mTypeWrapperValue;
         public T TypeWrapperValue { get => mTypeWrapperValue; set => SetValue( value ); }
 
-
         private void SetValue( T value ) {
+
+            var isChanged = false;
 
             if ( mTypeWrapperValue != null ) {
 
                 if ( !mTypeWrapperValue.Equals( value ) ) {
-                    OnPropertyChanged( mColumnName);
+                    OnPropertyChanged( mColumnName );
+                    isChanged = true;
                 }
 
             } else {
                 OnPropertyChanged( mColumnName );
+                isChanged = true;
             }
 
             this.mTypeWrapperValue = value;
-
+            
+            if ( isChanged ) NotifyObserver();
         }
 
-        public object Value() {
+        public object GetValue() {
+            if ( mTypeWrapperValue is null )
+                throw new NullReferenceException( nameof( mTypeWrapperValue ) + " is null" );
             if ( mTypeWrapperValue.IsNull )
                 return null;
             else
@@ -112,20 +143,42 @@ namespace prestoMySQL.Column {
 
 
 
-        bool mIsAutoincrement;      
+        bool mIsAutoincrement;
         public bool isAutoIncrement { get => mIsAutoincrement; }
+
+        private string mAlias;
+        public string Alias => mAlias;
+
+        public string ActualName => ( !String.IsNullOrWhiteSpace( mAlias ) ) ? mAlias : mColumnName;
 
 
         public abstract object ValueAsParamType();
         public abstract void AssignValue( object x );
 
-        
-        
+
+
         public event PropertyChangedEventHandler PropertyChanged;
         public virtual void OnPropertyChanged( string propertyName ) {
             if ( PropertyChanged != null ) {
-                PropertyChanged( this , new PropertyChangedEventArgs( propertyName ) );
+                PropertyChanged( this , new PropertyChangedEventArgs( propertyName ) );                
             }
+        }
+
+        public void Attach( IObserverColumn observer ) {
+            //throw new NotImplementedException();
+            if ( !( mObserverColumns.Contains( observer ) ) ) {
+                mObserverColumns.Add( observer );
+            }
+        }
+
+        public void Detach( IObserverColumn observer ) {
+            if ( ( mObserverColumns.Contains( observer ) ) ) {
+                mObserverColumns.Remove( observer );
+            }
+        }
+        
+        public void NotifyObserver() {
+            mObserverColumns.ForEach( o => o.Update( this ) );
         }
 
         //public event PropertyChangedEventHandler PropertyChanged;

@@ -21,15 +21,19 @@ namespace prestoMySQL.SQL {
         bool mIsNull;
         public bool IsNull { get => mIsNull; }
 
+        public bool ValueIsNull() { return mValue is null; }
+
 
         public static implicit operator SQLTypeWrapper<T>( T x ) {
             return new SQLTypeWrapper<T>( x );
         }
 
         public static explicit operator T( SQLTypeWrapper<T> x ) {
+            if ( x is null ) throw new ArgumentNullException();
             if ( x.IsNull ) throw new InvalidOperationException();
             return x.mValue;
         }
+
 
         //public static implicit operator T( SQLTypeWrapper<T> x ) {
         //    if ( x.IsNull ) throw new InvalidOperationException();
@@ -142,9 +146,23 @@ namespace prestoMySQL.SQL {
         }
 
         public override bool Equals( object obj ) {
-            
-            return ( Value.Equals(  ( obj as SQLTypeWrapper<T> ).Value ) && ( IsNull == ( obj as SQLTypeWrapper<T> ).IsNull ) );
+            return obj is SQLTypeWrapper<T> wrapper &&
+                    EqualityComparer<T>.Default.Equals( this.mValue , wrapper.mValue ) &&
+                     this.mIsNull == wrapper.mIsNull;
         }
+
+        public override int GetHashCode() {
+            return HashCode.Combine( this.mValue , this.mIsNull );
+        }
+
+        //public override bool Equals( object obj ) {
+
+        //    return ( Value.Equals(  ( obj as SQLTypeWrapper<T> ).Value ) && ( IsNull == ( obj as SQLTypeWrapper<T> ).IsNull ) );
+        //}
+
+        //public override int GetHashCode() {
+        //    throw new NotImplementedException();
+        //}
     }
 
     #endregion

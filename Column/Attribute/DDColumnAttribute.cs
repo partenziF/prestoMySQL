@@ -51,6 +51,8 @@ namespace prestoMySQL.Column.Attribute {
     public class DDColumnAttribute : System.Attribute {
 
         public string Name { get; set; }
+        public string Alias { get; set; }
+
         public MySQLDataType DataType { get; set; }
         public NullValue NullValue { get; set; }
         public object DefaultValue { get; set; }
@@ -136,11 +138,14 @@ namespace prestoMySQL.Column.Attribute {
             return result;
         }
 
-        protected StringBuilder BuildString() {
-            
+        public string BuildColumnName() {
             string columnName = ( !string.IsNullOrWhiteSpace( Name ) ) ? Name : throw new System.Exception( "Column name is empty or null" );
-            
-            StringBuilder sb = new StringBuilder( $" {SQL.Constant.COLUMN_NAME_QUALIFIER}{columnName}{SQL.Constant.COLUMN_NAME_QUALIFIER} " );
+            return $" {SQL.SQLConstant.COLUMN_NAME_QUALIFIER}{columnName}{SQL.SQLConstant.COLUMN_NAME_QUALIFIER} ";
+        }
+
+        protected StringBuilder BuildString() {
+                        
+            StringBuilder sb = new StringBuilder( this.BuildColumnName() );
 
             sb.Append( BulldTypeString()  );
 
@@ -153,10 +158,10 @@ namespace prestoMySQL.Column.Attribute {
         }
 
         public override string ToString() {
-            string columnName = ( !string.IsNullOrWhiteSpace( Name ) ) ? Name : throw new System.Exception( "Column name is empty or null" );
+
             MySQLColumnDataType dataType = new MySQLColumnDataType( ( MySQLDataType ) this.DataType );
 
-            StringBuilder sb = new StringBuilder( $" {SQL.Constant.COLUMN_NAME_QUALIFIER}{columnName}{SQL.Constant.COLUMN_NAME_QUALIFIER} " );
+            StringBuilder sb = new StringBuilder( this.BuildColumnName() );
 
             sb.Append( $" {dataType.ToString()} " );
 
@@ -189,7 +194,6 @@ namespace prestoMySQL.Column.Attribute {
             return sb.ToString();
 
         }
-
         public override string ToString() {
 
             StringBuilder sb = base.BuildString();
@@ -222,7 +226,6 @@ namespace prestoMySQL.Column.Attribute {
             return sb.ToString();
 
         }
-
         public override string ToString() {
 
             StringBuilder sb = base.BuildString();
@@ -242,14 +245,13 @@ namespace prestoMySQL.Column.Attribute {
 
     public sealed class DDColumnStringAttribute : DDColumnAttribute {
         //Length is required
-        public byte Length { get; set; }
+        public UInt16 Length { get; set; }
         public string Charset { get; set; }
 
-        public DDColumnStringAttribute( string aName , MySQLDataType aDataType , byte aLength = 250 , string aCharset = "" , NullValue NullValue = NullValue.Null ) : base( aName , aDataType , NullValue ) {
+        public DDColumnStringAttribute( string aName , MySQLDataType aDataType , UInt16 aLength = 250 , string aCharset = "" , NullValue NullValue = NullValue.Null ) : base( aName , aDataType , NullValue ) {
             this.Length = aLength;
             this.Charset = aCharset;
         }
-
         public override string BulldTypeString() {
 
             MySQLColumnDataType dataType = new MySQLColumnDataType( ( MySQLDataType ) this.DataType );
@@ -258,8 +260,6 @@ namespace prestoMySQL.Column.Attribute {
             return sb.ToString();
 
         }
-
-
         public override string ToString() {
 
             StringBuilder sb = base.BuildString();
@@ -286,8 +286,6 @@ namespace prestoMySQL.Column.Attribute {
             this.Size = aSize;
             this.Precision = aPrecision;
         }
-
-
         public override string BulldTypeString() {
 
             MySQLColumnDataType dataType = new MySQLColumnDataType( ( MySQLDataType ) this.DataType );
@@ -298,7 +296,6 @@ namespace prestoMySQL.Column.Attribute {
             return sb.ToString();
 
         }
-
         public override string ToString() {
 
             StringBuilder sb = base.BuildString();

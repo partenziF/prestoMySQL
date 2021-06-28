@@ -1,9 +1,13 @@
-﻿using prestoMySQL.Column;
+﻿using DatabaseEntity.EntityAdapter;
+using prestoMySQL.Adapter;
+using prestoMySQL.Column;
 using prestoMySQL.Column.Attribute;
 using prestoMySQL.Column.DataType;
 using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity;
 using prestoMySQL.Exception;
+using prestoMySQL.ForeignKey;
+using prestoMySQL.ForeignKey.Attributes;
 using prestoMySQL.Helper;
 using prestoMySQL.PrimaryKey.Attributes;
 using prestoMySQL.Query;
@@ -17,7 +21,7 @@ using System.Text;
 
 namespace prestoMySQL.SQL {
 
-    public static class Constant {
+    public static class SQLConstant {
         public static char COLUMN_NAME_QUALIFIER = '`';
         public static char TABLE_NAME_QUALIFIER = '`';
         public static char TABLE_PARAM_STRING_QUALIFIER = '"';
@@ -30,11 +34,14 @@ namespace prestoMySQL.SQL {
             List<String> pk = null;
             List<String> result = new List<String>();
 
-            sb.Append( $"CREATE TABLE {( ifNotExists ? "IF NOT EXISTS" : "" )} {prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER}{SQLTableEntityHelper.getTableName<T>()}{prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER} (\n" );
+            sb.Append( $"CREATE TABLE {( ifNotExists ? "IF NOT EXISTS" : "" )} {prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER}{SQLTableEntityHelper.getTableName<T>()}{prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER} (\n" );
             bool autoIncrementKey = false;
             try {
 
                 var l = SQLTableEntityHelper.getPropertyIfColumnDefinition<T>();
+
+                var IndexKey = new Dictionary<string , List<string>>();
+                var UniqueKey = new Dictionary<string , List<string>>();
 
                 foreach ( PropertyInfo f in l ) {
 
@@ -42,51 +49,56 @@ namespace prestoMySQL.SQL {
 
                     if ( a != null ) {
 
-                        //var s = a.ToString();
-
                         result.Add( a.ToString() );
 
-                        string column = ( !string.IsNullOrWhiteSpace( a.Name ) ) ? a.Name : throw new System.Exception( "Column name not present" );
-
-                        //SQLColumnDataType dataType = null;
-                        //if ( a.DataType != null ) {
-                        //    dataType = new SQLColumnDataType( ( MySQLDataType ) a.DataType );
-                        //} else {
-                        //    throw new System.Exception( "Column type not present" );
-                        //}) ? " NOT NULL" : "";
-                        //string sUnique = ( a.Unique ) ? " UNIQUE" : "";
-
-                        string sPrimaryKey = "";
-                        string sAutoIncrement = "";
+                        string column = a.BuildColumnName();//  ( !string.IsNullOrWhiteSpace( a.Name ) ) ? a.Name : throw new System.Exception( "Column name not present" );
 
                         DDPrimaryKey ddp = f.GetCustomAttribute<DDPrimaryKey>();
                         if ( ddp != null ) {
 
-                            //string sNotNull = ( a.NullValue == NullValue.NotNull 
-                            sPrimaryKey = " PRIMARY KEY";
                             if ( ddp.Autoincrement ) {
-                                sAutoIncrement = " AUTOINCREMENT";
+
                                 if ( !autoIncrementKey ) {
                                     autoIncrementKey = true;
                                 } else {
                                     throw new SQLiteTableException( "Only one autoincrement key is allowed." );
                                 }
-
-                                //result.Add( "\t" + $"\"{column}\" {dataType.ToString()}{sNotNull}{sUnique}{sPrimaryKey}{sAutoIncrement}".Trim() );
-                                ////String.Format( "\"%s\" %s%s%s%s%s" , column , dataType.ToString() , sNotNull , sUnique ,sPrimaryKey , sAutoIncrement ).trim() );
-
-                            } else {
-                                //result.Add( "\t" + $"\"{column}\"  {dataType.ToString()}{sNotNull}{sUnique}{sAutoIncrement}".Trim() );
-                                ////result.Add( "\t" + String.Format( "\"%s\" %s%s%s%s" , column , dataType.ToString() , sNotNull , sUnique , sAutoIncrement ).trim() );
                             }
 
                             if ( pk == null ) pk = new List<string>();
-                            pk.Add( $"`{column}`" );
+                            pk.Add( column );
 
-                        } else {
-                            //result.Add( "\t" + $"\"{column}\" {dataType.ToString()}{sNotNull}{sUnique}".Trim() );
-                            //String.Format( "\"%s\" %s%s%s" , column , dataType.ToString() , sNotNull , sUnique ).Trim() 
                         }
+
+
+                        DDIndexAttribute ddia = f.GetCustomAttribute<DDIndexAttribute>();
+                        if ( ddia != null ) {
+
+                            if ( !IndexKey.ContainsKey( ddia.Name ) ) {
+                                IndexKey.Add( ddia.Name , new List<string> {
+                                    column
+                                } );
+                            } else {
+                                IndexKey[ddia.Name].Add( column );
+
+                            }
+
+                        }
+
+
+                        DDUniqueIndexAttribute ddua = f.GetCustomAttribute<DDUniqueIndexAttribute>();
+                        if ( ddua != null ) {
+
+                            if ( !UniqueKey.ContainsKey( ddua.Name ) ) {
+                                UniqueKey.Add( ddua.Name , new List<string> {
+                                    column
+                                } );
+                            } else {
+                                UniqueKey[ddua.Name].Add( column );
+
+                            }
+                        }
+
 
                     }
 
@@ -94,6 +106,19 @@ namespace prestoMySQL.SQL {
 
                 if ( pk != null ) {
                     result.Add( String.Format( "PRIMARY KEY( {0} )" , String.Join( "," , pk ) ) );
+                }
+
+                if ( UniqueKey?.Count > 0 ) {
+                    foreach ( var k in UniqueKey.Keys ) {
+                        result.Add( String.Format( "UNIQUE INDEX " + SQLConstant.COLUMN_NAME_QUALIFIER + "{0}" + SQLConstant.COLUMN_NAME_QUALIFIER + " ( {1} )" , k , String.Join( "," , UniqueKey[k] ) ) );
+                    }
+                }
+
+
+                if ( IndexKey?.Count > 0 ) {
+                    foreach ( var k in UniqueKey.Keys ) {
+                        result.Add( String.Format( "INDEX " + SQLConstant.COLUMN_NAME_QUALIFIER + "{0}" + SQLConstant.COLUMN_NAME_QUALIFIER + " ( {1} )" , k , String.Join( "," , UniqueKey[k] ) ) );
+                    }
                 }
 
                 sb.Append( String.Join( ",\n" , result ) );
@@ -120,21 +145,21 @@ namespace prestoMySQL.SQL {
         public static string sqlTruncate<T>() where T : AbstractEntity {
             StringBuilder sb = new StringBuilder();
             sb.Append( "TRUNCATE TABLE " );
-            sb.Append( prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER );
+            sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER );
             return sb.ToString();
         }
 
         public static string sqlExistsTable<T>() where T : AbstractEntity {
             StringBuilder sb = new StringBuilder();
             sb.Append( "SHOW TABLES LIKE " );
-            sb.Append( prestoMySQL.SQL.Constant.TABLE_PARAM_STRING_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.Constant.TABLE_PARAM_STRING_QUALIFIER );
+            sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_PARAM_STRING_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_PARAM_STRING_QUALIFIER );
             return sb.ToString();
         }
 
         public static string sqlDescribeTable<T>() where T : AbstractEntity {
             StringBuilder sb = new StringBuilder();
             sb.Append( "DESCRIBE " );
-            sb.Append( prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.Constant.TABLE_NAME_QUALIFIER );
+            sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER );
             return sb.ToString();
         }
 
@@ -159,7 +184,7 @@ namespace prestoMySQL.SQL {
 
             StringBuilder sb = new StringBuilder();
 
-            List<dynamic> columnDefinition = SQLTableEntityHelper.getDefinitionColumn<T>( aTableInstance , true );
+            List<dynamic> columnDefinition = SQLTableEntityHelper.getDefinitionColumn( aTableInstance , true );
 
             outParams ??= new SQLQueryParams( columnDefinition.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToArray() );
 
@@ -176,7 +201,7 @@ namespace prestoMySQL.SQL {
         public static string sqlUpdate<T>( T aTableInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" ) where T : AbstractEntity {
 
             List<dynamic> pkColumnDefinition = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( aTableInstance );
-            List<dynamic> columnDefinition = SQLTableEntityHelper.getDefinitionColumn<T>( aTableInstance , false );
+            List<dynamic> columnDefinition = SQLTableEntityHelper.getDefinitionColumn( aTableInstance , false );
 
             outParams ??= new SQLQueryParams( columnDefinition.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToList().Union( pkColumnDefinition.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToList() ).ToArray() );
 
@@ -187,71 +212,182 @@ namespace prestoMySQL.SQL {
         }
 
 
+        public static List<EntityForeignKey> GetAllForeignkey( AbstractEntity EntityInstance ) {
+
+            List<EntityForeignKey> fks = new List<EntityForeignKey>();
+
+            var fieldInfoForeignKey = ReflectionTypeHelper.FieldsWhereIsAssignableFrom<EntityForeignKey>( EntityInstance.GetType() );
+
+            foreach ( var fk in fieldInfoForeignKey ) {
+
+                EntityForeignKey o;
+                o = ( EntityForeignKey ) fk.GetValue( EntityInstance );
+                if ( o == null ) {
+                    ReflectionTypeHelper.InstantiateDeclaredClassToField( EntityInstance ,
+                                                                          fk ,
+                                                                          new Type[] { typeof( AbstractEntity ) , typeof( string ) } ,
+                                                                          new object[] { EntityInstance , fk.Name } );
+                    o = ( EntityForeignKey ) fk.GetValue( EntityInstance );
+
+
+                }
+                fks.Add( o );
+                //fks.Push( o );
+                //joins.Add( o.ToString() );
+                //List<String> joinTableColumnsNames = SQLTableEntityHelper.getColumnName( o.TypeRefenceTable , true , false );
+
+            }
+
+            return fks;
+        }
 
         public static string sqlSelect<T>( ref SQLQueryParams outParams , EntityConditionalExpression Constraint = null ) where T : AbstractEntity {
 
-
             List<String> columnsName = SQLTableEntityHelper.getColumnName<T>( true , false );
+            List<string> joins = new List<string>();
 
-            String tableName = SQLTableEntityHelper.getTableName<T>();
+            StringBuilder sb = new StringBuilder( "SELECT\r\n" );
+
+            sb.AppendLine( string.Join( ',' , columnsName ) );
+            sb.AppendLine( "FROM" );
+            sb.AppendLine( SQLTableEntityHelper.getTableName<T>() );
+
+            sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
 
             if ( Constraint?.Length > 0 ) {
 
-                EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
+                sb.AppendLine( "WHERE" );
 
+                EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
                 outParams ??= new SQLQueryParams( expr.getParam() );
 
-                return string.Format(
-@"SELECT
-    {0}
-FROM
-    {1}
-WHERE
-    {2}" ,
-                    String.Join( "," , columnsName ) ,
-                    tableName ,
-                    expr.ToString()
-                );
-
-            } else {
-                return String.Format( "SELECT\n\t{0}\nFROM\n\t{1}" , String.Join( "," , columnsName ) , tableName );
+                sb.AppendLine( expr.ToString() );
             }
+
+            return sb.ToString();
+        }
+        //Add Join
+
+        public static string sqlSelect<T>( T Entities , ref SQLQueryParams outParams , EntityConditionalExpression Constraint = null ) where T : EntitiesAdapter {
+
+            var tables = Entities.GetTopologicalOrder();
+
+            List<string> columnsName = new List<string>();
+            List<string> joins = new List<string>();
+
+            StringBuilder sb = new StringBuilder( "SELECT\r\n" );
+
+            foreach ( var e in tables ) {
+                columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
+            }
+
+            joins.AddRange( Entities.GetForeignKeys().Select( fk => fk.ToString() ).ToList() );
+
+            sb.AppendLine( string.Join( "," , columnsName ) );
+
+            sb.AppendLine( "FROM" );
+            sb.AppendLine( SQLTableEntityHelper.getTableName( tables.First().GetType() ) );
+
+            sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
+
+            if ( Constraint?.Length > 0 ) {
+
+                sb.AppendLine( "WHERE" );
+
+                EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
+                outParams ??= new SQLQueryParams( expr.getParam() );
+
+                sb.AppendLine( expr.ToString() );
+            }
+
+            return sb.ToString();
 
         }
 
-        public static string sqlSelect<T>( T aTableInstance , ref SQLQueryParams outParams , string aParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) where T : AbstractEntity {
+        public static string sqlSelect( EntitiesAdapter Entities , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) {
 
-            List<dynamic> pkColumnDefinition = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( aTableInstance );
-            List<String> columnsName = SQLTableEntityHelper.getColumnName<T>( true , false );
+            var tables = Entities.GetTopologicalOrder();
+
+            List<dynamic> pkColumnDefinition = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( tables.First() );
+            List<string> columnsName = new List<string>();
+            List<string> joins = new List<string>();
+
+            StringBuilder sb = new StringBuilder( "SELECT\r\n" );
+
+            foreach ( var e in tables ) {
+                columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
+            }
+
+            joins.AddRange( Entities.GetForeignKeys().Select( fk => fk.ToString() ).ToList() );
+
+            sb.AppendLine( string.Join( "," , columnsName ) );
+
+            sb.AppendLine( "FROM" );
+            sb.AppendLine( SQLTableEntityHelper.getTableName( tables.First().GetType() ) );
+
+            sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
 
             EntityConditionalExpression constraintExpression = null;
+
             if ( Constraint?.Length > 0 ) {
 
                 constraintExpression = new EntityConditionalExpression( LogicOperator.AND ,
 
                 new EntityConditionalExpression( LogicOperator.AND ,
-                     new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() ) ,
+                     new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() ) ,
                      new EntityConditionalExpression( LogicOperator.AND , Constraint )
                     ) );
 
             } else {
-                constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() );
+                constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() );
             }
 
             outParams ??= new SQLQueryParams( constraintExpression.getParam() );
 
-            return string.Format(
-@"SELECT
-    {0}
-FROM
-    {1}
-WHERE
-    {2}" ,
-                string.Join( "," , SQLTableEntityHelper.getDefinitionColumn<T>( aTableInstance , true ).Select( x => ( string ) x.ToString() ).ToList() ) ,
-                                   SQLTableEntityHelper.getTableName<T>() ,
-                                   constraintExpression.ToString()
-                );
+            sb.AppendLine( "WHERE" );
+            sb.AppendLine( constraintExpression.ToString() );
 
+
+            return sb.ToString();
+        }
+
+        public static string sqlSelect( AbstractEntity EntityInstance , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) {
+
+            StringBuilder sb = new StringBuilder( "SELECT\r\n" );
+
+            List<dynamic> pkColumnDefinition = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( EntityInstance );
+            List<string> columnsName = SQLTableEntityHelper.getDefinitionColumn( EntityInstance , true ).Select( x => ( string ) x.ToString() ).ToList();
+            List<string> joins = new List<string>();
+
+            sb.AppendLine( string.Join( "," , columnsName ) );
+
+            sb.AppendLine( "FROM" );
+            sb.AppendLine( SQLTableEntityHelper.getTableName( EntityInstance.GetType() ) );
+
+            sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
+
+            EntityConditionalExpression constraintExpression = null;
+
+            if ( Constraint?.Length > 0 ) {
+
+                constraintExpression = new EntityConditionalExpression( LogicOperator.AND ,
+
+                new EntityConditionalExpression( LogicOperator.AND ,
+                     new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() ) ,
+                     new EntityConditionalExpression( LogicOperator.AND , Constraint )
+                    ) );
+
+            } else {
+                constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() );
+            }
+
+            outParams ??= new SQLQueryParams( constraintExpression.getParam() );
+
+            sb.AppendLine( "WHERE" );
+            sb.AppendLine( constraintExpression.ToString() );
+
+
+            return sb.ToString();
         }
 
 
@@ -277,7 +413,6 @@ WHERE
             StringBuilder sb = new StringBuilder();
 
             try {
-
 
                 sb.Append( String.Format( "SELECT\r\n\t{0} " , String.Join( ',' , aQueryInstance.SelectExpression ) ) );
                 sb.Append( String.Format( "\r\nFROM\r\n\t{0} " , String.Join( ',' , aQueryInstance.TablesReferences ) ) );
@@ -322,14 +457,9 @@ WHERE
                     //int i = 0;
                     //foreach( SQLQueryConditionExpression sc in aQueryInstance.WhereCondition) {
                     //    i += sc.countParam();
-
                     //    var p = sc.getParam();
-
                     //    var c = sc.ToString();
-
                     //}
-
-
 
                     //EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
 

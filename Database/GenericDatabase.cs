@@ -165,6 +165,7 @@ namespace PrestoMySQ.Database {
 
 
         public virtual bool Close() {
+        
             if ( isConnected ) {
                 DoCloseConnection();
                 return true;

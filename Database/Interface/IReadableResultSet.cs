@@ -30,9 +30,11 @@ namespace PrestoMySQL.Database.Interface {
 
         public U getValueAs<U>( String aColumnName );
 
+        public U getValueAs<U>( int Index );
+
         public Object getObject( int i );
         bool isEmpty();
 
-        object ResultSetSchemaTable();
+        Dictionary<string , Dictionary<string , int>> ResultSetSchemaTable();
         }
 }

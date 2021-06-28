@@ -2,13 +2,9 @@
 using MySqlConnector;
 using PrestoMySQ.Database;
 using prestoMySQL.Extension;
-using PrestoMySQL.Database.Interface;
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 /* 
@@ -408,6 +404,7 @@ namespace PrestoMySQL.Database.MySQL {
         }
 
         public override bool Close() {
+            
             if ( isConnected ) {
 
                 if ( mTransaction != null ) {

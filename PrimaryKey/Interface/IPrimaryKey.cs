@@ -1,4 +1,7 @@
-﻿using System;
+﻿using prestoMySQL.Entity;
+using prestoMySQL.ForeignKey;
+using prestoMySQL.PrimaryKey;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,15 +15,15 @@ namespace prestoMySQL {
 		Unset
 	}
 
-	public delegate object[] DelegateCreatePrimaryKey();
+	public delegate void DelegateCreatePrimaryKey( AbstractEntity e );
 
 	public interface IPrimaryKey {
 
 		public Object[] getKeyValues();
 
-		void setKeyValues( params Object[] values );
+		void AssignValues( params object[] values );
 
-		public Object[] createKey();
+		public void createKey();
 
 		public void setDoCreatePrimaryKey( DelegateCreatePrimaryKey doCreatePrimaryKey );
 

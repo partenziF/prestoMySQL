@@ -13,6 +13,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using prestoMySQL.Query.SQL;
+using DatabaseEntity.EntityAdapter;
+using prestoMySQL.ForeignKey.Attributes;
+using prestoMySQL.SQL;
 
 namespace prestoMySQL.Helper {
     public static class SQLTableEntityHelper {
@@ -26,10 +29,9 @@ namespace prestoMySQL.Helper {
 
         #endregion
 
-        public static List<PropertyInfo> getPropertyIfColumnDefinition<T>() where T : AbstractEntity {
-
+        public static List<PropertyInfo> getPropertyIfColumnDefinition(Type T)  {
             var Result = new List<PropertyInfo>();
-            PropertyInfo[] props = typeof( T ).GetProperties( BindingFlags.Public | BindingFlags.Instance );
+            PropertyInfo[] props = T.GetProperties( BindingFlags.Public | BindingFlags.Instance );
 
             foreach ( PropertyInfo propertyInfo in props ) {
 
@@ -44,6 +46,26 @@ namespace prestoMySQL.Helper {
             }
 
             return Result;
+        }
+        public static List<PropertyInfo> getPropertyIfColumnDefinition<T>() where T : AbstractEntity {
+            
+            return getPropertyIfColumnDefinition( typeof( T ) );
+            //var Result = new List<PropertyInfo>();
+            //PropertyInfo[] props = typeof( T ).GetProperties( BindingFlags.Public | BindingFlags.Instance );
+
+            //foreach ( PropertyInfo propertyInfo in props ) {
+
+            //    if ( propertyInfo.PropertyType.IsGenericType && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) ) ) {
+
+            //        Result.Add( propertyInfo );
+
+            //    } else if ( ( propertyInfo.PropertyType.IsGenericType ) && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( Nullable<> ) ) ) {
+
+            //    }
+
+            //}
+
+            //return Result;
         }
 
         public static List<PropertyInfo> getPropertyIfPrimaryKey( Type aType ) {
@@ -72,6 +94,82 @@ namespace prestoMySQL.Helper {
 
 
 
+        public static List<PropertyInfo> getPropertyIfForeignKey( Type aType ) {
+
+            List<PropertyInfo> Result = new List<PropertyInfo>();
+
+            PropertyInfo[] props = aType.GetProperties( BindingFlags.Public | BindingFlags.Instance );
+
+            foreach ( PropertyInfo propertyInfo in props ) {
+
+                if ( propertyInfo.PropertyType.IsGenericType
+                     && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) )
+                     && ( propertyInfo.GetCustomAttribute<DDForeignKey>() != null )
+                     && ( propertyInfo.GetCustomAttribute<DDColumnAttribute>() != null )
+                   ) {
+
+                    Result.Add( propertyInfo );
+
+                }
+
+            }
+
+            return Result;
+
+        }
+
+
+
+        public static List<PropertyInfo> getPropertyIfIndex( Type aType ) {
+
+            List<PropertyInfo> Result = new List<PropertyInfo>();
+
+            PropertyInfo[] props = aType.GetProperties( BindingFlags.Public | BindingFlags.Instance );
+
+            foreach ( PropertyInfo propertyInfo in props ) {
+
+                if ( propertyInfo.PropertyType.IsGenericType
+                     && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) )
+                     && ( propertyInfo.GetCustomAttribute<DDIndexAttribute>() != null )
+                     && ( propertyInfo.GetCustomAttribute<DDColumnAttribute>() != null )
+                   ) {
+
+                    Result.Add( propertyInfo );
+
+                }
+
+            }
+
+            return Result;
+
+        }
+
+
+        public static List<PropertyInfo> getPropertyIfUniqueIndex( Type aType ) {
+
+            List<PropertyInfo> Result = new List<PropertyInfo>();
+
+            PropertyInfo[] props = aType.GetProperties( BindingFlags.Public | BindingFlags.Instance );
+
+            foreach ( PropertyInfo propertyInfo in props ) {
+
+                if ( propertyInfo.PropertyType.IsGenericType
+                     && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) )
+                     && ( propertyInfo.GetCustomAttribute<DDUniqueIndexAttribute>() != null )
+                     && ( propertyInfo.GetCustomAttribute<DDColumnAttribute>() != null )
+                   ) {
+
+                    Result.Add( propertyInfo );
+
+                }
+
+            }
+
+            return Result;
+
+        }
+
+
         public static List<dynamic> getPrimaryKeyDefinitionColumn( AbstractEntity aTableInstance ) {
 
             List<dynamic> l = new List<dynamic>();
@@ -93,13 +191,15 @@ namespace prestoMySQL.Helper {
 
         }
 
-        public static List<dynamic> getDefinitionColumn<T>( T aTableInstance , bool aIncludePrimaryKey = false ) where T : AbstractEntity {
+        public static List<dynamic> getDefinitionColumn( AbstractEntity aTableInstance , bool aIncludePrimaryKey = false ) {
+
+            Type T = aTableInstance.GetType();
 
             List<dynamic> l = new List<dynamic>();
 
             try {
 
-                foreach ( PropertyInfo f in getPropertyIfColumnDefinition<T>() ) {
+                foreach ( PropertyInfo f in getPropertyIfColumnDefinition(T) ) {
 
                     if ( Attribute.IsDefined( f , typeof( DDColumnAttribute ) ) ) {
                         var oDefinitionColumn = f.GetValue( aTableInstance );
@@ -125,21 +225,76 @@ namespace prestoMySQL.Helper {
         }
 
 
+        public static string getColumnName( Type Table , string aColumn , bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) {
+            string result = "";
+            String prefix = ( withTableNameAsPrefix ) ? getTableName( Table ) : String.Empty;
+            PropertyInfo pi = getPropertyIfColumnDefinition( Table ).FirstOrDefault( x => x.Name.Equals( aColumn , StringComparison.InvariantCultureIgnoreCase ) );
+            
+            if ( pi != null ) {
+                
+                String ColumName = "";
+
+                ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + pi.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
+
+                if ( withTableNameAsPrefix )
+                    ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER + prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
+
+                result = ColumName;
+
+            } else {
+                throw new ArgumentException( "Column name not found." );
+            }
+
+            return result;
+        }
+
+
         public static List<string> getColumnName<T>( bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) where T : AbstractEntity {
+
+            //List<String> result = new List<String>();
+
+            //String prefix = ( withTableNameAsPrefix ) ? getTableName<T>() : String.Empty;
+
+            //foreach ( PropertyInfo f in getPropertyIfColumnDefinition<T>() ) {
+
+            //    String ColumName = "";
+
+            //    ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + f.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
+
+            //    if ( withTableNameAsPrefix )
+            //        ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER+ prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
+
+            //    if ( aExcludePrimaryKey ) {
+            //        if ( !Attribute.IsDefined( f , typeof( DDPrimaryKey ) ) ) {
+            //            result.Add( ColumName );
+            //        }
+            //    } else {
+            //        result.Add( ColumName );
+            //    }
+
+            //}
+
+            //return result;
+
+            return getColumnName( typeof( T ) , withTableNameAsPrefix , aExcludePrimaryKey );
+
+        }
+
+
+        public static List<string> getColumnName(Type T, bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false )  {
 
             List<String> result = new List<String>();
 
-            String prefix = ( withTableNameAsPrefix ) ? getTableName<T>() : String.Empty;
+            String prefix = ( withTableNameAsPrefix ) ? getTableName(T) : String.Empty;
 
-
-            foreach ( PropertyInfo f in getPropertyIfColumnDefinition<T>() ) {
+            foreach ( PropertyInfo f in getPropertyIfColumnDefinition(T) ) {
 
                 String ColumName = "";
 
-                ColumName = '`' + f.ColumnName( null ) + '`';
+                ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + f.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
 
                 if ( withTableNameAsPrefix )
-                    ColumName = String.Concat( '`' + prefix + '`' , '.' , ColumName );
+                    ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER + prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
 
                 if ( aExcludePrimaryKey ) {
                     if ( !Attribute.IsDefined( f , typeof( DDPrimaryKey ) ) ) {
@@ -191,9 +346,9 @@ namespace prestoMySQL.Helper {
 
         public static List<PropertyInfo> getProjectionFields<T>() where T : SQLQuery {
 
-            
+
             var Result = new List<PropertyInfo>();
-            PropertyInfo[] props = typeof( T ).GetProperties( BindingFlags.Public | BindingFlags.Instance); //| BindingFlags.FlattenHierarchy 
+            PropertyInfo[] props = typeof( T ).GetProperties( BindingFlags.Public | BindingFlags.Instance ); //| BindingFlags.FlattenHierarchy 
 
             foreach ( PropertyInfo propertyInfo in props ) {
 
@@ -201,7 +356,7 @@ namespace prestoMySQL.Helper {
 
                     Result.Add( propertyInfo );
 
-                //} else if ( ( propertyInfo.PropertyType.IsGenericType ) && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( Nullable<> ) ) ) {
+                    //} else if ( ( propertyInfo.PropertyType.IsGenericType ) && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( Nullable<> ) ) ) {
 
                 }
 
@@ -215,12 +370,12 @@ namespace prestoMySQL.Helper {
 
         public static List<dynamic> getProjectionColumn<T>( T aQueryInstance ) where T : SQLQuery {
 
-//            List<string> result = new List<string>();
+            //            List<string> result = new List<string>();
             List<dynamic> result = new List<dynamic>();
 
             foreach ( System.Reflection.PropertyInfo f in getProjectionFields<T>() ) {
 
-                if (Attribute.IsDefined(f,typeof(DALProjectionColumn))) {
+                if ( Attribute.IsDefined( f , typeof( DALProjectionColumn ) ) ) {
 
                     dynamic o = f.GetValue( aQueryInstance );
                     if ( o != null ) {
@@ -252,11 +407,11 @@ namespace prestoMySQL.Helper {
 
 
 
-        public static List<string> getProjectionColumnName<T>(T aQueryInstance ) where T : SQLQuery {
+        public static List<string> getProjectionColumnName<T>( T aQueryInstance ) where T : SQLQuery {
 
             List<string> result = new List<string>();
 
-            foreach ( System.Reflection.PropertyInfo f in getProjectionFields<T>( ) ) {
+            foreach ( System.Reflection.PropertyInfo f in getProjectionFields<T>() ) {
 
                 string ColumName = "";
 
@@ -266,7 +421,7 @@ namespace prestoMySQL.Helper {
                     ColumName = ( ( GenericQueryColumn ) o ).ToString();
 
                 } else if ( f.PropertyType.IsGenericType && ( f.PropertyType.GetGenericTypeDefinition() == typeof( SQLProjectionFunction<> ) ) ) {
-                    
+
                     dynamic o = f.GetValue( aQueryInstance );
                     ColumName = ( ( GenericQueryColumn ) o ).ToString();
 

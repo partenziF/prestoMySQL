@@ -19,7 +19,7 @@ namespace prestoMySQL.Column {
     public class MySQLDefinitionColumn<T> : SQLColumn<T> where T : ISQLTypeWrapper { //where T : struct 
 
         public MySQLDefinitionColumn( string aDeclaredVariableName, PropertyInfo aMethodBase , AbstractEntity abstractEntity ) : base( aDeclaredVariableName , aMethodBase ) {
-
+            
             MethodInfo m1 = typeof( AbstractEntity ).GetMethod( "Entity_PropertyChanged" , BindingFlags.NonPublic | BindingFlags.Instance );
             Delegate dlg = Delegate.CreateDelegate( typeof( PropertyChangedEventHandler ) , abstractEntity , m1 );
 
@@ -30,6 +30,7 @@ namespace prestoMySQL.Column {
 
         }
 
+        public uint ResultSetIndex { get; set; }
 
         public override string ToString() {
             return Table.getColumnName( this.ColumnName );

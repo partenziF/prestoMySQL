@@ -4,7 +4,7 @@ using System;
 
 namespace prestoMySQL.Column.Interface {
     public interface ConstructibleColumn {
-        
+
         Type GenericType { get; }
 
         bool isNotNull { get; }
@@ -14,12 +14,20 @@ namespace prestoMySQL.Column.Interface {
         bool isPrimaryKey { get; }
         bool isAutoIncrement { get; }
 
-        public object Value();
+        public object GetValue();
 
         public TableReference Table { get; }
 
+
+
         ///////////////////////////////////////////
-        public string ColumnName { get; }
+        string ColumnName { get; }
+
+        string Alias { get; }
+
+        string ActualName { get; }
+
+        void AssignValue( object x );
 
     }
 

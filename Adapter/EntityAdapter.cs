@@ -472,7 +472,7 @@ namespace prestoMySQL.Adapter {
         public override OperationResult Read( EntityConditionalExpression Constraint = null , params object[] KeyValues ) {
 
             //CreateInstace<T>();
-            if ( this.Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
+            if ( Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
             //InitEntity();
 
             try {
@@ -539,6 +539,7 @@ namespace prestoMySQL.Adapter {
         }
 
         private OperationResult FetchResultSet( MySQResultSet rs ) {
+
             if ( rs != null ) {
 
                 if ( rs.fetch() ) {
@@ -564,13 +565,15 @@ namespace prestoMySQL.Adapter {
 
                 } else {
                     rs?.close();
-                    this.mEntities.Clear();
+                    if ( this.mEntities.Count() > 1 )
+                        this.mEntities.Clear();
                     return OperationResult.Empty;
                 }
 
             } else {
                 rs?.close();
-                this.mEntities.Clear();
+                if ( this.mEntities.Count() > 1 )
+                    this.mEntities.Clear();
                 return OperationResult.Error;
             }
         }

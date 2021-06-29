@@ -108,7 +108,7 @@ namespace prestoMySQL.Adapter {
                 }
 
             } catch (ArgumentNullException ex ) {
-                throw new System.Exception( "Invalid resultset." );              
+                throw new System.Exception( "Invalid resultset. "+ex.Message );              
             } catch ( System.Exception e ) {
                 throw new System.Exception( "Error while reading data." );
             }

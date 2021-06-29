@@ -40,9 +40,9 @@ namespace prestoMySQL.Column {
 
             //DDColumnAttribute columnAttribute = this.mPropertyInfo?.GetCustomAttribute<DDColumnAttribute>( false );
             this.mSQLDataType = ( MySQLDataType ) ( columnAttribute as DDColumnAttribute ).DataType;
-            
 
-            
+
+
         }
 
         // Data Type used in database read from attribute
@@ -57,7 +57,7 @@ namespace prestoMySQL.Column {
         private readonly byte mSize;
         public byte Size { get => mSize; }
 
-        
+
         private readonly SignType mSigned;
         public SignType Signed { get => mSigned; }
 
@@ -362,7 +362,7 @@ namespace prestoMySQL.Column {
             } else if ( TypeWrapperValue.ValueIsNull() ) {
                 throw new ArgumentNullException();
             } else {
-                throw new InvalidCastException( "Uknown type for column "+ColumnName+" defined in "+mPropertyInfo.Name );
+                throw new InvalidCastException( "Uknown type for column " + ColumnName + " defined in " + mPropertyInfo.Name );
             }
         }
 
@@ -436,7 +436,22 @@ namespace prestoMySQL.Column {
 
             var genericType = typeof( T ).GetGenericArguments()[0];
             ConstructorInfo ctor = typeof( T ).GetConstructor( new Type[] { genericType } );
-            TypeWrapperValue = ( T ) ctor?.Invoke( new object[] { Convert.ChangeType( x , genericType ) } );
+            if ( Nullable.GetUnderlyingType( genericType ) != null ) {
+
+                Type NullableType = Nullable.GetUnderlyingType( genericType );
+                var notNullableValue = Convert.ChangeType( x , NullableType );
+                if ( NullableType.IsValueType ) {
+
+                    var nctor = typeof( Nullable<> ).MakeGenericType( NullableType )?.GetConstructor( new Type[] { NullableType } );
+                    //Nullable<uint> xxx = new Nullable<uint>( (uint) notNullableValue );
+                    TypeWrapperValue = ( T ) ctor?.Invoke( new object[] { nctor.Invoke( new object[] { notNullableValue } ) } );
+                } else {
+                    throw new NotImplementedException( "not implemented on SQLColumn line 449" );
+                }
+
+            } else {
+                TypeWrapperValue = ( T ) ctor?.Invoke( new object[] { Convert.ChangeType( x , genericType ) } );
+            }
 
             //SQLTypeWrapper<uint> b = new SQLTypeWrapper<uint>();
             //uint y = x.ConvertTo<uint>();

@@ -145,7 +145,10 @@ namespace prestoMySQL.Adapter {
 
                     var o = typeof( SQLTypeWrapper<> ).MakeGenericType( column.GenericType );
                     var p = o.GetField( nameof( SQLTypeWrapper<object>.NULL ) , BindingFlags.Static | BindingFlags.Public );
-                    ( column as dynamic ).TypeWrapperValue = p.GetValue( null );
+                    //dynamic xx = p.GetValue( null );
+                    //var xxx = Convert.ChangeType( xx , o );
+
+                    ( column as dynamic ).TypeWrapperValue = ( dynamic ) p.GetValue( null ); ;// ( SQLTypeWrapper <uint?> )p.GetValue( null );
 
                 } else {
 

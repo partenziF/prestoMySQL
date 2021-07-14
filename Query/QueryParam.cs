@@ -33,6 +33,9 @@ namespace prestoMySQL.Query {
 
         }
 
+        internal void rename(string name ) {
+            this.mName = name;
+        }
         protected abstract object GetValue();
 
         public static explicit operator MySqlParameter( QueryParam v ) {

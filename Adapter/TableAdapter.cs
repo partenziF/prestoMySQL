@@ -10,11 +10,11 @@ using System.Collections.Generic;
 
 namespace prestoMySQL.Adapter {
 
-    public abstract class TableAdapter : IAdaptableTable {
+    public abstract class TableEntity : IAdaptableTable {
 
         protected List<DefinableColumn<SQLTypeWrapper<object>>> definitionColumns;
 
-        protected TableAdapter() {
+        protected TableEntity() {
         }
 
         public abstract void InitEntity();

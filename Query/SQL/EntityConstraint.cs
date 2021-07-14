@@ -11,6 +11,26 @@ using System.Threading.Tasks;
 namespace prestoMySQL.Query.SQL {
 
     public static class FactoryEntityConstraint {
+
+        public static DefinableConstraint MakeEqual( dynamic aColumnDefinition , MySQLQueryParam p , string aParamPlaceHolder = "" ) {
+
+
+            Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
+
+            Type[] types = new Type[4];
+            types[0] = ( aColumnDefinition.GetType() );
+            types[1] = typeof( EvaluableBinaryOperator );
+            types[2] = typeof( IQueryParams );
+            types[3] = typeof( string );
+            Type myParameterizedSomeClass = typeof( EntityConstraint<> ).MakeGenericType( generic );
+            ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
+
+            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition , SQLBinaryOperator.equal() , new SQLQueryParams( new[] { p } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
+
+            return o;    
+
+        }
+
         public static DefinableConstraint MakeConstraintEqual( dynamic aColumnDefinition , string aParamPlaceHolder = "" ) {
 
             Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
@@ -56,14 +76,38 @@ namespace prestoMySQL.Query.SQL {
             Type myParameterizedSomeClass = typeof( EntityAssignement<> ).MakeGenericType( generic );
             ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
 
-            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition , new SQLQueryParams( new[] { new MySQLQueryParam( value , aColumnDefinition.ActualName ) } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
+            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { 
+                aColumnDefinition , 
+                new SQLQueryParams( new[] { new MySQLQueryParam( value , aColumnDefinition.ActualName ) } ) , 
+                aParamPlaceHolder } 
+            ) ) ?? throw new ArgumentNullException();
 
             return o;
         }
 
+        public static DefinableConstraint MakeEqual( dynamic aColumnDefinition , string paramName , object value , string aParamPlaceHolder = "" ) {
+
+            Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
+
+            Type[] types = new Type[3];
+            types[0] = ( aColumnDefinition.GetType() );
+            //types[1] = typeof( EvaluableBinaryOperator );
+            types[1] = typeof( IQueryParams );
+            types[2] = typeof( string );
+            Type myParameterizedSomeClass = typeof( EntityAssignement<> ).MakeGenericType( generic );
+            ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
+
+            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition , new SQLQueryParams( new[] { new MySQLQueryParam( value , paramName ) } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
+
+            return o;
+        }
+
+
+
     }
 
-    public class EntityConstraint<T> : GenericEntityConstraint<T> where T : notnull {
+
+public class EntityConstraint<T> : GenericEntityConstraint<T> where T : notnull {
 
         public EntityConstraint( MySQLDefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition , EvaluableBinaryOperator aOperator , IQueryParams aQueryPararm , string aParamPlaceHolder = "" ) :
             base( aColumnDefinition , aOperator , aQueryPararm , aParamPlaceHolder ) {

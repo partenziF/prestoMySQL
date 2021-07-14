@@ -18,8 +18,8 @@ namespace prestoMySQL.Column.Attribute {
 
         public String Name { get; set; }
 
-        public String Table { get; set; }//default "";
-        public AbstractEntity Entity { get; set; }// () default void.class;
+        public string Table { get; set; }//default "";
+        public Type Entity { get; set; }// () default void.class;
         public String Alias { get; set; }// () default ""; 
         public MySQLDataType DataType { get; set; }
         public int OrderBy { get; set; }// () default  0;

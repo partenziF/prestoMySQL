@@ -371,7 +371,40 @@ namespace prestoMySQL.Column {
         }
 
         ushort IConvertible.ToUInt16( IFormatProvider provider ) {
-            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToUInt16 )}" );
+
+            TypeCode code;
+            if ( TypeWrapperValue is null ) {
+                return isNotNull ? default( ushort ) : throw new ArgumentNullException();
+            } else if ( TypeWrapperValue.IsInteger( out code ) ) {
+                return Convert.ToUInt16( TypeWrapperValue );
+            } else if ( TypeWrapperValue.IsFloatingPoint( out code ) ) {
+                return ( ushort ) Convert.ChangeType( TypeWrapperValue , typeof( ushort ) );
+            } else if ( TypeWrapperValue.IsLitteral( out code ) ) {
+                switch ( code ) {
+                    case TypeCode.Char: {
+                        var c = ( char ) Convert.ChangeType( TypeWrapperValue , typeof( char ) );
+                        return ( ushort ) Convert.ToByte( c );
+                    }
+
+                    default: {
+                        if ( !ushort.TryParse( TypeWrapperValue.ToString() , out ushort r ) ) {
+                            throw new InvalidCastException( "Unable to convert " + TypeWrapperValue.ToString() + " to " + SQLDataType.ToString() );
+                        } else {
+                            return ( ushort ) r;
+                        }
+                    }
+                }
+
+            } else if ( TypeWrapperValue.IsDateTime() ) {
+                //return ( ushort ) new DateTimeOffset( ( ( DateTime ) Convert.ChangeType( TypeWrapperValue , typeof( DateTime ) ) ) ).ToUnixTimeSeconds();
+                throw new InvalidCastException( "Uknown type for column " + ColumnName + " defined in " + mPropertyInfo.Name );
+            } else if ( TypeWrapperValue.IsBoolean() ) {
+                return ( ushort ) ( ( ( bool ) Convert.ChangeType( TypeWrapperValue , typeof( bool ) ) ) ? 1 : 0 );
+            } else {
+                throw new InvalidCastException( "Unknow type for value " + TypeWrapperValue.ToString() );
+            }
+
+            
         }
 
         //sbyte => short, int, long, float, double, decimal o nint

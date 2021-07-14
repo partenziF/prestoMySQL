@@ -30,7 +30,7 @@ namespace prestoMySQL.Adapter {
 
         public abstract MySQResultSet ExecuteQuery( out ILastErrorInfo Message );
 
-        protected abstract void BindData( MySQResultSet resultSet );
+        protected abstract void BindData( Dictionary<string , Dictionary<string , int>> s,MySQResultSet resultSet );
 
 
     }

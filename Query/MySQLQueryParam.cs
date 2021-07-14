@@ -39,9 +39,11 @@ namespace prestoMySQL.Query {
         }
 
         protected override object GetValue() {
-            if ( mValue is string ) {
-                return MySqlConnector.MySqlHelper.EscapeString( ( string ) mValue );
-            } else
+            //Viene già fatto l'escape della string
+            //if ( mValue is string ) {
+            //    //return MySqlConnector.MySqlHelper.EscapeString( ( string ) mValue );
+            //    return mValue;
+            //} else
                 return mValue;
         }
 

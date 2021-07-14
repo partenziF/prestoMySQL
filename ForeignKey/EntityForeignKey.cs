@@ -23,6 +23,7 @@ namespace prestoMySQL.ForeignKey {
 
         private readonly int mKeyLength;
         public int KeyLength { get => mKeyLength; }
+        public JoinType JoinType { get => this.mJoinType; set => this.mJoinType =  value ; }
 
         private DelegateCreateForeignKey delegatorCreateForeignKey = null;
 
@@ -53,7 +54,7 @@ namespace prestoMySQL.ForeignKey {
                             this.mColumnName = aa.Name;
                             this.mReferenceColumnName = a.Reference;
                             this.TypeRefenceTable = a.TableReferences;
-                            this.mJoinType = aa.NullValue == NullValue.NotNull ? JoinType.INNER : JoinType.LEFT;
+                            this.JoinType = aa.NullValue == NullValue.NotNull ? JoinType.INNER : JoinType.LEFT;
 
                             this.mPropertyInfo = p;
                         }
@@ -128,7 +129,7 @@ namespace prestoMySQL.ForeignKey {
             var a = SQLTableEntityHelper.getColumnName( TypeRefenceTable , ReferenceColumnName , true , true );
             var b = SQLTableEntityHelper.getColumnName( Table.GetType() , ColumnName , true , true );
 
-            var s = string.Format( "{0} JOIN {1} ON\r\n\t{2} = {3}" , this.mJoinType.ToString() , SQLTableEntityHelper.getTableName( TypeRefenceTable ) , a , b );
+            var s = string.Format( "{0} JOIN {1} ON\r\n\t{2} = {3}" , this.JoinType.ToString() , SQLTableEntityHelper.getTableName( TypeRefenceTable ) , a , b );
             return s;
 
         }

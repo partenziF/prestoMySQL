@@ -38,7 +38,7 @@ namespace prestoMySQL.Query.SQL {
 
         public override string ToString() {
 
-            return String.Concat( "( " , columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " )" );
+            return String.Concat( "( " , columnDefinition.AsCondition() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " )" );
         }
 
 

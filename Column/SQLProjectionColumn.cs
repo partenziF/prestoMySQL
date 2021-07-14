@@ -23,25 +23,33 @@ namespace prestoMySQL.Column {
 
         public GenericQueryColumn( PropertyInfo aPropertyInfo = null ) {
 
+            Type entity;
 
             this.mPropertyInfo = aPropertyInfo;
 
             DALQueryEntity dalQueryEntity = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALQueryEntity>();
             if ( dalQueryEntity == null ) throw new ArgumentNullException();
-            Type entity = dalQueryEntity.value;
-            DALTable dalTable = entity?.GetCustomAttribute<DALTable>();
-            if ( dalTable == null ) throw new ArgumentNullException();
-            mTable = new TableReference( dalTable.TableName );
-
 
             DALProjectionColumn dalProjectionColumn = this.mPropertyInfo?.GetCustomAttribute<DALProjectionColumn>();
-            if ( dalProjectionColumn == null ) throw new ArgumentNullException();
+            if ( dalProjectionColumn == null ) throw new ArgumentNullException( String.Format( "DALProjectionColumn attribute is required for {0}" , aPropertyInfo.Name ) );
 
+            //if (!string.IsNullOrWhiteSpace(dalProjectionColumn.Table)) {
+            //} else 
+
+            if ( ( dalProjectionColumn.Entity != null ) && ( dalProjectionColumn.Entity != dalQueryEntity.Entity ) )  {
+                entity = dalProjectionColumn.Entity;
+            } else {
+                entity = dalQueryEntity.Entity;
+            }
+
+            DALTable dalTable = entity?.GetCustomAttribute<DALTable>();
+            
+            if ( dalTable == null ) throw new ArgumentNullException();
+            mTable = new TableReference( dalTable.TableName );
 
             mSQLDataType = ( MySQLDataType ) ( dalProjectionColumn as DALProjectionColumn ).DataType;
 
             mColumnName = dalProjectionColumn.Name;
-
             mColumnAlias = dalProjectionColumn.Alias;
 
         }
@@ -56,16 +64,20 @@ namespace prestoMySQL.Column {
 
         protected readonly TableReference mTable;
 
-        protected readonly string mColumnName;
-
-        protected readonly string mColumnAlias;
-
         public abstract TableReference Table { get; }
 
 
+        protected readonly string mColumnName;
         public abstract string ColumnName { get; }
 
+
+        protected readonly string mColumnAlias;
         public abstract string ColumnAlias { get; }
+
+        public abstract string ActualName { get; }
+
+
+
     }
 
     public class QueryColumn<T> : GenericQueryColumn where T : ISQLTypeWrapper {
@@ -98,6 +110,7 @@ namespace prestoMySQL.Column {
         private T mTypeWrapperValue;
         public T TypeWrapperValue { get => mTypeWrapperValue; set => SetValue( value ); }
 
+        public override string ActualName => mColumnAlias ?? mColumnName;
 
         private void SetValue( T value ) {
 
@@ -121,6 +134,12 @@ namespace prestoMySQL.Column {
 
         }
 
+        public string AsCondition() {
+            return this.Table.getResultColumn( ColumnName , "" );
+            //return this.getTableReference().getResultColumn( getColumnName() , getAlias() );
+        }
+
+
     }
 
 
@@ -138,7 +157,7 @@ namespace prestoMySQL.Column {
             return this.Table.getResultColumn( ColumnName , ColumnAlias );
             //return this.getTableReference().getResultColumn( getColumnName() , getAlias() );
         }
-
+        //Se devo usarlo in una condizione non serve l'alias
 
     }
 

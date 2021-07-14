@@ -29,7 +29,7 @@ namespace prestoMySQL.Helper {
 
         #endregion
 
-        public static List<PropertyInfo> getPropertyIfColumnDefinition(Type T)  {
+        public static List<PropertyInfo> getPropertyIfColumnDefinition( Type T ) {
             var Result = new List<PropertyInfo>();
             PropertyInfo[] props = T.GetProperties( BindingFlags.Public | BindingFlags.Instance );
 
@@ -48,7 +48,7 @@ namespace prestoMySQL.Helper {
             return Result;
         }
         public static List<PropertyInfo> getPropertyIfColumnDefinition<T>() where T : AbstractEntity {
-            
+
             return getPropertyIfColumnDefinition( typeof( T ) );
             //var Result = new List<PropertyInfo>();
             //PropertyInfo[] props = typeof( T ).GetProperties( BindingFlags.Public | BindingFlags.Instance );
@@ -67,7 +67,6 @@ namespace prestoMySQL.Helper {
 
             //return Result;
         }
-
         public static List<PropertyInfo> getPropertyIfPrimaryKey( Type aType ) {
 
             List<PropertyInfo> Result = new List<PropertyInfo>();
@@ -91,9 +90,6 @@ namespace prestoMySQL.Helper {
             return Result;
 
         }
-
-
-
         public static List<PropertyInfo> getPropertyIfForeignKey( Type aType ) {
 
             List<PropertyInfo> Result = new List<PropertyInfo>();
@@ -117,9 +113,6 @@ namespace prestoMySQL.Helper {
             return Result;
 
         }
-
-
-
         public static List<PropertyInfo> getPropertyIfIndex( Type aType ) {
 
             List<PropertyInfo> Result = new List<PropertyInfo>();
@@ -143,8 +136,6 @@ namespace prestoMySQL.Helper {
             return Result;
 
         }
-
-
         public static List<PropertyInfo> getPropertyIfUniqueIndex( Type aType ) {
 
             List<PropertyInfo> Result = new List<PropertyInfo>();
@@ -168,8 +159,6 @@ namespace prestoMySQL.Helper {
             return Result;
 
         }
-
-
         public static List<dynamic> getPrimaryKeyDefinitionColumn( AbstractEntity aTableInstance ) {
 
             List<dynamic> l = new List<dynamic>();
@@ -199,11 +188,13 @@ namespace prestoMySQL.Helper {
 
             try {
 
-                foreach ( PropertyInfo f in getPropertyIfColumnDefinition(T) ) {
+                foreach ( PropertyInfo f in getPropertyIfColumnDefinition( T ) ) {
 
                     if ( Attribute.IsDefined( f , typeof( DDColumnAttribute ) ) ) {
                         var oDefinitionColumn = f.GetValue( aTableInstance );
+
                         if ( oDefinitionColumn != null ) {
+
                             if ( ( Attribute.IsDefined( f , typeof( DDPrimaryKey ) ) ) ) {
                                 if ( aIncludePrimaryKey ) {
                                     l.Add( ( dynamic ) oDefinitionColumn );
@@ -224,14 +215,13 @@ namespace prestoMySQL.Helper {
             return l;
         }
 
-
         public static string getColumnName( Type Table , string aColumn , bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) {
             string result = "";
             String prefix = ( withTableNameAsPrefix ) ? getTableName( Table ) : String.Empty;
             PropertyInfo pi = getPropertyIfColumnDefinition( Table ).FirstOrDefault( x => x.Name.Equals( aColumn , StringComparison.InvariantCultureIgnoreCase ) );
-            
+
             if ( pi != null ) {
-                
+
                 String ColumName = "";
 
                 ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + pi.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
@@ -247,8 +237,6 @@ namespace prestoMySQL.Helper {
 
             return result;
         }
-
-
         public static List<string> getColumnName<T>( bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) where T : AbstractEntity {
 
             //List<String> result = new List<String>();
@@ -279,15 +267,13 @@ namespace prestoMySQL.Helper {
             return getColumnName( typeof( T ) , withTableNameAsPrefix , aExcludePrimaryKey );
 
         }
-
-
-        public static List<string> getColumnName(Type T, bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false )  {
+        public static List<string> getColumnName( Type T , bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) {
 
             List<String> result = new List<String>();
 
-            String prefix = ( withTableNameAsPrefix ) ? getTableName(T) : String.Empty;
+            String prefix = ( withTableNameAsPrefix ) ? getTableName( T ) : String.Empty;
 
-            foreach ( PropertyInfo f in getPropertyIfColumnDefinition(T) ) {
+            foreach ( PropertyInfo f in getPropertyIfColumnDefinition( T ) ) {
 
                 String ColumName = "";
 
@@ -314,11 +300,32 @@ namespace prestoMySQL.Helper {
 
         #region Query         
 
+        public static List<Type> getQueryEntity( Type c ) {
+            var result = new List<Type>();
+
+            if ( Attribute.IsDefined( c , typeof( DALQueryEntity ) ) ) {
+
+                result = c.GetCustomAttributes<DALQueryEntity>()?.ToList().Select( x => ( ( DALQueryEntity ) x ).Entity ).ToList();
+            }
+
+            return result;
+        }
+
+        public static List<Type> getQueryJoinEntity( Type c ) {
+            var result = new List<Type>();
+
+            if ( Attribute.IsDefined( c , typeof( DALQueryJoinEntity ) ) ) {
+
+                result = c.GetCustomAttributes<DALQueryJoinEntity>()?.ToList().Select( x => ( ( DALQueryJoinEntity ) x ).Entity).ToList();
+            }
+
+            return result;
+        }
+
         public static List<TableReference> getQueryTableName( Type c ) {
 
             //Type c = typeof( T );
             List<TableReference> result = new List<TableReference>();
-
 
             if ( Attribute.IsDefined( c , typeof( DALQueryTable ) ) ) {
 
@@ -326,14 +333,12 @@ namespace prestoMySQL.Helper {
                 //result.Add( new TableReference( a.Table() , a.Alias() ) );
                 c.GetCustomAttributes<DALQueryTable>()?.ToList().ForEach( a => result.Add( new TableReference( a.Table , a.Alias ) ) );
 
-
             } else if ( Attribute.IsDefined( c , typeof( DALQueryEntity ) ) ) {
 
                 //DALQueryEntity e = c.getAnnotation( typeof( DALQueryEntity ) );
                 //result.Add( new TableReference( getTableName( e.value() ) , e.Alias() ) );
 
-                c.GetCustomAttributes<DALQueryEntity>()?.ToList().ForEach( a => result.Add( new TableReference( getTableName( a.value ) , a.Alias ) ) );
-
+                c.GetCustomAttributes<DALQueryEntity>()?.ToList().ForEach( a => result.Add( new TableReference( getTableName( a.Entity ) , a.Alias ) ) );
 
             } else {
                 throw new System.Exception( "Table references annotation is missing" );
@@ -342,7 +347,6 @@ namespace prestoMySQL.Helper {
             return result;
 
         }
-
 
         public static List<PropertyInfo> getProjectionFields<T>() where T : SQLQuery {
 
@@ -365,8 +369,6 @@ namespace prestoMySQL.Helper {
             return Result;
 
         }
-
-
 
         public static List<dynamic> getProjectionColumn<T>( T aQueryInstance ) where T : SQLQuery {
 
@@ -403,10 +405,6 @@ namespace prestoMySQL.Helper {
 
         }
 
-
-
-
-
         public static List<string> getProjectionColumnName<T>( T aQueryInstance ) where T : SQLQuery {
 
             List<string> result = new List<string>();
@@ -436,10 +434,25 @@ namespace prestoMySQL.Helper {
         }
 
 
-
         public static IEnumerable<TableReference> getQueryJoinTableName<T>() {
             throw new NotImplementedException();
         }
+
+
+        public static IEnumerable<DALQueryJoinEntityConstraint> getQueryJoinConstraint(Type t) {
+            
+            var result = new List<DALQueryJoinEntityConstraint>();
+
+            if ( Attribute.IsDefined( t , typeof( DALQueryJoinEntityConstraint ) ) ) {
+
+                result = t.GetCustomAttributes<DALQueryJoinEntityConstraint>()?.ToList();
+
+            }
+
+            return result;
+        }
+
+
         #endregion
 
 

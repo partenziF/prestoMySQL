@@ -16,10 +16,41 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using prestoMySQL.ForeignKey;
+using prestoMySQL.Utils;
+using prestoMySQL.Entity;
 
 namespace prestoMySQL.Query {
 
     public abstract class SQLQuery : ISQLQuery, IDictionary<string , MySQLQueryParam> {
+
+        public TableGraph Graph;
+
+        protected List<string> mParamNames;
+
+
+        public DefinableConstraint MakeUniqueParamName( DefinableConstraint c ) {
+            foreach ( QueryParam qp in c.QueryParams ) {
+                var count = ( mParamNames.Count( c => c.StartsWith( qp.Name ) ) );
+                if ( count > 0 ) {
+                    qp.rename( string.Format( "{0}_{1}" , qp.Name , count ) );
+                }
+                mParamNames.Add( qp.Name );
+            }
+            return c;
+        }
+        public void MakeUniqueParamName( SQLQueryParams queryParams ) {
+
+            foreach ( QueryParam qp in queryParams ) {
+                var count = ( mParamNames.Count( c => c.StartsWith( qp.Name ) ) );
+                if ( count > 0 ) {
+                    qp.rename( string.Format( "{0}_{1}" , qp.Name , count ) );
+                }
+                mParamNames.Add( qp.Name );
+            }
+
+
+        }
 
         public SQLQuery() {
 
@@ -30,18 +61,19 @@ namespace prestoMySQL.Query {
                 p.SetValue( this , ctors.Invoke( new object[] { p.Name , p , this } ) , null );
             }
 
-
+            Graph = new TableGraph();
 
             // TODO Auto-generated constructor stub
+            mParamNames = new List<string>();
+
             mSelectExpression = new List<string>();
             mWhereCondition = new List<SQLQueryConditionExpression>();
-            mJoinTable = new List<SQLQueryJoinTable>();
+            mJoinTable = new Dictionary<string , SQLQueryJoinTable>( StringComparer.OrdinalIgnoreCase );
             mHashOfSQLQueryTableReference = new Dictionary<string , TableReference>();
             mOrderBy = new PriorityQueue<SQLQueryOrderBy>();
             mGroupBy = new PriorityQueue<SQLQueryGroupBy>();
 
             mDictionary = new Dictionary<string , MySQLQueryParam>();
-
 
             var InstantiableFields = this.GetType().GetFields().Where( x => System.Attribute.IsDefined( x , typeof( DALQueryParamAttribute ) ) );
             InstantiableFields?.ToList().ForEach( x => this[x.Name] = new MySQLQueryParam( x.GetValue( this ) , x.GetCustomAttribute<DALQueryParamAttribute>().Name ) );
@@ -56,7 +88,6 @@ namespace prestoMySQL.Query {
 
         private int? mOffset = null;
         public int? Offset { get => this.mOffset; set => this.mOffset = value; }
-
 
 
         public class OrderByEntityComparator : IComparer<SQLQueryOrderBy> {
@@ -105,8 +136,8 @@ namespace prestoMySQL.Query {
         }
 
 
-        private List<SQLQueryJoinTable> mJoinTable;
-        protected virtual List<SQLQueryJoinTable> JoinTable {
+        private Dictionary<string , SQLQueryJoinTable> mJoinTable;
+        public virtual Dictionary<string , SQLQueryJoinTable> JoinTable {
             get {
                 return mJoinTable;
             }
@@ -129,6 +160,16 @@ namespace prestoMySQL.Query {
         public QueryParam[] getParam {
             get {
                 List<QueryParam> l = new List<QueryParam>();
+                foreach ( SQLQueryJoinTable i in this.mJoinTable.Values ) {
+                    if ( i.SqlQueryConditions != null ) {
+                        foreach ( var j in i.SqlQueryConditions ) {
+                            foreach ( var x in j.getParam() ) {
+                                l.Add( x );
+                            }
+                        }
+
+                    }
+                }
                 foreach ( var i in this.mWhereCondition ) {
                     foreach ( var j in i.getParam() ) {
                         l.Add( j );
@@ -173,7 +214,7 @@ namespace prestoMySQL.Query {
             }
         }
 
-        private IDictionary<string , TableReference> mHashOfSQLQueryTableReference;
+        internal IDictionary<string , TableReference> mHashOfSQLQueryTableReference;
 
         //////////////////////////////////////////////////////////////////////////////////
 
@@ -309,6 +350,7 @@ namespace prestoMySQL.Query {
 
         public void Initialize() { //final
 
+            mParamNames.Clear();
             mSelectExpression.Clear();
             mWhereCondition.Clear();
             mJoinTable.Clear();
@@ -357,7 +399,7 @@ namespace prestoMySQL.Query {
             //    }
             //}
 
-            //mJoinTable.add( new SQLQueryJoinTable( this , JoinType.INNER , aPrimaryTable , aPrimaryKey , aForeignTable , aForeignKey , fSqlQueryConditions ) );
+            //mJoinTable.TryAdd( Add( new SQLQueryJoinTable( this , JoinType.INNER , aPrimaryTable , aPrimaryKey , aForeignTable , aForeignKey , null ) );
 
             return this;
         }
@@ -374,10 +416,74 @@ namespace prestoMySQL.Query {
             //    }
             //}
 
+            //mJoinTable.Add( new SQLQueryJoinTable( this , JoinType.LEFT , aPrimaryTable , aPrimaryKey , aForeignTable , aForeignKey , null ) );
             //mJoinTable.add( new SQLQueryJoinTable( this , JoinType.LEFT , aPrimaryTable , aPrimaryKey , aForeignTable ,
             //        aForeignKey , fSqlQueryConditions ) );
 
             return this;
+        }
+
+        internal void JOIN( bool reverse  , EntityForeignKey fk , SQLQueryConditionExpression constraint = null ) {
+
+            var a = SQLTableEntityHelper.getColumnName( fk.TypeRefenceTable , fk.ReferenceColumnName , false );
+            var b = SQLTableEntityHelper.getColumnName( fk.Table.GetType() , fk.ColumnName , false );
+
+            //[DALQueryJoinEntityConstraint( typeof( ProvinceEntity ) , nameof( ProvinceEntity.Delete ) , ParamValue = false )]
+
+            //Reverse visit
+            if ( reverse ) {
+
+
+                if ( constraint != null )
+                    mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , constraint ) );
+                else
+                    mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b ) );
+
+
+            } else {
+
+                if ( constraint != null )
+                    mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , constraint ) );
+                else
+                    mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a ) );
+
+            }
+
+            //if ( TablesReferences.First().Equals( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , StringComparison.InvariantCultureIgnoreCase ) ) {
+
+            //    if ( constraint != null )
+            //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , constraint ) );
+            //    else
+            //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a ) );
+
+
+            //} else {
+
+            //    if ( constraint != null )
+            //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , constraint ) );
+            //    else
+            //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b ) );
+            //}
+
+            //var s = string.Format( "{0} JOIN {1} ON\r\n\t{2} = {3}" , this.JoinType.ToString() , SQLTableEntityHelper.getTableName( TypeRefenceTable ) , a , b );
+            //return s;
+            //if ( fk.JoinType == JoinType.LEFT ) {
+            //    //LEFTJOIN( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , null );
+            //} else if ( fk.JoinType == JoinType.INNER ) {
+            //    //INNERJOIN( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , null );
+            //};
+
+            /*
+             *                 this.JoinTable[SQLTableEntityHelper.getTableName< RegioniEntity>() ].SqlQueryConditions = new SQLQueryConditionExpression[]{ new SQLQueryConditionExpression(
+                                LogicOperator.AND ,
+                                FactorySQLWhereCondition.MakeColumnEqual( Delete , this[nameof( pDelete )] , "@" ) ,
+                                FactorySQLWhereCondition.MakeColumnEqual( FkProvincia , this[nameof( pFkProvincia )] , "@" )
+                                )
+                            };
+            */
+
+
+
         }
 
         public SQLQuery GROUPBY( params SQLQueryGroupBy[] aGroupByEntity ) {
@@ -480,6 +586,8 @@ namespace prestoMySQL.Query {
 
             //throw new Exception( "Error type not valid" );
         }
+
+
         private void createJoin( DALJoinClause a , DALProjectionColumn aa ) {
 
             throw new NotImplementedException();

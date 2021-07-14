@@ -21,7 +21,7 @@ using System.Reflection;
 
 namespace prestoMySQL.Adapter {
 
-    public abstract class EntityAdapter<T> : TableAdapter where T : AbstractEntity {
+    public abstract class EntityAdapter<T> : TableEntity where T : AbstractEntity {
 
         private const string ERROR_EXECUTE_QUERY = "Error execute query ";
         //private Dictionary<AbstractEntity , List<EntityForeignKey>> mGraph = new Dictionary<AbstractEntity , List<EntityForeignKey>>();
@@ -498,7 +498,7 @@ namespace prestoMySQL.Adapter {
                 return r;
 
             } catch ( ArgumentOutOfRangeException e1 ) {
-                throw new ArgumentOutOfRangeException( "Invalid key valus length for primary key" );
+                throw new ArgumentOutOfRangeException( "Invalid key valu length for primary key" );
             } catch ( System.Exception e ) {
                 throw new System.Exception( e.Message );
             }
@@ -533,7 +533,7 @@ namespace prestoMySQL.Adapter {
 
             if ( r == OperationResult.OK ) {
                 Entity.PrimaryKey.KeyState = KeyState.Set;
-            } else {
+            } else if (r != OperationResult.Empty) {
                 Entity.PrimaryKey.KeyState = KeyState.Unset;
             }
 

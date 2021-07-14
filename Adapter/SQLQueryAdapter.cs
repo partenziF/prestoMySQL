@@ -1,6 +1,9 @@
 ﻿using MySqlConnector;
+using prestoMySQL.Column;
 using prestoMySQL.Database.Cursor;
+using prestoMySQL.Entity;
 using prestoMySQL.Extension;
+using prestoMySQL.ForeignKey;
 using prestoMySQL.Helper;
 using prestoMySQL.Query;
 using prestoMySQL.Query.Attribute;
@@ -21,184 +24,223 @@ namespace prestoMySQL.Adapter {
 
 
         public SQLQueryAdapter( MySQLDatabase db ) {
+
+            List<AbstractEntity> entities = new List<AbstractEntity>();
             mDatabase = db;
             mSqlQuery = ( T ) createSqlQuery();
+
+
+            SQLTableEntityHelper.getQueryEntity( typeof( T ) )?.ForEach( e => {
+                entities.Add( ( AbstractEntity ) Activator.CreateInstance( e ) );
+            } );
+
+            SQLTableEntityHelper.getQueryJoinEntity( typeof( T ) )?.ForEach( e => {
+                entities.Add( ( AbstractEntity ) Activator.CreateInstance( e ) );
+            } );
+
+
+            mSqlQuery.Graph.BuildEntityGraph( entities.ToArray() );
+
+            /*                var a = new ComuniEntity();
+                            var b = new ProvinceEntity();
+                            var c = new RegioniEntity();
+
+                            Graph.BuildEntityGraph( a , b , c );
+*/
+
+            //mCache = new Dictionary<Type , List<TableEntity>>();
         }
 
-        protected override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
+                    protected override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
 
-        protected T mSqlQuery;
-        public T sqlQuery { get => mSqlQuery; }
-        public override int SQLCount {
-            get {
-                sqlQuery.UpdateValueToQueryParam();
+                    protected T mSqlQuery;
+                    public T sqlQuery { get => mSqlQuery; }
+                    public override int SQLCount {
+                        get {
+                            sqlQuery.UpdateValueToQueryParam();
 
-                SQLQueryParams outparam = null;
-                sqlQuery.Prepare();
-                sqlQuery.SelectExpression.Clear();
-                sqlQuery.SelectExpression.Add( "COUNT(*)" );
-                var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
-                return mDatabase.ExecuteScalar<int?>( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
+                            SQLQueryParams outparam = null;
+                            sqlQuery.Prepare();
+                            sqlQuery.SelectExpression.Clear();
+                            sqlQuery.SelectExpression.Add( "COUNT(*)" );
+                            var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+                            return mDatabase.ExecuteScalar<int?>( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
 
-            }
-        }
-
-        public readonly MySQLDatabase mDatabase;
-
-        protected virtual T createSqlQuery() {
-            return ( T ) Activator.CreateInstance( typeof( T ) );
-        }
-
-        public class AdapterIterator<X> : IEnumerator<X> where X : IInstantiableAdapterRow {
-            public AdapterIterator( dynamic adapter ) {
-                mAdapter = adapter;
-            }
-
-            private dynamic mAdapter;
-
-            private X mCurrent;
-            public X Current => mCurrent;
-
-            object IEnumerator.Current => throw new NotImplementedException();
-
-            public void Dispose() {
-                mAdapter.Cursor.Close();
-            }
-
-            public bool MoveNext() {
-
-                try {
-
-                    if ( mAdapter.Cursor.MoveNext() ) {
-
-                        var rs = mAdapter.Cursor.Current;
-                        this.mAdapter.BindData( rs );
-                        Type t = typeof( T );
-
-                        var ctor = typeof( X ).GetConstructor( new Type[] { t } );
-                        mCurrent = ( X ) ctor?.Invoke( new object[] { this.mAdapter.sqlQuery } );
-                        return true;
-                    } else {
-                        return false;
+                        }
                     }
 
-                } catch ( System.Exception e ) {
-                    throw new ArgumentNullException( e.Message );
-                }
+                    public readonly MySQLDatabase mDatabase;
 
-            }
+                    protected virtual T createSqlQuery() {
+                        return ( T ) Activator.CreateInstance( typeof( T ) );
+                    }
 
-            public void Reset() {
-                throw new NotImplementedException();
-            }
-        }
+                    public class AdapterIterator<X> : IEnumerator<X> where X : IInstantiableAdapterRow {
+                        public AdapterIterator( dynamic adapter ) {
+                            mAdapter = adapter;
+                        }
 
-        public IEnumerator GetEnumerator() {
+                        private dynamic mAdapter;
 
-            AdapterIterator<X> ai = null;
+                        private X mCurrent;
+                        public X Current => mCurrent;
 
-            ILastErrorInfo message = null;
+                        object IEnumerator.Current => throw new NotImplementedException();
 
-            try {
+                        public void Dispose() {
+                            mAdapter.Cursor.Close();
+                        }
 
-                Cursor = new CursorWrapper<MySQResultSet , MySqlDataReader>( ExecuteQuery( out message ) , message );
-                ai = new AdapterIterator<X>( this );
-                if ( Cursor.mResultSet is null ) {
-                    throw new ArgumentNullException( "Invalid resultset. " + Cursor.LastError.ToString() );
-                }
+                        public bool MoveNext() {
 
-            } catch (ArgumentNullException ex ) {
-                throw new System.Exception( "Invalid resultset. "+ex.Message );              
-            } catch ( System.Exception e ) {
-                throw new System.Exception( "Error while reading data." );
-            }
+                            try {
 
-            return ai;
+                                if ( mAdapter.Cursor.MoveNext() ) {
 
-        }
+                                    var rs = mAdapter.Cursor.Current;
+                                    Dictionary<string , Dictionary<string , int>> s = rs.ResultSetSchemaTable();
+                                    this.mAdapter.BindData( s, rs );
+                                    Type t = typeof( T );
 
+                                    var ctor = typeof( X ).GetConstructor( new Type[] { t } );
+                                    mCurrent = ( X ) ctor?.Invoke( new object[] { this.mAdapter.sqlQuery } );
+                                    return true;
+                                } else {
+                                    return false;
+                                }
 
-        //public IEnumerable<X> GetAll() {
-        //    var result = new List<X>();
-        //    ProjectionColumns?.Clear();
-        //    ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( sqlQuery );            
-        //    IEnumerator<X> i = ( IEnumerator<X> ) this.GetEnumerator();
-        //    while ( i.MoveNext() )
-        //        result.Add( i.Current );
-        //    Cursor.Close();
-        //    return ( List<X> ) result;
-        //}
+                            } catch ( System.Exception e ) {
+                                throw new ArgumentNullException( e.Message );
+                            }
 
-        protected override void BindData( MySQResultSet resultSet ) {
+                        }
 
-            foreach ( var column in ProjectionColumns ) {
+                        public void Reset() {
+                            throw new NotImplementedException();
+                        }
+                    }
 
-                //need explicit conversion to work
-                if ( resultSet[( string ) ( column.ColumnAlias ?? column.ColumnName )].IsDBNull() ) {
+                    public IEnumerator GetEnumerator() {
 
-                    var o = typeof( SQLTypeWrapper<> ).MakeGenericType( column.GenericType );
-                    var p = o.GetField( "NULL" , BindingFlags.Static | BindingFlags.Public );
-                    column.TypeWrapperValue = p.GetValue( null );
+                        AdapterIterator<X> ai = null;
 
-                } else {
+                        ILastErrorInfo message = null;
 
-                    MethodInfo method = typeof( MySQResultSet ).GetMethod( nameof( MySQResultSet.getValueAs ) , new Type[] { typeof( string ) } );
-                    MethodInfo generic = method.MakeGenericMethod( column.GenericType );
-                    var o = generic.Invoke( resultSet , new object[] { ( string ) column.ColumnName } );
-                    column.AssignValue( o );
+                        try {
 
-                }
+                            Cursor = new CursorWrapper<MySQResultSet , MySqlDataReader>( ExecuteQuery( out message ) , message );
+                            ai = new AdapterIterator<X>( this );
+                            if ( Cursor.mResultSet is null ) {
+                                throw new ArgumentNullException( "Invalid resultset. " + Cursor.LastError.ToString() );
+                            }
 
-            }
+                        } catch (ArgumentNullException ex ) {
+                            throw new System.Exception( "Invalid resultset. "+ex.Message );              
+                        } catch ( System.Exception e ) {
+                            throw new System.Exception( "Error while reading data." );
+                        }
 
-        }
+                        return ai;
 
-        public override MySQResultSet ExecuteQuery( out ILastErrorInfo Message ) {
-
-            sqlQuery.UpdateValueToQueryParam();
-
-            SQLQueryParams outparam = null;
-
-            sqlQuery.Prepare();
-
-            sqlQuery.LIMIT( Offset , RowCount );
-
-            var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
-
-            var result = mDatabase.ReadQuery( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
-
-            Message = mDatabase.LastError;
-
-            return result;
-
-            //return null;
-
-            //throw new NotImplementedException();
-
-            //SQLQueryCondition cc = new SQLQueryCondition<string>( sqlQuery , "drinks" , "Name" , SQLiteBinaryOperator.notEqual() , ( string ) myParams.getParamValue( 0 ) , true );
-            //SQLQueryConditionExpression condition = new SQLQueryConditionExpression( SQLQueryConditionExpression.LogicOperator.OR , cc );
+                    }
 
 
-            ////		SQLiteQueryParams myParams = new SQLiteQueryParams(1);
-            ////		myParams.setParam(0, "prova");
-            //SQLiteQueryParams queryParams = new SQLiteQueryParams();
+                    //public IEnumerable<X> GetAll() {
+                    //    var result = new List<X>();
+                    //    ProjectionColumns?.Clear();
+                    //    ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( sqlQuery );            
+                    //    IEnumerator<X> i = ( IEnumerator<X> ) this.GetEnumerator();
+                    //    while ( i.MoveNext() )
+                    //        result.Add( i.Current );
+                    //    Cursor.Close();
+                    //    return ( List<X> ) result;
+                    //}
 
-            //SQLBuilder.SELECT( sqlQuery );
-            ////		amyParams.setParam(0, "0");
-            ///*
-            //ArrayList<DALQueryEntity> entityQuery = SQLTableEntityHelper.getQueryEntity(this.getSqlQuery().getClass());
-            //ArrayList<DALQueryJoinEntity> entityJoin = SQLTableEntityHelper.getQueryJoinEntity(this.getSqlQuery().getClass());
-
-            //for (DALQueryJoinEntity a : entityJoin) {
-            //    createJoin(a,entityQuery.get(0));
-            //}
+                    protected override void BindData( Dictionary<string , Dictionary<string , int>> s , MySQResultSet resultSet ) {
 
 
-            //for (int i = 0; i<entityJoin.size();i++) 			
-            //    for (int j=i+1;j<entityJoin.size();j++) 
-            //        createJoin(entityJoin.get(i),entityJoin.get(j));
+                        int? index = null;
 
-            //*/
+                        foreach ( GenericQueryColumn column in ProjectionColumns ) {
+
+                            index = null;
+
+                            if ( s.ContainsKey( column.Table.ActualName ) ) {
+
+                                if ( s[column.Table.ActualName].ContainsKey( column.ActualName ) ) {
+                                    index = s[column.Table.ActualName][column.ActualName];
+                                }
+
+
+                            }
+
+
+                            if ( index == null ) throw new System.Exception( "Invalid index column." );
+
+                            var v = ReflectionTypeHelper.InvokeGenericFunction( column.GenericType ,
+                                                                       typeof( MySQResultSet ) ,
+                                                                       resultSet ,
+                                                                       nameof( MySQResultSet.getValueAs ) ,
+                                                                       new Type[] { typeof( int ) } ,
+                                                                       new object[] { ( int ) index } );
+
+                            if ( v.IsDBNull() ) {
+                                ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                            } else {
+                                ((dynamic)column).AssignValue( v );
+                            }
+
+
+                        }
+
+                    }
+
+                    public override MySQResultSet ExecuteQuery( out ILastErrorInfo Message ) {
+
+                        sqlQuery.UpdateValueToQueryParam();
+
+                        SQLQueryParams outparam = null;
+
+                        sqlQuery.Prepare();
+
+                        sqlQuery.LIMIT( Offset , RowCount );
+
+                        var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+
+                        var result = mDatabase.ReadQuery( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+
+                        Message = mDatabase.LastError;
+
+                        return result;
+
+                        //return null;
+
+                        //throw new NotImplementedException();
+
+                        //SQLQueryCondition cc = new SQLQueryCondition<string>( sqlQuery , "drinks" , "Name" , SQLiteBinaryOperator.notEqual() , ( string ) myParams.getParamValue( 0 ) , true );
+                        //SQLQueryConditionExpression condition = new SQLQueryConditionExpression( SQLQueryConditionExpression.LogicOperator.OR , cc );
+
+
+                        ////		SQLiteQueryParams myParams = new SQLiteQueryParams(1);
+                        ////		myParams.setParam(0, "prova");
+                        //SQLiteQueryParams queryParams = new SQLiteQueryParams();
+
+                        //SQLBuilder.SELECT( sqlQuery );
+                        ////		amyParams.setParam(0, "0");
+                        ///*
+                        //ArrayList<DALQueryEntity> entityQuery = SQLTableEntityHelper.getQueryEntity(this.getSqlQuery().getClass());
+                        //ArrayList<DALQueryJoinEntity> entityJoin = SQLTableEntityHelper.getQueryJoinEntity(this.getSqlQuery().getClass());
+
+                        //for (DALQueryJoinEntity a : entityJoin) {
+                        //    createJoin(a,entityQuery.get(0));
+                        //}
+
+
+                        //for (int i = 0; i<entityJoin.size();i++) 			
+                        //    for (int j=i+1;j<entityJoin.size();j++) 
+                        //        createJoin(entityJoin.get(i),entityJoin.get(j));
+
+                        //*/
             //sqlQuery.WHERE( condition );
 
             ////		String query = sqlQuery.toString();

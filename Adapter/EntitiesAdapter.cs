@@ -34,6 +34,15 @@ namespace prestoMySQL.Adapter {
         private readonly ILogger mLogger;
         private Dictionary<Type , List<TableEntity>> mEntitiesCache;
 
+        public EntitiesAdapter( MySQLDatabase aMySQLDatabase , ILogger logger = null ) {
+            this.mDatabase = aMySQLDatabase;
+            this.mLogger = logger;
+            _Graph = new TableGraph();
+            mEntitiesCache = new Dictionary<Type , List<TableEntity>>();
+            //_Graph.mCache = new Dictionary<Type , List<TableEntity>>();
+        }
+
+
         //public ICollection<AbstractEntity> Keys => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph ).Keys;
         //public ICollection<List<EntityForeignKey>> Values => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph ).Values;
         //public int Count => ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.mGraph ).Count;
@@ -43,6 +52,7 @@ namespace prestoMySQL.Adapter {
                                              where A2 : EntityAdapter<E2> where E2 : AbstractEntity {
 
             _Graph.mCache.Clear();
+            mEntitiesCache.Clear();
 
             A1 a1;
             A2 a2;
@@ -65,6 +75,7 @@ namespace prestoMySQL.Adapter {
                                                    where A3 : EntityAdapter<E3> where E3 : AbstractEntity {
 
             _Graph.mCache.Clear();
+            mEntitiesCache.Clear();
 
             A1 a1;
             A2 a2;
@@ -93,6 +104,7 @@ namespace prestoMySQL.Adapter {
                                                     where A4 : EntityAdapter<E4> where E4 : AbstractEntity {
 
             _Graph.mCache.Clear();
+            mEntitiesCache.Clear();
 
             A1 a1;
             A2 a2;
@@ -122,13 +134,6 @@ namespace prestoMySQL.Adapter {
 
         //public List<EntityForeignKey> this[AbstractEntity key] { get => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph )[key]; set => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph )[key] = value; }
 
-        public EntitiesAdapter( MySQLDatabase aMySQLDatabase , ILogger logger = null ) {
-            this.mDatabase = aMySQLDatabase;
-            this.mLogger = logger;
-            _Graph = new TableGraph();
-            mEntitiesCache = new Dictionary<Type , List<TableEntity>>();
-            //_Graph.mCache = new Dictionary<Type , List<TableEntity>>();
-        }
 
 
         public List<EntityForeignKey> GetForeignKeys() {
@@ -206,12 +211,40 @@ namespace prestoMySQL.Adapter {
             return _Graph.Keys.FirstOrDefault( x => x.GetType().IsAssignableFrom( t ) );
 
         }
+        //EntityAdapter<ProvinceEntity>
+        public T Adapter<T>( T adapter ) where T : TableEntity {
+
+            if ( mEntitiesCache.ContainsKey( typeof( T ) ) ) {
+                
+                var x = mEntitiesCache[typeof( T )].FirstOrDefault();
+
+                _Graph.ReplaceEntityGraph( ( AbstractEntity ) ( x as dynamic ).Entity, ( AbstractEntity ) ( adapter as dynamic ).Entity );
+
+                mEntitiesCache[typeof( T )].Remove( x );
+                mEntitiesCache.AddOrCreate( adapter );
+
+
+                //AbstractEntity[] entities = mEntitiesCache.Values.SelectMany( l => l.Select( e => ( AbstractEntity)( e as dynamic ).Entity ) ).ToArray();
+                //_Graph.BuildEntityGraph( entities );
+
+
+            } else {
+
+                mEntitiesCache.AddOrCreate( adapter );
+                AbstractEntity[] entities = mEntitiesCache.Values.SelectMany( l => l.Select( e => ( AbstractEntity ) ( e as dynamic ).Entity ) ).ToArray();
+                _Graph.BuildEntityGraph( entities );
+
+            }
+
+            return adapter;
+        }
 
         public T Adapter<T>() where T : TableEntity {
 
 
-            if ( _Graph.mCache.ContainsKey( typeof( T ) ) ) {
+            if ( mEntitiesCache.ContainsKey( typeof( T ) ) ) {
                 return ( T ) mEntitiesCache[typeof( T )].FirstOrDefault();
+
             } else {
                 if ( ( typeof( T ).IsGenericType ) && ( typeof( T ).GetGenericTypeDefinition() == typeof( EntityAdapter<> ) ) ) {
 
@@ -492,7 +525,7 @@ namespace prestoMySQL.Adapter {
 
                     BindData( rs );
 
-                    foreach ( var (t, list) in  mEntitiesCache ) {
+                    foreach ( var (t, list) in mEntitiesCache ) {
 
                         foreach ( var a in list ) {
 
@@ -508,6 +541,10 @@ namespace prestoMySQL.Adapter {
                         //    a.OnBi
                         //    OnBindDataFrom( new BindDataFromEventArgs<T>() { Entity = this.Entity } );
                     }
+
+
+                    
+
 
                     if ( rs.fetch() ) {
 

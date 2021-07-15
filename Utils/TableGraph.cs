@@ -137,6 +137,148 @@ namespace prestoMySQL.Utils {
 
         }
 
+        public void ReplaceEntityGraph( AbstractEntity old , AbstractEntity @new ) {
+
+            Stack<EntityForeignKey> foreignKeys = new Stack<EntityForeignKey>();
+
+
+            mGraph.Remove( old );
+
+            if ( mCache.ContainsKey( old.GetType() ) )
+                mCache[old.GetType()].Remove( old );
+
+            mGraph.Add( @new );
+            mCache.AddOrCreate( @new );
+
+            //            AbstractEntity[] e =
+
+
+
+            //            BuildEntityGraph( e)
+
+            ( ( AbstractEntity ) @new ).GetAllForeignkey().ForEach( x => {
+                foreignKeys.Push( x );
+                mGraph.Connect( x.Table , x );
+            } );
+
+
+            EntityForeignKey fkey = null;
+            while ( foreignKeys.TryPop( out fkey ) ) {
+
+                if ( InstantiateReferenceTable( fkey ) ) {
+
+                    mGraph.Add( fkey.RefenceTable );
+
+                    var allfk = fkey.RefenceTable.GetAllForeignkey();
+
+                    foreach ( var ffk in allfk ) {
+
+                        if ( !mGraph.IsConnected( ffk ) ) {
+
+                            foreignKeys.Push( ffk );
+                            InstantiateReferenceTable( ffk );
+                            mGraph.Connect( ffk.RefenceTable , ffk );
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+            var _Entities = mGraph.Keys.ToList();            
+            foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Count() ).ToList() ) {
+                foreach ( var _fk in mGraph[e] ) {
+
+                    if ( _fk.RefenceTable != null ) {
+                        _fk.addEntities( _Entities );
+                    }
+                }
+            }
+
+            //    //foreach ( var (e, l) in mGraph ) {
+            //    //    if ( ( fkey.RefenceTable == null ) && ( fkey.TypeRefenceTable == e.GetType() ) ) {
+
+            //    //        if ( InstantiateReferenceTable( fkey ) ) {
+            //    //            Console.WriteLine( "" );
+            //    //        }
+            //    //    }
+            //    //}
+
+            //    //if ( mCache.Values.ToList().FirstOrDefault( a => a.GetType() == fkey.TypeRefenceTable ) != null ) {
+
+            //    //    //if ( @new.GetType() == fkey.TypeRefenceTable ) {
+
+            //    //    if ( InstantiateReferenceTable( fkey ) ) {
+
+            //    //        mGraph.Add( fkey.RefenceTable );
+
+            //    //        var allfk = fkey.RefenceTable.GetAllForeignkey();
+
+            //    //        foreach ( var ffk in allfk ) {
+
+            //    //            if ( !mGraph.IsConnected( ffk ) ) {
+
+            //    //                foreignKeys.Push( ffk );
+            //    //                InstantiateReferenceTable( ffk );
+            //    //                mGraph.Connect( ffk.RefenceTable , ffk );
+
+            //    //            }
+
+            //    //        }
+
+            //    //    }
+
+            //    //}
+
+            //    //if ( tableEntity.ToList().FirstOrDefault( a => a.GetType() == fkey.TypeRefenceTable ) != null ) {
+
+            //    //    //Non istanziare se è già presente un'istanza con lo stesso tipo nel grafo
+
+            //    //    //Se è presente nel grafo il tipo entity in fkey.TypeRefenceTable 
+            //    //    // allora se RefenceTable è nullo copia il valore in mGraph
+            //    //    // altrimenti instazia la tabella ed aggiungila ad mGraph
+
+            //    //    //if ( fkey.RefenceTable == null ) {
+
+            //    //    if ( InstantiateReferenceTable( fkey ) ) {
+
+            //    //        mGraph.Add( fkey.RefenceTable );
+
+            //    //        var allfk = fkey.RefenceTable.GetAllForeignkey();
+
+            //    //        foreach ( var ffk in allfk ) {
+
+            //    //            if ( !mGraph.IsConnected( ffk ) ) {
+
+            //    //                foreignKeys.Push( ffk );
+            //    //                InstantiateReferenceTable( ffk );
+            //    //                mGraph.Connect( ffk.RefenceTable , ffk );
+
+            //    //            }
+
+            //    //        }
+
+            //    //    }
+            //    //}
+            //}
+
+
+            //var _Entities = mGraph.Keys.ToList();
+            //foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Count() ).ToList() ) {
+            //    foreach ( var _fk in mGraph[e] ) {
+
+            //        if ( _fk.RefenceTable != null ) {
+            //            _fk.addEntities( _Entities );
+            //        }
+            //    }
+            //}
+
+
+
+        }
+
         public void BuildEntityGraph( params AbstractEntity[] tableEntity ) {
 
             this.mGraph.Clear();

@@ -46,7 +46,7 @@ namespace prestoMySQL.Adapter {
 
         public delegate void BindDataFromEventHandler( Object sender , BindDataFromEventArgs<T> e );
         public event BindDataFromEventHandler BindDataFrom;
-        protected virtual void OnBindDataFrom( BindDataFromEventArgs<T> e ) {
+        public virtual void OnBindDataFrom( BindDataFromEventArgs<T> e ) {
             BindDataFromEventHandler handler = BindDataFrom;
             handler?.Invoke( this , e );
         }
@@ -475,7 +475,10 @@ namespace prestoMySQL.Adapter {
         public override OperationResult Read( EntityConditionalExpression Constraint = null , params object[] KeyValues ) {
 
             //CreateInstace<T>();
-            if ( Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
+            if ( Entity is null ) {
+                Create();
+                //new ArgumentNullException( "Entity can't be null." );
+            };
             //InitEntity();
 
             try {
@@ -509,7 +512,10 @@ namespace prestoMySQL.Adapter {
         public OperationResult Read<X>( Func<T , X> delegateMethod ) where X : EntityUniqueIndex {
 
             //CreateInstace<T>();
-            if ( this.Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
+            if ( this.Entity is null ) {
+                //new ArgumentNullException( "Entity can't be null, use Create() method." ); 
+                Create();
+            };
             //InitEntity();
 
             X x = delegateMethod( Entity );
@@ -533,7 +539,7 @@ namespace prestoMySQL.Adapter {
 
             if ( r == OperationResult.OK ) {
                 Entity.PrimaryKey.KeyState = KeyState.Set;
-            } else if (r != OperationResult.Empty) {
+            } else if ( r != OperationResult.Empty ) {
                 Entity.PrimaryKey.KeyState = KeyState.Unset;
             }
 

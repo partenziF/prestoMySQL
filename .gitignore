@@ -468,3 +468,17 @@ bin/Debug/net5.0/prestoMySQL.deps.json
 bin/Debug/net5.0/prestoMySQL.dll
 bin/Debug/net5.0/prestoMySQL.pdb
 bin/Debug/net5.0/ref/prestoMySQL.dll
+obj/project.nuget.cache
+obj/project.assets.json
+obj/prestoMySQL.csproj.nuget.dgspec.json
+obj/Debug/net5.0/ref/prestoMySQL.dll
+obj/Debug/net5.0/prestoMySQL.pdb
+obj/Debug/net5.0/prestoMySQL.dll
+obj/Debug/net5.0/prestoMySQL.csprojAssemblyReference.cache
+obj/Debug/net5.0/prestoMySQL.csproj.CoreCompileInputs.cache
+obj/Debug/net5.0/prestoMySQL.assets.cache
+Database/MySQL/MySQLDatabase.cs
+bin/Debug/net5.0/ref/prestoMySQL.dll
+bin/Debug/net5.0/prestoMySQL.pdb
+bin/Debug/net5.0/prestoMySQL.dll
+bin/Debug/net5.0/prestoMySQL.deps.json

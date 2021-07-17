@@ -144,6 +144,8 @@ namespace PrestoMySQL.Database.MySQL {
                 if ( ( mConnection.State == ConnectionState.Closed ) || ( mConnection.State == ConnectionState.Broken ) )
                     mConnection.Open();
 
+                this.LastError = null;
+
                 return true;
 
             } catch ( MySqlException e ) {
@@ -218,6 +220,8 @@ namespace PrestoMySQL.Database.MySQL {
 
                 try {
 
+                    this.LastError = null;
+
                     Command.CommandText = aSQLQuery;
 
                     if ( mTransaction != null )
@@ -249,6 +253,7 @@ namespace PrestoMySQL.Database.MySQL {
             if ( isConnected ) {
 
                 try {
+                    this.LastError = null;
 
                     Command.CommandText = aSQLQuery;
 
@@ -262,7 +267,7 @@ namespace PrestoMySQL.Database.MySQL {
                     }
 
                     var rs = Command.ExecuteReader();
-                    
+
                     if ( ( Logger is not null ) && ( args.Length > 0 ) ) {
                         args.ToList().ForEach( a => Logger?.LogDebug( a.ParameterName + " " + a.Value ) );
                     }
@@ -287,6 +292,8 @@ namespace PrestoMySQL.Database.MySQL {
             if ( isConnected ) {
 
                 try {
+
+                    this.LastError = null;
 
                     Command.CommandText = aSQLQuery;
 
@@ -358,6 +365,7 @@ namespace PrestoMySQL.Database.MySQL {
 
             if ( isConnected ) {
                 try {
+                    this.LastError = null;
                     this.mTransaction = this.Connection.BeginTransaction();
                     return ( this.mTransaction != null );
                 } catch ( Exception e ) {
@@ -376,6 +384,7 @@ namespace PrestoMySQL.Database.MySQL {
 
             if ( ( isConnected ) && ( this.mTransaction != null ) ) {
                 try {
+                    this.LastError = null;
                     this.mTransaction.Commit();
                     return true;
                 } catch ( Exception e ) {
@@ -404,7 +413,7 @@ namespace PrestoMySQL.Database.MySQL {
         }
 
         public override bool Close() {
-            
+
             if ( isConnected ) {
 
                 if ( mTransaction != null ) {
@@ -427,6 +436,7 @@ namespace PrestoMySQL.Database.MySQL {
             T? result = default;
 
             if ( isConnected ) {
+                this.LastError = null;
 
                 try {
 
@@ -471,6 +481,7 @@ namespace PrestoMySQL.Database.MySQL {
             if ( isConnected ) {
 
                 try {
+                    this.LastError = null;
 
                     Command.CommandText = aSQLQuery;
 
@@ -487,7 +498,7 @@ namespace PrestoMySQL.Database.MySQL {
 
 
 
-                    var id = await Command.ExecuteScalarAsync();                    
+                    var id = await Command.ExecuteScalarAsync();
                     result = id.ConvertTo<T>();
 
                     //return new MySQResultSet( rs );

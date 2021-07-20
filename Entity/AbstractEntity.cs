@@ -19,6 +19,7 @@ using prestoMySQL.ForeignKey.Interface;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using prestoMySQL.PrimaryKey.Attributes;
+using prestoMySQL.Index;
 
 namespace prestoMySQL.Entity {
 
@@ -83,6 +84,7 @@ namespace prestoMySQL.Entity {
             return this;
         }
 
+        #endregion
 
 
         public EntityUniqueIndex createUniqueIndex( [CallerMemberName] string memberName = "" , params object[] values ) {
@@ -93,8 +95,13 @@ namespace prestoMySQL.Entity {
 
         }
 
-        #endregion
+        public EntityIndex createIndex( [CallerMemberName] string memberName = "" , params object[] values ) {
 
+            var u = new EntityIndex( memberName , this );
+            u.setKeyValues( values );
+            return u;
+
+        }
 
 
 

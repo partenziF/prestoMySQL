@@ -2,6 +2,7 @@
 using prestoMySQL.Column;
 using prestoMySQL.Column.Attribute;
 using prestoMySQL.Column.Interface;
+using prestoMySQL.Entity;
 using prestoMySQL.Helper;
 using prestoMySQL.Index;
 using prestoMySQL.SQL;
@@ -9,23 +10,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace prestoMySQL.Entity {
-
-
-    public class EntityUniqueIndex : TableIndex, ITableIndex {
+namespace prestoMySQL.Index {
+    public class EntityIndex : TableIndex, ITableIndex {
 
         private readonly int mKeyLength;
-        public int KeyLength { get => mKeyLength; }
 
-        public EntityUniqueIndex( string Name , AbstractEntity aTableEntity ) : base() {
+        public EntityIndex( string Name , AbstractEntity aTableEntity ) {
+            
             this.Table = aTableEntity;
 
             try {
 
-                List<PropertyInfo> l = SQLTableEntityHelper.getPropertyIfUniqueIndex( aTableEntity.GetType() );
+                List<PropertyInfo> l = SQLTableEntityHelper.getPropertyIfIndex( aTableEntity.GetType() );
 
                 foreach ( PropertyInfo p in l ) {
-                    var a = p.GetCustomAttribute<DDUniqueIndexAttribute>();
+                    var a = p.GetCustomAttribute<DDIndexAttribute>();
                     if ( ( a != null ) && ( a.Name == Name ) ) {
                         var aa = p.GetCustomAttribute<DDColumnAttribute>();
                         this.IndexColumns.Add( aa.Name , p );
@@ -39,7 +38,10 @@ namespace prestoMySQL.Entity {
             mKeyLength = IndexColumns.Count;
         }
 
-        public void setKeyValue<T>( string aKey , T aValue ) where T : notnull {
+        public int KeyLength { get => mKeyLength; }
+
+
+        public void setKeyValue<T>( string aKey , T aValue ) {
 
             try {
 
@@ -68,8 +70,6 @@ namespace prestoMySQL.Entity {
 
         public virtual void setKeyValues( params object[] values ) {
 
-            //MethodBase.GetCurrentMethod().DeclaringType.FullName
-
             if ( values.Length != KeyLength )
                 throw new System.Exception( "Invalid key length" );
             int i = 0;
@@ -83,7 +83,7 @@ namespace prestoMySQL.Entity {
                     MethodInfo method = this.GetType().GetMethod( nameof( setKeyValue ) ); // , new Type[] { typeof( string ) , t } 
                     MethodInfo generic = method.MakeGenericMethod( t );
                     generic.Invoke( this , new object[] { kv.Key , values[i++] } );
-                        
+
 
                     //var mi = typeof(setKeyValue);
                     //var r = mi.Invoke( this, new object[] { kv.Key,values[i++]} );
@@ -98,6 +98,15 @@ namespace prestoMySQL.Entity {
             }
 
         }
+
+
+        //public virtual string[] ColumnsName {
+        //    get {
+        //        return this.IndexColumns.Keys.ToArray();
+        //    }
+        //}
+
+
     }
 
 }

@@ -7,6 +7,7 @@ using prestoMySQL.Entity;
 using prestoMySQL.Extension;
 using prestoMySQL.ForeignKey;
 using prestoMySQL.Helper;
+using prestoMySQL.Index;
 using prestoMySQL.Query;
 using prestoMySQL.Query.Interface;
 using prestoMySQL.Query.SQL;
@@ -509,7 +510,7 @@ namespace prestoMySQL.Adapter {
 
         }
 
-        public OperationResult Read<X>( Func<T , X> delegateMethod ) where X : EntityUniqueIndex {
+        public OperationResult Read<X>( Func<T , X> delegateMethod ) where X : TableIndex {
 
             //CreateInstace<T>();
             if ( this.Entity is null ) {

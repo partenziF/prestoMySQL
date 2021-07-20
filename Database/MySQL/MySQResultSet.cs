@@ -190,7 +190,7 @@ namespace PrestoMySQL.Database.MySQL {
         }
 
         public U getValueAs<U>( int Index ) {
-            if ( ( this.mResultSet != null ) && ( !this.mResultSet.IsClosed ) ) {                
+            if ( ( this.mResultSet != null ) && ( !this.mResultSet.IsClosed ) ) {                    
                 return this.mResultSet[Index].ConvertTo<U>();
             } else {
                 throw new Exception( "Invalid Resultset" );

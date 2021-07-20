@@ -6,6 +6,7 @@ using prestoMySQL.Entity;
 using prestoMySQL.Extension;
 using prestoMySQL.ForeignKey;
 using prestoMySQL.Helper;
+using prestoMySQL.Index;
 using prestoMySQL.Query;
 using prestoMySQL.Query.Interface;
 using prestoMySQL.Query.SQL;
@@ -132,6 +133,216 @@ namespace prestoMySQL.Adapter {
 
         }
 
+        public void Create<A1, E1, A2, E2, A3, E3, A4, E4, A5, E5>() where A1 : EntityAdapter<E1> where E1 : AbstractEntity
+                                                                   where A2 : EntityAdapter<E2> where E2 : AbstractEntity
+                                                                   where A3 : EntityAdapter<E3> where E3 : AbstractEntity
+                                                                   where A4 : EntityAdapter<E4> where E4 : AbstractEntity
+                                                                   where A5 : EntityAdapter<E5> where E5 : AbstractEntity {
+
+            _Graph.mCache.Clear();
+            mEntitiesCache.Clear();
+
+            A1 a1;
+            A2 a2;
+            A3 a3;
+            A4 a4;
+            A5 a5;
+
+            a1 = NewInstanceAdapter<A1>();
+            a1.Create();
+
+            a2 = NewInstanceAdapter<A2>();
+            a2.Create();
+
+            a3 = NewInstanceAdapter<A3>();
+            a3.Create();
+
+            a4 = NewInstanceAdapter<A4>();
+            a4.Create();
+
+            a5 = NewInstanceAdapter<A5>();
+            a5.Create();
+
+            mEntitiesCache.AddOrCreate( a1 );
+            mEntitiesCache.AddOrCreate( a2 );
+            mEntitiesCache.AddOrCreate( a3 );
+            mEntitiesCache.AddOrCreate( a4 );
+            mEntitiesCache.AddOrCreate( a5 );
+
+            _Graph.BuildEntityGraph( a1.Entity , a2.Entity , a3.Entity , a4.Entity , a5.Entity );
+
+        }
+
+
+        public void Create<A1, E1, A2, E2, A3, E3, A4, E4, A5, E5, A6, E6, A7, E7>() where A1 : EntityAdapter<E1> where E1 : AbstractEntity
+                                                                                      where A2 : EntityAdapter<E2> where E2 : AbstractEntity
+                                                                                      where A3 : EntityAdapter<E3> where E3 : AbstractEntity
+                                                                                      where A4 : EntityAdapter<E4> where E4 : AbstractEntity
+                                                                                      where A5 : EntityAdapter<E5> where E5 : AbstractEntity
+                                                                                      where A6 : EntityAdapter<E6> where E6 : AbstractEntity
+                                                                                      where A7 : EntityAdapter<E7> where E7 : AbstractEntity {
+
+            _Graph.mCache.Clear();
+            mEntitiesCache.Clear();
+
+            A1 a1;
+            A2 a2;
+            A3 a3;
+            A4 a4;
+            A5 a5;
+            A6 a6;
+            A7 a7;
+
+            a1 = NewInstanceAdapter<A1>();
+            a1.Create();
+
+            a2 = NewInstanceAdapter<A2>();
+            a2.Create();
+
+            a3 = NewInstanceAdapter<A3>();
+            a3.Create();
+
+            a4 = NewInstanceAdapter<A4>();
+            a4.Create();
+
+            a5 = NewInstanceAdapter<A5>();
+            a5.Create();
+            a6 = NewInstanceAdapter<A6>();
+            a6.Create();
+            a7 = NewInstanceAdapter<A7>();
+            a7.Create();
+
+            mEntitiesCache.AddOrCreate( a1 );
+            mEntitiesCache.AddOrCreate( a2 );
+            mEntitiesCache.AddOrCreate( a3 );
+            mEntitiesCache.AddOrCreate( a4 );
+            mEntitiesCache.AddOrCreate( a5 );
+            mEntitiesCache.AddOrCreate( a6 );
+            mEntitiesCache.AddOrCreate( a7 );
+
+            _Graph.BuildEntityGraph( a1.Entity , a2.Entity , a3.Entity , a4.Entity , a5.Entity , a6.Entity , a7.Entity );
+
+        }
+
+
+        public void Create<A1, E1, A2, E2, A3, E3, A4, E4, A5, E5, A6, E6, A7, E7, A8, E8>() 
+                   where A1 : EntityAdapter<E1> where E1 : AbstractEntity
+                    where A2 : EntityAdapter<E2> where E2 : AbstractEntity
+                    where A3 : EntityAdapter<E3> where E3 : AbstractEntity
+                    where A4 : EntityAdapter<E4> where E4 : AbstractEntity
+                    where A5 : EntityAdapter<E5> where E5 : AbstractEntity
+                    where A6 : EntityAdapter<E6> where E6 : AbstractEntity
+                    where A7 : EntityAdapter<E7> where E7 : AbstractEntity
+                    where A8 : EntityAdapter<E8> where E8 : AbstractEntity {
+
+            _Graph.mCache.Clear();
+            mEntitiesCache.Clear();
+
+            A1 a1;
+            A2 a2;
+            A3 a3;
+            A4 a4;
+            A5 a5;
+            A6 a6;
+            A7 a7;
+            A8 a8;
+
+            a1 = NewInstanceAdapter<A1>();
+            a1.Create();
+
+            a2 = NewInstanceAdapter<A2>();
+            a2.Create();
+
+            a3 = NewInstanceAdapter<A3>();
+            a3.Create();
+
+            a4 = NewInstanceAdapter<A4>();
+            a4.Create();
+
+            a5 = NewInstanceAdapter<A5>();
+            a5.Create();
+            a6 = NewInstanceAdapter<A6>();
+            a6.Create();
+            a7 = NewInstanceAdapter<A7>();
+            a7.Create();
+            a8 = NewInstanceAdapter<A8>();
+            a8.Create();
+
+            mEntitiesCache.AddOrCreate( a1 );
+            mEntitiesCache.AddOrCreate( a2 );
+            mEntitiesCache.AddOrCreate( a3 );
+            mEntitiesCache.AddOrCreate( a4 );
+            mEntitiesCache.AddOrCreate( a5 );
+            mEntitiesCache.AddOrCreate( a6 );
+            mEntitiesCache.AddOrCreate( a7 );
+            mEntitiesCache.AddOrCreate( a8 );
+
+            _Graph.BuildEntityGraph( a1.Entity , a2.Entity , a3.Entity , a4.Entity , a5.Entity , a6.Entity , a7.Entity , a8.Entity );
+
+        }
+
+
+        public void Create<A1, E1, A2, E2, A3, E3, A4, E4, A5, E5, A6, E6, A7, E7, A8, E8,A9,E9>()
+                   where A1 : EntityAdapter<E1> where E1 : AbstractEntity
+                    where A2 : EntityAdapter<E2> where E2 : AbstractEntity
+                    where A3 : EntityAdapter<E3> where E3 : AbstractEntity
+                    where A4 : EntityAdapter<E4> where E4 : AbstractEntity
+                    where A5 : EntityAdapter<E5> where E5 : AbstractEntity
+                    where A6 : EntityAdapter<E6> where E6 : AbstractEntity
+                    where A7 : EntityAdapter<E7> where E7 : AbstractEntity
+                    where A8 : EntityAdapter<E8> where E8 : AbstractEntity
+                    where A9 : EntityAdapter<E9> where E9 : AbstractEntity {
+
+            _Graph.mCache.Clear();
+            mEntitiesCache.Clear();
+
+            A1 a1;
+            A2 a2;
+            A3 a3;
+            A4 a4;
+            A5 a5;
+            A6 a6;
+            A7 a7;
+            A8 a8;
+            A9 a9;
+
+            a1 = NewInstanceAdapter<A1>();
+            a1.Create();
+
+            a2 = NewInstanceAdapter<A2>();
+            a2.Create();
+
+            a3 = NewInstanceAdapter<A3>();
+            a3.Create();
+
+            a4 = NewInstanceAdapter<A4>();
+            a4.Create();
+
+            a5 = NewInstanceAdapter<A5>();
+            a5.Create();
+            a6 = NewInstanceAdapter<A6>();
+            a6.Create();
+            a7 = NewInstanceAdapter<A7>();
+            a7.Create();
+            a8 = NewInstanceAdapter<A8>();
+            a8.Create();
+            a9 = NewInstanceAdapter<A9>();
+            a9.Create();
+
+            mEntitiesCache.AddOrCreate( a1 );
+            mEntitiesCache.AddOrCreate( a2 );
+            mEntitiesCache.AddOrCreate( a3 );
+            mEntitiesCache.AddOrCreate( a4 );
+            mEntitiesCache.AddOrCreate( a5 );
+            mEntitiesCache.AddOrCreate( a6 );
+            mEntitiesCache.AddOrCreate( a7 );
+            mEntitiesCache.AddOrCreate( a8 );
+            mEntitiesCache.AddOrCreate( a9 );
+
+            _Graph.BuildEntityGraph( a1.Entity , a2.Entity , a3.Entity , a4.Entity , a5.Entity , a6.Entity , a7.Entity , a8.Entity , a9.Entity );
+
+        }
+
         //public List<EntityForeignKey> this[AbstractEntity key] { get => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph )[key]; set => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph )[key] = value; }
 
 
@@ -215,10 +426,10 @@ namespace prestoMySQL.Adapter {
         public T Adapter<T>( T adapter ) where T : TableEntity {
 
             if ( mEntitiesCache.ContainsKey( typeof( T ) ) ) {
-                
+
                 var x = mEntitiesCache[typeof( T )].FirstOrDefault();
 
-                _Graph.ReplaceEntityGraph( ( AbstractEntity ) ( x as dynamic ).Entity, ( AbstractEntity ) ( adapter as dynamic ).Entity );
+                _Graph.ReplaceEntityGraph( ( AbstractEntity ) ( x as dynamic ).Entity , ( AbstractEntity ) ( adapter as dynamic ).Entity );
 
                 mEntitiesCache[typeof( T )].Remove( x );
                 mEntitiesCache.AddOrCreate( adapter );
@@ -509,6 +720,8 @@ namespace prestoMySQL.Adapter {
 
                 if ( v.IsDBNull() ) {
                     ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                } else if ( v is null ) {
+                    ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
                 } else {
                     column.AssignValue( v );
                 }
@@ -543,7 +756,7 @@ namespace prestoMySQL.Adapter {
                     }
 
 
-                    
+
 
 
                     if ( rs.fetch() ) {
@@ -614,7 +827,7 @@ namespace prestoMySQL.Adapter {
         }
 
 
-        public OperationResult Read<T, X>( Func<T , X> delegateMethod ) where X : EntityUniqueIndex where T : AbstractEntity {
+        public OperationResult Read<T, X>( Func<T , X> delegateMethod ) where X : TableIndex where T : AbstractEntity {
 
             AbstractEntity entity = _Graph.FirstOrDefault( kvp => kvp.Key.GetType() == typeof( T ) ).Key;
 

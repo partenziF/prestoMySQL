@@ -15,6 +15,8 @@ namespace prestoMySQL.Extension {
             if ( t.IsGenericType && ( t.GetGenericTypeDefinition() == typeof( Nullable<> ) ) ) {
                 if ( source == null ) {
                     return default( T );
+                } else if ( source.GetType() == typeof( DBNull ) ) {
+                    return default( T );
                 } else {
                     return ( T ) Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
                 }
@@ -27,6 +29,9 @@ namespace prestoMySQL.Extension {
                 if ( ( source is not null ) && ( ( source.GetType().IsArray ) && ( source.GetType() == typeof( byte[] ) ) ) && ( t == typeof( string ) ) ) {
 
                     return ( T ) Convert.ChangeType( Encoding.UTF8.GetString( ( byte[] ) source ) , t );
+
+                } else if ( source.GetType() == typeof( DBNull ) ) {
+                    return default( T );
 
                 } else {
                     return ( T ) Convert.ChangeType( source , t );

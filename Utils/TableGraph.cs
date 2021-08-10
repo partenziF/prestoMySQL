@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using prestoMySQL.Helper;
+using prestoMySQL.Table;
 
 namespace prestoMySQL.Utils {
     public class TableGraph : IDictionary<AbstractEntity , List<EntityForeignKey>> {
@@ -90,57 +91,221 @@ namespace prestoMySQL.Utils {
 
         public bool IsConnected( EntityForeignKey Node ) {
 
-            foreach ( var entity in mGraph.Keys.ToList() ) {
+            //foreach ( var entity in mGraph.Keys.ToList() ) {
 
-                if ( entity.GetType() == Node.Table.GetType() ) {
-                    //var xxxxx = Graph[entity].FirstOrDefault( x => x.TypeRefenceTable == Node.TypeRefenceTable );
-                    foreach ( var x in mGraph[entity] ) {
-                        if ( Node.TypeRefenceTable == x.TypeRefenceTable ) {
-                            return true;
+            //    if ( entity.GetType() == Node.Table.GetType() ) {
+            //        //var xxxxx = Graph[entity].FirstOrDefault( x => x.TypeReferenceTable == Node.TypeReferenceTable );
+            //        foreach ( var x in mGraph[entity] ) {
+            //            if ( Node.TypeReferenceTable == x.TypeReferenceTable ) {
+            //                return true;
+            //            }
+            //        }
+
+            //    }
+
+            //}
+            //return false;
+
+            throw new NotImplementedException();
+        }
+
+
+        private bool InstantiateReferenceTable( string ForeignkeyName , ForeignKeyInfo foreignKeyInfo ) {
+
+            if ( foreignKeyInfo.ReferenceTable == null ) {
+
+                //var x = mGraph.Keys.FirstOrDefault( x => (x.GetType() == fkey.TypeReferenceTable) && ( (x.FkNames == null) || (x.FkNames == fkey.ForeignkeyName)) );
+                //fkey.TypeReferenceTable ) && ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( fkey.ForeignkeyName ) ) ) ).ToList();
+                var xlist = mGraph.Keys.Where( x => ( x.GetType() == foreignKeyInfo.TypeReferenceTable ) ).ToList();
+
+                if ( xlist.Count() > 1 ) {
+                    //&& ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( ForeignkeyName )
+
+                    foreach ( var x in xlist ) {
+                        if ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( ForeignkeyName ) ) ) {
+
+                            if ( x != null ) {
+                                if ( !x.FkNames.Contains( ForeignkeyName ) )
+                                    x.FkNames.Add( ForeignkeyName );
+                                foreignKeyInfo.ReferenceTable = x;
+                                if ( foreignKeyInfo.mReferenceTableAlias is not null ) {
+                                    x.mAliasName = foreignKeyInfo.mReferenceTableAlias;
+                                    foreach ( var pi in SQLTableEntityHelper.getPropertyIfColumnDefinition( x.GetType() ) ) {
+
+                                        var c = pi.GetValue( x );
+                                        ( ( TableReference ) ( c as dynamic ).mTable ).TableAlias = x.AliasName;
+                                    }
+
+                                }
+
+                                // Visto che ho trovato un tipo che già esiste non c'è bisogno di 
+                                // analizzare le chiavi esterne perchè si suppone che già siano state aggiunte
+                                return false;
+
+                            } else {
+                                throw new NotImplementedException();
+                                //foreignKeyInfo.InstantiateReferenceTable();
+                                return true;
+                            }
+
+
                         }
                     }
+                } else {
+
+
+                    var result = false;
+
+                    foreach ( var x in xlist ) {
+
+                        if ( x != null ) {
+                            if ( !x.FkNames.Contains( ForeignkeyName ) )
+                                x.FkNames.Add( ForeignkeyName );
+                            foreignKeyInfo.ReferenceTable = x;
+                            if ( foreignKeyInfo.mReferenceTableAlias is not null ) {
+                                x.mAliasName = foreignKeyInfo.mReferenceTableAlias;
+                                foreach ( var pi in SQLTableEntityHelper.getPropertyIfColumnDefinition( x.GetType() ) ) {
+
+                                    var c = pi.GetValue( x );
+                                    ( ( TableReference ) ( c as dynamic ).mTable ).TableAlias = x.AliasName;
+                                }
+
+                            }
+
+
+                            // Visto che ho trovato un tipo che già esiste non c'è bisogno di 
+                            // analizzare le chiavi esterne perchè si suppone che già siano state aggiunte
+
+                        } else {
+                            result = true;
+                            throw new NotImplementedException();
+                            //foreignKeyInfo.InstantiateReferenceTable();
+
+                        }
+
+                    }
+
+                    return result;
 
                 }
 
+                //Questo serev per la chiave ManyToMany
+                //var xlist = mGraph.Keys.Where( x => ( x.GetType() == foreignKeyInfo.TypeReferenceTable ) ).ToList();
+
+
             }
+
             return false;
 
         }
 
 
         public bool InstantiateReferenceTable( EntityForeignKey fkey ) {
+            throw new NotImplementedException();
 
-            //Non istanziare se è già presente un'istanza con lo stesso tipo nel grafo
+            //if ( fkey.KeyLength > 1 ) {
 
-            //Se è presente nel grafo il tipo entity in fkey.TypeRefenceTable 
-            // allora se RefenceTable è nullo copia il valore in mGraph
-            // altrimenti instazia la tabella ed aggiungila ad mGraph
-            if ( fkey.RefenceTable == null ) {
+            //bool result = false;
 
-                var x = mGraph.Keys.FirstOrDefault( x => x.GetType() == fkey.TypeRefenceTable );
+            //foreach ( var (t, d) in fkey.foreignKeysInfo ) {
 
-                if ( x != null ) {
+            //    foreach ( var (name, info) in fkey.foreignKeysInfo[t] ) {
 
-                    fkey.RefenceTable = x;
-                    // Visto che ho trovato un tipo che già esiste non c'è bisogno di 
-                    // analizzare le chiavi esterne perchè si suppone che già siano state aggiunte
-                    return false;
-                } else {
+            //        if ( fkey.foreignKeysInfo[t][name].ReferenceTable is null ) {
 
-                    fkey.InstantiateRefenceTable();
-                    return true;
-                }
+            //            var xlist = mGraph.Keys.Where( x => ( x.GetType() == fkey.foreignKeysInfo[t][name].TypeReferenceTable ) ).ToList();
 
-            }
+            //            foreach ( var x in xlist ) {
 
-            return false;
+            //                if ( x != null ) {
 
+            //                    x.FkNames.Add( name );
+            //                    fkey.foreignKeysInfo[t][name].ReferenceTable = x;
+
+            //                    // Visto che ho trovato un tipo che già esiste non c'è bisogno di 
+            //                    // analizzare le chiavi esterne perchè si suppone che già siano state aggiunte
+            //                    //return false;
+            //                    result = false;
+
+            //                } else {
+
+            //                    fkey.InstantiateReferenceTable( t , name );
+            //                    //return true;
+            //                    result = true;
+            //                }
+
+
+            //            }
+
+
+            //        }
+
+            //    }
+            //}
+
+            //return result;
+
+            //} else {
+
+
+            ////Non istanziare se è già presente un'istanza con lo stesso tipo nel grafo
+
+            ////Se è presente nel grafo il tipo entity in fkey.TypeReferenceTable 
+            //// allora se ReferenceTable è nullo copia il valore in mGraph
+            //// altrimenti instazia la tabella ed aggiungila ad mGraph
+
+            //if ( fkey.ReferenceTable == null ) {
+
+            //    //var x = mGraph.Keys.FirstOrDefault( x => (x.GetType() == fkey.TypeReferenceTable) && ( (x.FkNames == null) || (x.FkNames == fkey.ForeignkeyName)) );
+            //    //var xlist = mGraph.Keys.Where( x => ( x.GetType() == fkey.TypeReferenceTable ) && ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( fkey.ForeignkeyName ) ) ) ).ToList();
+            //    var xlist = mGraph.Keys.Where( x => ( x.GetType() == fkey.TypeReferenceTable ) ).ToList();
+
+            //    foreach ( var x in xlist ) {
+
+            //        if ( x != null ) {
+
+            //            if ( !x.FkNames.Contains( fkey.ForeignkeyName ) )
+            //                x.FkNames.Add( fkey.ForeignkeyName );
+            //            fkey.ReferenceTable = x;
+
+            //            // Visto che ho trovato un tipo che già esiste non c'è bisogno di 
+            //            // analizzare le chiavi esterne perchè si suppone che già siano state aggiunte
+            //            return false;
+
+            //        } else {
+
+            //            fkey.InstantiateReferenceTable();
+            //            return true;
+            //        }
+
+            //    }
+
+            //}
+
+            //return false;
+
+            //}
         }
 
         public void ReplaceEntityGraph( AbstractEntity old , AbstractEntity @new ) {
 
             Stack<EntityForeignKey> foreignKeys = new Stack<EntityForeignKey>();
+            ///old.FkNames.ForEach( x => @new.FkNames.Add( x ) );
 
+            var tableEntity = new List<AbstractEntity>() { @new };
+            foreach ( var (e, list) in mGraph ) {
+                foreach ( var fk in list ) {
+                    foreach ( var info in fk.foreignKeyInfo ) {
+                        if ( ( info.ReferenceTable != null ) && ( info.ReferenceTable == old ) ) {
+                            info.ReferenceTable = null;
+                            if ( info.Table != null ) tableEntity.Add( info.Table );
+                        } else if ( ( info.Table != null ) && ( info.Table == old ) ) {
+                            info.Table = null;
+                            if ( info.ReferenceTable != null ) tableEntity.Add( info.ReferenceTable );
+                        }
+                    }
+                }
+            }
 
             mGraph.Remove( old );
 
@@ -150,131 +315,172 @@ namespace prestoMySQL.Utils {
             mGraph.Add( @new );
             mCache.AddOrCreate( @new );
 
-            //            AbstractEntity[] e =
 
+            tableEntity.ToList().ForEach( a => {
 
+                ( ( AbstractEntity ) a ).GetAllForeignkey().ForEach( x => {
+                    foreignKeys.Push( x );
+                    foreach ( var info in x.foreignKeyInfo ) {
+                        mGraph.Connect( info.Table , x );
+                    }
+                } );
 
-            //            BuildEntityGraph( e)
-
-            ( ( AbstractEntity ) @new ).GetAllForeignkey().ForEach( x => {
-                foreignKeys.Push( x );
-                mGraph.Connect( x.Table , x );
             } );
-
 
             EntityForeignKey fkey = null;
             while ( foreignKeys.TryPop( out fkey ) ) {
+                foreach ( var info in fkey.foreignKeyInfo ) {
 
-                if ( InstantiateReferenceTable( fkey ) ) {
-
-                    mGraph.Add( fkey.RefenceTable );
-
-                    var allfk = fkey.RefenceTable.GetAllForeignkey();
-
-                    foreach ( var ffk in allfk ) {
-
-                        if ( !mGraph.IsConnected( ffk ) ) {
-
-                            foreignKeys.Push( ffk );
-                            InstantiateReferenceTable( ffk );
-                            mGraph.Connect( ffk.RefenceTable , ffk );
-
-                        }
-
-                    }
-
-                }
-
-            }
-
-            var _Entities = mGraph.Keys.ToList();            
-            foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Count() ).ToList() ) {
-                foreach ( var _fk in mGraph[e] ) {
-
-                    if ( _fk.RefenceTable != null ) {
-                        _fk.addEntities( _Entities );
+                    if ( InstantiateReferenceTable( fkey.ForeignkeyName , info ) ) {
+                        throw new NotImplementedException();
                     }
                 }
             }
 
-            //    //foreach ( var (e, l) in mGraph ) {
-            //    //    if ( ( fkey.RefenceTable == null ) && ( fkey.TypeRefenceTable == e.GetType() ) ) {
 
-            //    //        if ( InstantiateReferenceTable( fkey ) ) {
-            //    //            Console.WriteLine( "" );
-            //    //        }
-            //    //    }
-            //    //}
+            var _Entities = mGraph.Keys.ToList();
+            var _order = new Dictionary<AbstractEntity , int>();
 
-            //    //if ( mCache.Values.ToList().FirstOrDefault( a => a.GetType() == fkey.TypeRefenceTable ) != null ) {
-
-            //    //    //if ( @new.GetType() == fkey.TypeRefenceTable ) {
-
-            //    //    if ( InstantiateReferenceTable( fkey ) ) {
-
-            //    //        mGraph.Add( fkey.RefenceTable );
-
-            //    //        var allfk = fkey.RefenceTable.GetAllForeignkey();
-
-            //    //        foreach ( var ffk in allfk ) {
-
-            //    //            if ( !mGraph.IsConnected( ffk ) ) {
-
-            //    //                foreignKeys.Push( ffk );
-            //    //                InstantiateReferenceTable( ffk );
-            //    //                mGraph.Connect( ffk.RefenceTable , ffk );
-
-            //    //            }
-
-            //    //        }
-
-            //    //    }
-
-            //    //}
-
-            //    //if ( tableEntity.ToList().FirstOrDefault( a => a.GetType() == fkey.TypeRefenceTable ) != null ) {
-
-            //    //    //Non istanziare se è già presente un'istanza con lo stesso tipo nel grafo
-
-            //    //    //Se è presente nel grafo il tipo entity in fkey.TypeRefenceTable 
-            //    //    // allora se RefenceTable è nullo copia il valore in mGraph
-            //    //    // altrimenti instazia la tabella ed aggiungila ad mGraph
-
-            //    //    //if ( fkey.RefenceTable == null ) {
-
-            //    //    if ( InstantiateReferenceTable( fkey ) ) {
-
-            //    //        mGraph.Add( fkey.RefenceTable );
-
-            //    //        var allfk = fkey.RefenceTable.GetAllForeignkey();
-
-            //    //        foreach ( var ffk in allfk ) {
-
-            //    //            if ( !mGraph.IsConnected( ffk ) ) {
-
-            //    //                foreignKeys.Push( ffk );
-            //    //                InstantiateReferenceTable( ffk );
-            //    //                mGraph.Connect( ffk.RefenceTable , ffk );
-
-            //    //            }
-
-            //    //        }
-
-            //    //    }
-            //    //}
-            //}
+            foreach ( var e in _Entities ) {
+                if ( !_order.ContainsKey( e ) )
+                    _order.Add( e , 0 );
+                foreach ( var fk in e.mforeignKeys ) {
+                    _order[e] += fk.foreignKeyInfo.Where( x => x.ReferenceTable != null ).Count();
+                }
+            }
 
 
-            //var _Entities = mGraph.Keys.ToList();
-            //foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Count() ).ToList() ) {
-            //    foreach ( var _fk in mGraph[e] ) {
+            foreach ( (AbstractEntity e, _) in _order.OrderBy( v => v.Value ) ) {
+                foreach ( var fk in mGraph[e] ) {
+                    //foreach ( var info in fk.foreignKeyInfo.Where( x => x.ReferenceTable != null ) ) {
+                    fk.addEntities( _Entities );
+                    //}
+                }
+            }
 
-            //        if ( _fk.RefenceTable != null ) {
-            //            _fk.addEntities( _Entities );
+
+            //Stack<EntityForeignKey> foreignKeys = new Stack<EntityForeignKey>();
+            /////old.FkNames.ForEach( x => @new.FkNames.Add( x ) );
+
+            //var tableEntity = new List<AbstractEntity>() { @new };
+
+            //foreach ( var (e, list) in mGraph ) {
+            //    foreach ( var fk in list ) {
+            //        foreach ( var (_, infos) in fk.foreignKeysInfo ) {
+            //            foreach ( var (_, info) in infos ) {
+            //                if ( ( info.ReferenceTable != null ) && ( info.ReferenceTable == old ) ) {
+            //                    info.ReferenceTable = null;
+            //                    if ( info.Table != null ) tableEntity.Add( info.Table );
+            //                } else if ( ( info.Table != null ) && ( info.Table == old ) ) {
+            //                    info.Table = null;
+            //                    if ( info.ReferenceTable != null ) tableEntity.Add( info.ReferenceTable );
+            //                }
+            //            }
             //        }
             //    }
             //}
 
+            //mGraph.Remove( old );
+
+            //if ( mCache.ContainsKey( old.GetType() ) )
+            //    mCache[old.GetType()].Remove( old );
+
+            //mGraph.Add( @new );
+            //mCache.AddOrCreate( @new );
+
+
+            //tableEntity.ToList().ForEach( a => {
+
+            //    //                mGraph.Add( ( AbstractEntity ) a );
+            //    //mCache.AddOrCreate( ( AbstractEntity ) a );
+
+            //    ( ( AbstractEntity ) a ).GetAllForeignkey().ForEach( x => {
+            //        foreignKeys.Push( x );
+            //        mGraph.Connect( x.Table , x );
+            //    } );
+
+            //} );
+
+
+
+            //EntityForeignKey fkey = null;
+            //while ( foreignKeys.TryPop( out fkey ) ) {
+
+            //    if ( fkey.KeyLength > 1 ) {
+
+            //        foreach ( var (t, d) in fkey.foreignKeysInfo ) {
+
+            //            //if ( tableEntity.ToList().FirstOrDefault( a => fkey.foreignKeysInfo.ContainsKey( a.GetType() ) ) != null ) {
+
+            //            foreach ( var (name, info) in fkey.foreignKeysInfo[t] ) {
+
+            //                if ( InstantiateReferenceTable( name , fkey.foreignKeysInfo[t][name] ) ) {
+
+            //                    fkey.InstantiateReferenceTable( t , name );
+
+            //                    mGraph.Add( fkey.foreignKeysInfo[t][name].ReferenceTable );
+            //                    var allfk = fkey.foreignKeysInfo[t][name].ReferenceTable.GetAllForeignkey();
+
+            //                    foreach ( var ffk in allfk ) {
+
+            //                        if ( !mGraph.IsConnected( ffk ) ) {
+
+            //                            foreignKeys.Push( ffk );
+            //                            InstantiateReferenceTable( ffk );
+            //                            mGraph.Connect( ffk.ReferenceTable , ffk );
+
+            //                        }
+
+            //                    }
+
+
+            //                }
+
+            //            }
+
+
+            //            //}
+
+            //        }
+
+            //    } else {
+            //        //E' neccessario?
+            //        //if ( tableEntity.ToList().FirstOrDefault( a => a.GetType() == fkey.TypeReferenceTable ) != null ) {
+
+            //        if ( InstantiateReferenceTable( fkey ) ) {
+
+            //            mGraph.Add( fkey.ReferenceTable );
+
+            //            var allfk = fkey.ReferenceTable.GetAllForeignkey();
+
+            //            foreach ( var ffk in allfk ) {
+
+            //                if ( !mGraph.IsConnected( ffk ) ) {
+
+            //                    foreignKeys.Push( ffk );
+            //                    InstantiateReferenceTable( ffk );
+            //                    mGraph.Connect( ffk.ReferenceTable , ffk );
+
+            //                }
+
+            //            }
+            //        }
+
+            //    }
+
+            //}
+
+            //var _Entities = mGraph.Keys.ToList();
+
+            //foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Where( x => x.ReferenceTables() != null ).Count() ).ToList() ) {
+
+            //    foreach ( var _fk in mGraph[e].Where( x => x.ReferenceTables() != null ) ) {
+
+            //        _fk.addEntities( _Entities );
+
+            //    }
+
+            //}
 
 
         }
@@ -284,6 +490,7 @@ namespace prestoMySQL.Utils {
             this.mGraph.Clear();
             Stack<EntityForeignKey> foreignKeys = new Stack<EntityForeignKey>();
 
+
             tableEntity.ToList().ForEach( a => {
 
                 mGraph.Add( ( AbstractEntity ) a );
@@ -291,60 +498,215 @@ namespace prestoMySQL.Utils {
 
                 ( ( AbstractEntity ) a ).GetAllForeignkey().ForEach( x => {
                     foreignKeys.Push( x );
-                    mGraph.Connect( x.Table , x );
+                    foreach ( var info in x.foreignKeyInfo ) {
+                        mGraph.Connect( info.Table , x );
+                    }
                 } );
 
             } );
 
             EntityForeignKey fkey = null;
-
             while ( foreignKeys.TryPop( out fkey ) ) {
 
-                if ( tableEntity.ToList().FirstOrDefault( a => a.GetType() == fkey.TypeRefenceTable ) != null ) {
+                foreach ( var info in fkey.foreignKeyInfo ) {
 
-                    //Non istanziare se è già presente un'istanza con lo stesso tipo nel grafo
+                    if ( InstantiateReferenceTable( fkey.ForeignkeyName , info ) ) {
 
-                    //Se è presente nel grafo il tipo entity in fkey.TypeRefenceTable 
-                    // allora se RefenceTable è nullo copia il valore in mGraph
-                    // altrimenti instazia la tabella ed aggiungila ad mGraph
-
-                    //if ( fkey.RefenceTable == null ) {
-
-                    if ( InstantiateReferenceTable( fkey ) ) {
-
-                        mGraph.Add( fkey.RefenceTable );
-
-                        var allfk = fkey.RefenceTable.GetAllForeignkey();
+                        mGraph.Add( info.ReferenceTable );
+                        var allfk = info.ReferenceTable.GetAllForeignkey();
 
                         foreach ( var ffk in allfk ) {
 
                             if ( !mGraph.IsConnected( ffk ) ) {
 
                                 foreignKeys.Push( ffk );
-                                InstantiateReferenceTable( ffk );
-                                mGraph.Connect( ffk.RefenceTable , ffk );
+                                foreach ( var infoffk in ffk.foreignKeyInfo ) {
+
+                                    InstantiateReferenceTable( ffk );
+                                    mGraph.Connect( infoffk.ReferenceTable , ffk );
+                                }
 
                             }
 
                         }
 
+
                     }
+
                 }
+
             }
 
 
             var _Entities = mGraph.Keys.ToList();
-            foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Count() ).ToList() ) {
-                foreach ( var _fk in mGraph[e] ) {
 
-                    if ( _fk.RefenceTable != null ) {
-                        _fk.addEntities( _Entities );
-                        //_fk.createKey(); inutile?
+            var _order = new Dictionary<AbstractEntity , int>();
 
-                    }
+            foreach ( var e in tableEntity ) {
+                if ( !_order.ContainsKey( e ) )
+                    _order.Add( e , 0 );
+                foreach ( var fk in e.mforeignKeys ) {
+                    _order[e] += fk.foreignKeyInfo.Where( x => x.ReferenceTable != null ).Count();
                 }
             }
 
+
+            foreach ( (AbstractEntity e, _) in _order.OrderBy( v => v.Value ) ) {
+                foreach ( var fk in mGraph[e] ) {
+                    //foreach ( var info in fk.foreignKeyInfo.Where( x => x.ReferenceTable != null ) ) {
+                    fk.addEntities( _Entities );
+                    //}
+                }
+            }
+
+            //foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Where( x => x.foreignKeyInfo.where( y => y.ReferenceTables != null ).Count() ).ToList() ) {
+
+            //    //foreach ( var _fk in mGraph[e].Where( x => x.ReferenceTable != null ) ) {
+            //    foreach ( var _fk in mGraph[e].Where( x => x.ReferenceTables() != null ) ) {
+
+            //        //if ( _fk.ReferenceTable != null ) {
+            //        _fk.addEntities( _Entities );
+            //        //_fk.createKey(); inutile?
+
+            //        //}
+
+            //    }
+
+            //}
+
+
+            //throw new NotImplementedException();
+
+            //this.mGraph.Clear();
+            //Stack<EntityForeignKey> foreignKeys = new Stack<EntityForeignKey>();
+
+            //tableEntity.ToList().ForEach( a => {
+
+            //    mGraph.Add( ( AbstractEntity ) a );
+            //    mCache.AddOrCreate( ( AbstractEntity ) a );
+
+            //    ( ( AbstractEntity ) a ).GetAllForeignkey().ForEach( x => {
+            //        foreignKeys.Push( x );
+            //        mGraph.Connect( x.Table , x );
+            //    } );
+
+            //} );
+
+            //EntityForeignKey fkey = null;
+
+            //while ( foreignKeys.TryPop( out fkey ) ) {
+
+            //    if ( fkey.KeyLength > 0 ) {
+
+            //        foreach ( var (t, d) in fkey.foreignKeysInfo ) {
+
+            //            if ( tableEntity.ToList().FirstOrDefault( a => fkey.foreignKeysInfo.ContainsKey( a.GetType() ) ) != null ) {
+
+            //                foreach ( var (name, info) in fkey.foreignKeysInfo[t] ) {
+
+            //                    if ( InstantiateReferenceTable( name , fkey.foreignKeysInfo[t][name] ) ) {
+
+            //                        fkey.InstantiateReferenceTable( t , name );
+
+            //                        mGraph.Add( fkey.foreignKeysInfo[t][name].ReferenceTable );
+            //                        var allfk = fkey.foreignKeysInfo[t][name].ReferenceTable.GetAllForeignkey();
+
+            //                        foreach ( var ffk in allfk ) {
+
+            //                            if ( !mGraph.IsConnected( ffk ) ) {
+
+            //                                foreignKeys.Push( ffk );
+            //                                InstantiateReferenceTable( ffk );
+            //                                mGraph.Connect( ffk.ReferenceTable , ffk );
+
+            //                            }
+
+            //                        }
+
+
+            //                    }
+
+            //                }
+
+            //            }
+
+            //        }
+
+            //        //if ( tableEntity.ToList().FirstOrDefault( a => fkey.foreignKeysInfo.ContainsKey( a.GetType() ) ) != null ) {
+            //        //    if ( InstantiateReferenceTable( fkey ) ) {
+            //        //        mGraph.Add( fkey.ReferenceTable );
+
+            //        //        var allfk = fkey.ReferenceTable.GetAllForeignkey();
+
+            //        //        foreach ( var ffk in allfk ) {
+
+            //        //            if ( !mGraph.IsConnected( ffk ) ) {
+
+            //        //                foreignKeys.Push( ffk );
+            //        //                InstantiateReferenceTable( ffk );
+            //        //                mGraph.Connect( ffk.ReferenceTable , ffk );
+
+            //        //            }
+
+            //        //        }
+            //        //    }
+            //        //}
+
+            //    } else {
+
+            //        if ( tableEntity.ToList().FirstOrDefault( a => a.GetType() == fkey.TypeReferenceTable ) != null ) {
+
+            //            //Non istanziare se è già presente un'istanza con lo stesso tipo nel grafo
+
+            //            //Se è presente nel grafo il tipo entity in fkey.TypeReferenceTable 
+            //            // allora se ReferenceTable è nullo copia il valore in mGraph
+            //            // altrimenti instazia la tabella ed aggiungila ad mGraph
+
+            //            //if ( fkey.ReferenceTable == null ) {
+
+            //            if ( InstantiateReferenceTable( fkey ) ) {
+
+            //                mGraph.Add( fkey.ReferenceTable );
+
+            //                var allfk = fkey.ReferenceTable.GetAllForeignkey();
+
+            //                foreach ( var ffk in allfk ) {
+
+            //                    if ( !mGraph.IsConnected( ffk ) ) {
+
+            //                        foreignKeys.Push( ffk );
+            //                        InstantiateReferenceTable( ffk );
+            //                        mGraph.Connect( ffk.ReferenceTable , ffk );
+
+            //                    }
+
+            //                }
+
+            //            }
+            //        }
+
+
+            //    }
+            //}
+
+
+            //var _Entities = mGraph.Keys.ToList();
+
+            ////foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Where( x => x.ReferenceTable != null ).Count() ).ToList() ) {
+            //foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Where( x => x.ReferenceTables() != null ).Count() ).ToList() ) {
+
+            //    //foreach ( var _fk in mGraph[e].Where( x => x.ReferenceTable != null ) ) {
+            //    foreach ( var _fk in mGraph[e].Where( x => x.ReferenceTables() != null ) ) {
+
+            //        //if ( _fk.ReferenceTable != null ) {
+            //        _fk.addEntities( _Entities );
+            //        //_fk.createKey(); inutile?
+
+            //        //}
+
+            //    }
+
+            //}
 
         }
 
@@ -373,21 +735,21 @@ namespace prestoMySQL.Utils {
 
         //    //while ( foreignKeys.TryPop( out fkey ) ) {
 
-        //    //    if ( tableAdapters.ToList().FirstOrDefault( a => ( ( dynamic ) a ).Entity.GetType() == fkey.TypeRefenceTable ) != null ) {
+        //    //    if ( tableAdapters.ToList().FirstOrDefault( a => ( ( dynamic ) a ).Entity.GetType() == fkey.TypeReferenceTable ) != null ) {
 
         //    //        //Non istanziare se è già presente un'istanza con lo stesso tipo nel grafo
 
-        //    //        //Se è presente nel grafo il tipo entity in fkey.TypeRefenceTable 
-        //    //        // allora se RefenceTable è nullo copia il valore in mGraph
+        //    //        //Se è presente nel grafo il tipo entity in fkey.TypeReferenceTable 
+        //    //        // allora se ReferenceTable è nullo copia il valore in mGraph
         //    //        // altrimenti instazia la tabella ed aggiungila ad mGraph
 
-        //    //        //if ( fkey.RefenceTable == null ) {
+        //    //        //if ( fkey.ReferenceTable == null ) {
 
         //    //        if ( InstantiateReferenceTable( fkey ) ) {
 
-        //    //            mGraph.Add( fkey.RefenceTable );
+        //    //            mGraph.Add( fkey.ReferenceTable );
 
-        //    //            var allfk = fkey.RefenceTable.GetAllForeignkey();
+        //    //            var allfk = fkey.ReferenceTable.GetAllForeignkey();
 
         //    //            foreach ( var ffk in allfk ) {
 
@@ -395,7 +757,7 @@ namespace prestoMySQL.Utils {
 
         //    //                    foreignKeys.Push( ffk );
         //    //                    InstantiateReferenceTable( ffk );
-        //    //                    mGraph.Connect( ffk.RefenceTable , ffk );
+        //    //                    mGraph.Connect( ffk.ReferenceTable , ffk );
 
         //    //                }
 
@@ -403,20 +765,20 @@ namespace prestoMySQL.Utils {
 
         //    //            //}
 
-        //    //            //var x = mGraph.Keys.FirstOrDefault( x => x.GetType() == fkey.TypeRefenceTable );
+        //    //            //var x = mGraph.Keys.FirstOrDefault( x => x.GetType() == fkey.TypeReferenceTable );
         //    //            //if ( x != null ) {
-        //    //            //    fkey.RefenceTable = x;
+        //    //            //    fkey.ReferenceTable = x;
         //    //            //    // Visto che ho trovato un tipo che già esiste non c'è bisogno di 
         //    //            //    // analizzare le chiavi esterne perchè si suppone che già siano state aggiunte
         //    //            //} else {
-        //    //            //    fkey.InstantiateRefenceTable();
-        //    //            //    mGraph.Add( fkey.RefenceTable );
-        //    //            //    var allfk = fkey.RefenceTable.GetAllForeignkey();
+        //    //            //    fkey.InstantiateReferenceTable();
+        //    //            //    mGraph.Add( fkey.ReferenceTable );
+        //    //            //    var allfk = fkey.ReferenceTable.GetAllForeignkey();
         //    //            //    foreach ( var ffk in allfk ) {
         //    //            //        if ( !mGraph.IsConnected( ffk ) ) {
         //    //            //            foreignKeys.Push( ffk );
         //    //            //            InstantiateReferenceTable( ffk );
-        //    //            //            mGraph.Connect( ffk.RefenceTable , ffk );
+        //    //            //            mGraph.Connect( ffk.ReferenceTable , ffk );
         //    //            //        }
         //    //            //    }
         //    //            //}
@@ -431,7 +793,7 @@ namespace prestoMySQL.Utils {
         //    //foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Count() ).ToList() ) {
         //    //    foreach ( var _fk in mGraph[e] ) {
 
-        //    //        if ( _fk.RefenceTable != null ) {
+        //    //        if ( _fk.ReferenceTable != null ) {
         //    //            _fk.addEntities( _Entities );
         //    //            //_fk.createKey(); inutile?
 
@@ -445,17 +807,17 @@ namespace prestoMySQL.Utils {
         //    ////        foreach ( EntityForeignKey fk in a.Entity.GetAllForeignkey() ) {
         //    ////            Console.WriteLine( fk );
         //    ////            mGraph.Connect( ( AbstractEntity ) a.Entity , fk );
-        //    ////            fk.InstantiateRefenceTable();
-        //    ////            mGraph.Add( fk.RefenceTable );
-        //    ////            fk.RefenceTable.mforeignKeys.ForEach( x => { foreignKeys.Push( x ); mGraph.Connect( fk.RefenceTable , x ); } );
+        //    ////            fk.InstantiateReferenceTable();
+        //    ////            mGraph.Add( fk.ReferenceTable );
+        //    ////            fk.ReferenceTable.mforeignKeys.ForEach( x => { foreignKeys.Push( x ); mGraph.Connect( fk.ReferenceTable , x ); } );
         //    ////        }
         //    ////    }
         //    ////    EntityForeignKey fkey = null;
         //    ////    while ( foreignKeys.TryPop( out fkey ) ) {
-        //    ////        //fkey.InstantiateRefenceTable();
-        //    ////        //mGraph.Add( fk.RefenceTable );
-        //    ////        //fk.RefenceTable.mforeignKeys.ForEach( x => { foreignKeys.Push( x ); mGraph.Connect( fk.RefenceTable , x ); } );
-        //    ////        //foreignKeyTables.Add( fk.RefenceTable );
+        //    ////        //fkey.InstantiateReferenceTable();
+        //    ////        //mGraph.Add( fk.ReferenceTable );
+        //    ////        //fk.ReferenceTable.mforeignKeys.ForEach( x => { foreignKeys.Push( x ); mGraph.Connect( fk.ReferenceTable , x ); } );
+        //    ////        //foreignKeyTables.Add( fk.ReferenceTable );
         //    ////    }
         //    ////}
 
@@ -469,21 +831,54 @@ namespace prestoMySQL.Utils {
         }
 
 
-        private bool CacheContainsEntityType( EntityForeignKey fk ) {
+        private bool CacheContainsEntityType( EntityForeignKey foreignKey ) {
 
-            foreach ( var (t, list) in mCache ) {
-                foreach ( var a in list ) {
-                    if ( ( ( dynamic ) a ).GetType() == fk.TypeRefenceTable ) {
-                        return true;
+            //throw new NotImplementedException();
+            foreach ( var (_, list) in mCache ) {
+
+                foreach ( AbstractEntity e in list ) {
+
+                    if ( foreignKey.foreignKeyInfo.Count == 1 ) {
+
+                        foreach ( var info in foreignKey.foreignKeyInfo ) {
+
+                            if ( ( info.TypeReferenceTable != null ) && ( e.GetType() == info.TypeReferenceTable ) )
+                                return true;
+                        }
+
+                    } else if ( foreignKey.foreignKeyInfo.Count > 1 ) {
+
+                        bool result = true;
+
+                        foreach ( var info in foreignKey.foreignKeyInfo ) {
+
+                            result &= ( ( info.TypeReferenceTable != null ) && ( e.GetType() == info.TypeReferenceTable ) );
+                                
+                        }
+
+                        return result;
+
                     }
+
                 }
             }
 
             return false;
+            //foreach ( var (t, list) in mCache ) {
+            //    foreach ( var a in list ) {
+            //        if ( ( ( dynamic ) a ).GetType() == fk.TypeReferenceTable ) {
+            //            return true;
+            //        }
+            //    }
+            //}
+
+            //return false;
         }
 
 
         public List<EntityForeignKey> GetForeignKeys() {
+
+            //throw new NotImplementedException();
 
             //Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
             Dictionary<AbstractEntity , bool> visited = new Dictionary<AbstractEntity , bool>();
@@ -498,45 +893,57 @@ namespace prestoMySQL.Utils {
                     visited?.TryAdd( e , ( listFK.Count > 0 ) );
                 }
 
-                foreach ( EntityForeignKey fk in listFK.Where( x => x.RefenceTable != null ).ToList() ) {
+                //foreach ( EntityForeignKey fk in listFK.Where( x => x.ReferenceTable != null ).ToList() ) {
+                //foreach ( ForeignKeyInfo info in listFK.SelectMany( y => y.foreignKeyInfo ).Where( x => x.ReferenceTable != null ).ToList() ) {
 
-                    if ( ( fk.RefenceTable != null ) && ( CacheContainsEntityType( fk ) ) ) {
+                foreach ( EntityForeignKey fk in listFK ) {
+                    foreach ( var info in fk.foreignKeyInfo ) {
 
-                        if ( visited.ContainsKey( fk.RefenceTable ) ) {
+                        if ( info.ReferenceTable != null ) {
 
-                            if ( visited[fk.RefenceTable] )
-                                continue;
-                            else {
-                                result.Add( fk );
-                                visited[fk.RefenceTable] = true;
+
+                            if ( ( info.ReferenceTable != null ) && ( CacheContainsEntityType( fk ) ) ) {
+
+                                if ( visited.ContainsKey( info.ReferenceTable ) ) {
+
+                                    if ( visited[info.ReferenceTable] )
+                                        continue;
+                                    else {
+                                        if ( !result.Contains( fk ) )
+                                            result.Add( fk );
+                                        visited[info.ReferenceTable] = true;
+                                    }
+
+                                } else {
+                                    if ( !result.Contains( fk ) )
+                                        result.Add( fk );
+                                    visited?.TryAdd( info.ReferenceTable , true );
+                                }
+
+                                //if (( visited.ContainsKey( fk.ReferenceTable ) ) && ( visited[fk.ReferenceTable] )) {
+                                //    //if ( visited[fk.ReferenceTable])
+                                //    continue;
+                                //}
+                                //if ( ( !visited.Contains( fk.ReferenceTable ) ) ) 
+                                //    visited?.Push( fk.ReferenceTable );
+
+
                             }
 
-                        } else {
-                            result.Add( fk );
-                            visited?.TryAdd( fk.RefenceTable , true );
                         }
 
-                        //if (( visited.ContainsKey( fk.RefenceTable ) ) && ( visited[fk.RefenceTable] )) {
-                        //    //if ( visited[fk.RefenceTable])
-                        //    continue;
+                        //bool add = true;
+                        //if ( edge.Count > 0 ) {
+                        //    foreach ( EntityForeignKey f in edge ) {
+                        //        if ( ( ( ( f.ReferenceTable == fk.ReferenceTable ) && ( f.Table == fk.Table ) ) || ( ( f.ReferenceTable == fk.Table ) && ( f.Table == fk.ReferenceTable ) ) ) ) {
+                        //            add = false;
+                        //            break;
+                        //        }
+                        //    }
                         //}
-                        //if ( ( !visited.Contains( fk.RefenceTable ) ) ) 
-                        //    visited?.Push( fk.RefenceTable );
-
+                        //if (add) edge.Add( fk ); 
 
                     }
-
-
-                    //bool add = true;
-                    //if ( edge.Count > 0 ) {
-                    //    foreach ( EntityForeignKey f in edge ) {
-                    //        if ( ( ( ( f.RefenceTable == fk.RefenceTable ) && ( f.Table == fk.Table ) ) || ( ( f.RefenceTable == fk.Table ) && ( f.Table == fk.RefenceTable ) ) ) ) {
-                    //            add = false;
-                    //            break;
-                    //        }
-                    //    }
-                    //}
-                    //if (add) edge.Add( fk ); 
 
                 }
 
@@ -549,8 +956,5 @@ namespace prestoMySQL.Utils {
 
 
     }
-
-
-
 
 }

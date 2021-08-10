@@ -20,6 +20,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using prestoMySQL.PrimaryKey.Attributes;
 using prestoMySQL.Index;
+using prestoMySQL.Table;
 
 namespace prestoMySQL.Entity {
 
@@ -28,6 +29,9 @@ namespace prestoMySQL.Entity {
         private EntityState mState = EntityState.Undefined;
         public EntityState State { get => mState; set => mState = value; }
 
+        private List<string> mFkNames;
+        public List<string> FkNames { get => mFkNames; set => mFkNames = value; }
+
         //public IDictionary<Type , List<AbstractEntity>> EntityTree = new Dictionary<Type , List<AbstractEntity>>();
 
         public List<EntityForeignKey> mforeignKeys = new List<EntityForeignKey>();
@@ -35,6 +39,8 @@ namespace prestoMySQL.Entity {
         protected AbstractEntity() {
 
             this.mTableName ??= SQLTableEntityHelper.getTableName( this );
+            //this.mAliasName ??= SQLTableEntityHelper.getTableAlias( this );
+
             mState = EntityState.Created;
 
             var InstantiableProperties = this.GetType().GetProperties().Where( x => x.PropertyType.IsGenericType ? x.PropertyType.GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) : false ).ToArray();
@@ -49,20 +55,24 @@ namespace prestoMySQL.Entity {
 
             //Instantiate primary key
             mPrimaryKey = this.createPrimaryKey();
-
+            mFkNames = new List<string>();
 
         }
-
 
 
         protected string mTableName;
         public string TableName { get => this.mTableName; }
 
+        internal string mAliasName;
+        public string AliasName { get => mAliasName; }
+
+        public string ActualName { get => mAliasName ?? mTableName; }
 
         #region PrimaryKey
 
         protected EntityPrimaryKey mPrimaryKey;
         public EntityPrimaryKey PrimaryKey { get => mPrimaryKey; }
+
 
         //public ICollection<Type> Keys => this.EntityTree.Keys;
 
@@ -103,8 +113,6 @@ namespace prestoMySQL.Entity {
 
         }
 
-
-
         public virtual void createForeignKey() {
 
             var fieldInfoForeignKey = ReflectionTypeHelper.FieldsWhereIsAssignableFrom( this.GetType() , typeof( EntityForeignKey ) );// this.GetType().GetFields().Where( x => typeof( EntityForeignKey ).IsAssignableFrom( x.FieldType ) ).ToArray();
@@ -139,7 +147,7 @@ namespace prestoMySQL.Entity {
         }
 
         public EntityPrimaryKey createPrimaryKey() {
-            
+
             if ( this.GetType().GetProperties().Where( p => Attribute.IsDefined( p , typeof( DDPrimaryKey ) ) ).ToList().Count > 0 ) {
 
                 var pkClass = this.GetType().GetNestedTypes( BindingFlags.NonPublic ).Where( x => typeof( EntityPrimaryKey ).IsAssignableFrom( x ) ).FirstOrDefault();
@@ -154,51 +162,6 @@ namespace prestoMySQL.Entity {
                 return null;
             }
         }
-
-        //public void Add( Type key , List<AbstractEntity> value ) {
-        //    this.EntityTree.Add( key , value );
-        //}
-
-        //public bool ContainsKey( Type key ) {
-        //    return this.EntityTree.ContainsKey( key );
-        //}
-
-        //public bool Remove( Type key ) {
-        //    return this.EntityTree.Remove( key );
-        //}
-
-        //public bool TryGetValue( Type key , [MaybeNullWhen( false )] out List<AbstractEntity> value ) {
-        //    return this.EntityTree.TryGetValue( key , out value );
-        //}
-
-        //public void Add( KeyValuePair<Type , List<AbstractEntity>> item ) {
-        //    this.EntityTree.Add( item );
-        //}
-
-        //public void Clear() {
-        //    this.EntityTree.Clear();
-        //}
-
-        //public bool Contains( KeyValuePair<Type , List<AbstractEntity>> item ) {
-        //    return this.EntityTree.Contains( item );
-        //}
-
-        //public void CopyTo( KeyValuePair<Type , List<AbstractEntity>>[] array , int arrayIndex ) {
-        //    this.EntityTree.CopyTo( array , arrayIndex );
-        //}
-
-        //public bool Remove( KeyValuePair<Type , List<AbstractEntity>> item ) {
-        //    return this.EntityTree.Remove( item );
-        //}
-
-        //public IEnumerator<KeyValuePair<Type , List<AbstractEntity>>> GetEnumerator() {
-        //    return this.EntityTree.GetEnumerator();
-        //}
-
-
-        //IEnumerator IEnumerable.GetEnumerator() {
-        //    return ( ( IEnumerable ) this.EntityTree ).GetEnumerator();
-        //}
 
 
         #region ForeignKey
@@ -233,6 +196,45 @@ namespace prestoMySQL.Entity {
 
 
         #endregion
+
+        public AbstractEntity Copy() {
+
+            AbstractEntity copy = ( AbstractEntity ) Activator.CreateInstance( this.GetType() );
+
+            copy.mState = this.mState;
+            this.mFkNames.ForEach( i => copy.mFkNames.Add( new String( i.ToCharArray() ) ) );
+            copy.mAliasName = ( this.mAliasName is not null ) ? new String( this.mAliasName.ToCharArray() ) : null;
+
+
+            var InstantiableProperties = this.GetType().GetProperties().Where( x => x.PropertyType.IsGenericType ? x.PropertyType.GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) : false ).ToArray();
+            //Instantiate all MySQLDefinitionColumn
+            foreach ( PropertyInfo p in InstantiableProperties ) {
+
+                var sourceCol = p.GetValue( this );
+                var destCol = p.GetValue( copy );
+                if ( ( sourceCol != null ) ) {
+
+                    //ReflectionTypeHelper.SetValueToColumn( copy , p , ( sourceCol as dynamic ).TypeWrapperValue.Value );
+                    ( destCol as dynamic ).TypeWrapperValue = ( sourceCol as dynamic ).TypeWrapperValue.Copy();
+                    ( destCol as dynamic ).mTable = ( sourceCol as dynamic ).Table.Copy();                    
+                }
+
+
+
+                ////( v as dynamic ).TypeWrapperValue.Copy()
+                //if ( ( v as dynamic ).TypeWrapperValue.IsNull ) {
+
+                //    ( c as dynamic ).
+
+                //} else {
+                //    ( c as dynamic ).AssignValue( ( v as dynamic ).TypeWrapperValue.Value );
+                //}
+
+            }
+
+            return copy;
+
+        }
 
     }
 }

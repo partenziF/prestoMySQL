@@ -1,5 +1,6 @@
 ﻿using prestoMySQL.Column;
 using prestoMySQL.Column.Interface;
+using prestoMySQL.Database.MySQL;
 using prestoMySQL.Entity;
 using prestoMySQL.ForeignKey;
 using prestoMySQL.PrimaryKey;
@@ -10,6 +11,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using MySqlConnector;
+
 
 namespace prestoMySQL.Helper {
     public static class ReflectionTypeHelper {
@@ -31,32 +35,101 @@ namespace prestoMySQL.Helper {
 
 
         //public static void AssignValue<T>( EntityForeignKey key , T entityLeft ) where T : AbstractEntity {
-        public static void AssignValue<T>( EntityForeignKey key , PropertyInfo pi , T entityLeft ) where T : AbstractEntity {
+        public static void AssignValue<T>( EntityForeignKey key , PropertyInfo pi , T entity ) where T : AbstractEntity {
 
             //var pi = key.Table.GetType().GetProperty( key.Column );
-            dynamic colPK = ( ConstructibleColumn ) ( pi?.GetValue( key.Table ) );
-            bool usePK = true;
-            PropertyInfo piFK = null;
-            if ( entityLeft.PrimaryKey[key.ReferenceColumnName] != null ) {
-                piFK = entityLeft.PrimaryKey[key.ReferenceColumnName];
-                usePK = false;
-            } else {
-                usePK = true;
-                piFK = entityLeft.GetType().GetProperty( key.ReferenceColumnName );
+
+            //if ( key.KeyLength > 1 ) {
+
+            //    bool usePK = true;
+            //    PropertyInfo piFK = null;
+
+            //    if ( key.foreignKeysInfo.TryGetValue( entity.GetType() , out var infos ) ) {
+
+            //        foreach ( var (_, info) in infos ) {
+
+            //            if ( ( info.TypeReferenceTable == entity.GetType() ) && ( info.ColumnName == pi.Name ) ) {
+
+            //                dynamic colPK = ( ConstructibleColumn ) ( pi?.GetValue( info.Table ) );
+
+            //                if ( entity.PrimaryKey[info.ReferenceColumnName] != null ) {
+            //                    piFK = entity.PrimaryKey[info.ReferenceColumnName];
+            //                    usePK = false;
+            //                } else {
+            //                    usePK = true;
+            //                    piFK = entity.GetType().GetProperty( info.ReferenceColumnName );
+            //                }
+
+            //                dynamic colFK = piFK?.GetValue( entity );
+
+            //                colPK.AssignValue( colFK?.TypeWrapperValue ?? SQLTypeWrapperNULL( colFK?.GenericType ) );
+            //                if ( usePK ) {
+            //                    ( ( IObservableColumn ) colPK ).Attach( key );
+            //                } else {
+            //                    ( ( IObservableColumn ) colFK ).Attach( key );
+            //                }
+
+            //            }
+
+            //        }
+
+            //    }
+
+            //} else {
+
+            foreach ( var info in key.foreignKeyInfo ) {
+
+                if ( ( info.TypeReferenceTable == entity.GetType() ) && ( info.ColumnName == pi.Name ) ) {
+
+                    dynamic colPK = ( ConstructibleColumn ) ( pi?.GetValue( info.Table ) );
+                    bool usePK = true;
+                    PropertyInfo piFK = null;
+
+                    if ( entity.PrimaryKey[info.ReferenceColumnName] != null ) {
+                        piFK = entity.PrimaryKey[info.ReferenceColumnName];
+                        usePK = false;
+                    } else {
+                        usePK = true;
+                        piFK = entity.GetType().GetProperty( info.ReferenceColumnName );
+                    }
+
+                    dynamic colFK = piFK?.GetValue( entity );
+
+                    colPK.AssignValue( colFK?.TypeWrapperValue ?? SQLTypeWrapperNULL( colFK?.GenericType ) );
+                    if ( usePK ) {
+                        ( ( IObservableColumn ) colPK ).Attach( key );
+                    } else {
+                        ( ( IObservableColumn ) colFK ).Attach( key );
+                    }
+                }
+                //dynamic colPK = ( ConstructibleColumn ) ( pi?.GetValue( key.Table ) );
+                //bool usePK = true;
+                //PropertyInfo piFK = null;
+
+                //if ( entity.PrimaryKey[key.ReferenceColumnName] != null ) {
+                //    piFK = entity.PrimaryKey[key.ReferenceColumnName];
+                //    usePK = false;
+                //} else {
+                //    usePK = true;
+                //    piFK = entity.GetType().GetProperty( key.ReferenceColumnName );
+                //}
+
+                //dynamic colFK = piFK?.GetValue( entity );
+
+                //colPK.AssignValue( colFK?.TypeWrapperValue ?? SQLTypeWrapperNULL( colFK?.GenericType ) );
+                //if ( usePK ) {
+                //    ( ( IObservableColumn ) colPK ).Attach( key );
+                //} else {
+                //    ( ( IObservableColumn ) colFK ).Attach( key );
+                //}
 
             }
-            dynamic colFK = piFK?.GetValue( entityLeft );
+            //}
             //dynamic vv = colPK.TypeWrapperValue;
             //var mi = entityLeft.PrimaryKey.GetType().GetMethod( nameof( entityLeft.PrimaryKey.getKeyValue ) );
             //MethodInfo migeneric = mi.MakeGenericMethod( new Type[] { col.GenericType } );
             //object v = migeneric.Invoke( entityLeft.PrimaryKey , new object[] { key.Reference } );
 
-            colPK.AssignValue( colFK?.TypeWrapperValue ?? SQLTypeWrapperNULL( colFK?.GenericType ) );
-            if ( usePK ) {
-                ( ( IObservableColumn ) colPK ).Attach( key );
-            } else {
-                ( ( IObservableColumn ) colFK ).Attach( key );
-            }
 
             //            ( col as dynamic ).TypeWrapperValue = v;
             /*
@@ -67,6 +140,14 @@ namespace prestoMySQL.Helper {
 */
         }
 
+        public static void InstantiateColumn( EntityPrimaryKey key , PropertyInfo pi ) {
+            ConstructibleColumn col = ( ConstructibleColumn ) ( pi?.GetValue( key.Table ) );
+            var p2 = col.GetType().GetProperty( nameof( MySQLDefinitionColumn<SQLTypeWrapper<dynamic>>.TypeWrapperValue ) );
+            var ctors = p2.PropertyType.GetConstructor( new Type[] { } );
+
+            var setter = p2.GetSetMethod( nonPublic: true );
+            var x = setter.Invoke( col , new object?[] { ctors.Invoke( new object?[] { } ) } );
+        }
 
         public static void SetValueToColumn( EntityPrimaryKey key , PropertyInfo pi , dynamic value ) {
 
@@ -74,8 +155,8 @@ namespace prestoMySQL.Helper {
             ConstructibleColumn col = ( ConstructibleColumn ) ( pi?.GetValue( key.Table ) );
             var p2 = col.GetType().GetProperty( nameof( MySQLDefinitionColumn<SQLTypeWrapper<dynamic>>.TypeWrapperValue ) );
             if ( value != null ) {
-                var setter = p2.GetSetMethod( nonPublic: true );
                 var ctors = p2.PropertyType.GetConstructor( new Type[] { col.GenericType } );
+                var setter = p2.GetSetMethod( nonPublic: true );
                 var x = setter.Invoke( col , new object?[] { ctors.Invoke( new object?[] { Convert.ChangeType( value , col.GenericType ) } ) } );
             } else {
 
@@ -84,9 +165,46 @@ namespace prestoMySQL.Helper {
 
         }
 
+
+        public static void SetValueToColumn( AbstractEntity entity, PropertyInfo pi , dynamic value ) {
+
+            //TODO oppure usare il metodo AssignValue
+            ConstructibleColumn col = ( ConstructibleColumn ) ( pi?.GetValue(entity) );
+            var p2 = col.GetType().GetProperty( nameof( MySQLDefinitionColumn<SQLTypeWrapper<dynamic>>.TypeWrapperValue ) );
+            if ( value != null ) {
+                var ctors = p2.PropertyType.GetConstructor( new Type[] { col.GenericType } );
+                var setter = p2.GetSetMethod( nonPublic: true );
+                if ( Nullable.GetUnderlyingType( col.GenericType ) is null ) {
+                    var x = setter.Invoke( col , new object?[] { ctors.Invoke( new object?[] { Convert.ChangeType( value , col.GenericType ) } ) } );
+                } else {
+                    if ( value is null ) {
+                        p2.SetValue( col , p2.PropertyType.GetField( "NULL" ).GetValue( value ) );
+                    } else {
+                        var x = setter.Invoke( col , new object?[] { ctors.Invoke( new object?[] { Convert.ChangeType( value , Nullable.GetUnderlyingType( col.GenericType ) ) } ) } );
+                    }
+                }
+            } else {
+
+                p2.SetValue( col , p2.PropertyType.GetField( "NULL" ).GetValue( value ) );
+            }
+
+        }
+
+
         public static object GetValueFromColumn( EntityPrimaryKey key , PropertyInfo pi ) {
 
             ConstructibleColumn col = ( ConstructibleColumn ) ( pi?.GetValue( key.Table ) );
+            var p2 = col.GetType().GetProperty( nameof( MySQLDefinitionColumn<SQLTypeWrapper<dynamic>>.TypeWrapperValue ) );
+            var getter = p2.GetGetMethod( nonPublic: true );
+            //var ctors = p2.PropertyType.GetConstructor( new Type[] { col.GenericType } );
+            var x = getter.Invoke( col , new object?[] { } );
+
+            return x;
+        }
+
+        public static object GetValueFromColumn( AbstractEntity entity , PropertyInfo pi ) {
+
+            ConstructibleColumn col = ( ConstructibleColumn ) ( pi?.GetValue( entity ) );
             var p2 = col.GetType().GetProperty( nameof( MySQLDefinitionColumn<SQLTypeWrapper<dynamic>>.TypeWrapperValue ) );
             var getter = p2.GetGetMethod( nonPublic: true );
             //var ctors = p2.PropertyType.GetConstructor( new Type[] { col.GenericType } );
@@ -119,7 +237,7 @@ namespace prestoMySQL.Helper {
 
             MethodInfo method = ClassTypeOfMethod.GetMethod( MethodName , MethodTypeParams );
             MethodInfo generic = method.MakeGenericMethod( GenericType );
-            return generic?.Invoke( InstanceClassTypeOfMethod , MethodParams );      
+            return generic?.Invoke( InstanceClassTypeOfMethod , MethodParams );
         }
 
         public static object InvokeMethod( object obj , string methodName , params object[] methodParams ) {
@@ -152,6 +270,22 @@ namespace prestoMySQL.Helper {
             else
                 return type;
         }
+
+
+        public static A1 NewInstanceAdapter<A1>( MySQLDatabase mDatabase , ILogger mLogger = null ) {
+
+            if ( mLogger != null ) {
+                var ctor = typeof( A1 ).GetConstructor( new Type[] { mDatabase.GetType() , mLogger.GetType() } );
+                return ( A1 ) ctor.Invoke( new object[] { mDatabase , mLogger } );
+
+            } else {
+                var ctor = typeof( A1 ).GetConstructor( new Type[] { mDatabase.GetType() } );
+                return ( A1 ) ctor.Invoke( new object[] { mDatabase } );
+
+            }
+
+        }
+
 
     }
 

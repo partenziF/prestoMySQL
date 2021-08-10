@@ -2,7 +2,7 @@
 using prestoMySQL.Adapter.Enum;
 using prestoMySQL.Entity;
 using prestoMySQL.Query.SQL;
-using PrestoMySQL.Database.MySQL;
+using prestoMySQL.Database.MySQL;
 using System;
 
 namespace prestoMySQL.Adapter.Interface {
@@ -12,7 +12,7 @@ namespace prestoMySQL.Adapter.Interface {
         //AbstractEntity CreateEntity();
         void InitEntity();
 
-        OperationResult New();
+        OperationResult New( AbstractEntity newEntity = null );
         OperationResult Read( EntityConditionalExpression Constraint = null , params object[] aKeyValues );
 
         bool Save();

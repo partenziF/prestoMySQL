@@ -25,7 +25,7 @@ namespace prestoMySQL.PrimaryKey {
         public EntityPrimaryKey( AbstractEntity aTableEntity ) : base( KeyState.Unset ) {
             this.Table = aTableEntity;
             initialize( aTableEntity );
-            mKeyLength = primaryKeyColumns.Count;
+            mKeyLength = IndexColumns.Count;
         }
 
         public virtual void initialize( AbstractEntity aTableEntity ) {
@@ -38,7 +38,7 @@ namespace prestoMySQL.PrimaryKey {
                     var a = p.GetCustomAttribute<DDPrimaryKey>();
                     if ( a != null ) {
                         var aa = p.GetCustomAttribute<DDColumnAttribute>();
-                        this.primaryKeyColumns.Add( aa.Name , p );
+                        this.IndexColumns.Add( aa.Name , p );
                         this.mAutoIncrement = a.Autoincrement;
                     }
                 }
@@ -49,16 +49,16 @@ namespace prestoMySQL.PrimaryKey {
         }
 
         public string[] getColumnsName() {
-            return this.primaryKeyColumns.Keys.ToArray();
+            return this.IndexColumns.Keys.ToArray();
         }
 
         protected void setKeyValue<T>( string aKey , T aValue ) where T : notnull {
 
             try {
 
-                if ( primaryKeyColumns.ContainsKey( aKey ) ) {
+                if ( IndexColumns.ContainsKey( aKey ) ) {
 
-                    System.Reflection.PropertyInfo f = this.primaryKeyColumns[aKey];
+                    System.Reflection.PropertyInfo f = this.IndexColumns[aKey];
 
                     try {
 
@@ -79,17 +79,17 @@ namespace prestoMySQL.PrimaryKey {
 
         }
 
-        internal virtual void setKeyValues(params object[] values) {
+        internal virtual void setKeyValues( params object[] values ) {
             int i = 0;
             KeyState = KeyState.Set;
-            
+
             if ( values.Length != KeyLength )
                 throw new ArgumentOutOfRangeException( "Invalid key length" );
 
             AssignValues( values );
         }
 
-        public void AssignValues(params object[] values ) {
+        public void AssignValues( params object[] values ) {
             uint i = 0;
             foreach ( KeyValuePair<string , PropertyInfo> kvp in this ) {
                 dynamic column = kvp.Value.GetValue( Table );
@@ -99,11 +99,11 @@ namespace prestoMySQL.PrimaryKey {
 
 
         public virtual void doCreatePrimaryKey() {
-        
+
             if ( delegatorCreatePrimaryKey != null ) {
                 this.delegatorCreatePrimaryKey( this.Table );//.createPrimaryKey();            
             } else {
-                foreach ( var (name, pi) in primaryKeyColumns ) {
+                foreach ( var (name, pi) in IndexColumns ) {
 
                     ReflectionTypeHelper.SetValueToColumn( this , pi , null );
                 }
@@ -113,11 +113,15 @@ namespace prestoMySQL.PrimaryKey {
         }
 
 
-        public void createKey() {
-
+        public void createKey( dynamic value = null ) {
+            
             KeyState = KeyState.Created;
 
             if ( !isAutoIncrement ) {
+
+                foreach ( var (name, pi) in IndexColumns ) {
+                    ReflectionTypeHelper.InstantiateColumn( this , pi );
+                }
                 doCreatePrimaryKey();
                 //TODO check key lenght?
                 //if ( KeyLength != values.Length ) {
@@ -125,9 +129,9 @@ namespace prestoMySQL.PrimaryKey {
                 //}
             } else {
 
-                foreach ( var (name, pi) in primaryKeyColumns ) {
+                foreach ( var (name, pi) in IndexColumns ) {
 
-                    ReflectionTypeHelper.SetValueToColumn( this , pi , null );
+                    ReflectionTypeHelper.SetValueToColumn( this , pi , value );
 
                 }
 
@@ -142,7 +146,7 @@ namespace prestoMySQL.PrimaryKey {
 
         public virtual object[] getKeyValues() {
             List<object> result = new List<object>();
-            foreach ( var (columnName, pi) in this.primaryKeyColumns ) {
+            foreach ( var (columnName, pi) in this.IndexColumns ) {
                 if ( Attribute.IsDefined( pi , typeof( DDColumnAttribute ) ) ) {
                     result.Add( ReflectionTypeHelper.GetValueFromColumn( this , pi ) );
                 } else {
@@ -165,9 +169,9 @@ namespace prestoMySQL.PrimaryKey {
 
         public T getKeyValue<T>( string aKey ) {
 
-            if ( primaryKeyColumns.ContainsKey( aKey ) ) {
+            if ( IndexColumns.ContainsKey( aKey ) ) {
                 try {
-                    PropertyInfo p = primaryKeyColumns[aKey];
+                    PropertyInfo p = IndexColumns[aKey];
                     var col = ( MySQLDefinitionColumn<SQLTypeWrapper<T>> ) p?.GetValue( this.Table );
                     return ( T ) col.TypeWrapperValue;
 
@@ -180,18 +184,18 @@ namespace prestoMySQL.PrimaryKey {
         }
 
         public IEnumerator GetEnumerator() {
-            return primaryKeyColumns.GetEnumerator();
+            return IndexColumns.GetEnumerator();
 
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
             //forces use of the non-generic implementation on the Values collection
-            return ( ( IEnumerable ) primaryKeyColumns ).GetEnumerator();
+            return ( ( IEnumerable ) IndexColumns ).GetEnumerator();
         }
 
         public virtual string[] ColumnsName {
             get {
-                return this.primaryKeyColumns.Keys.ToArray();
+                return this.IndexColumns.Keys.ToArray();
             }
         }
 

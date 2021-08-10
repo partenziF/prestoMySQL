@@ -23,7 +23,7 @@ namespace prestoMySQL {
 
 		void AssignValues( params object[] values );
 
-		public void createKey();
+		public void createKey( dynamic value = null );
 
 		public void setDoCreatePrimaryKey( DelegateCreatePrimaryKey doCreatePrimaryKey );
 

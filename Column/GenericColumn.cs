@@ -2,6 +2,7 @@
 using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity.Attributes;
 using prestoMySQL.Extension;
+using prestoMySQL.ForeignKey;
 using prestoMySQL.PrimaryKey.Attributes;
 using prestoMySQL.SQL.Interface;
 using prestoMySQL.Table;
@@ -47,10 +48,16 @@ namespace prestoMySQL.Column {
         private List<IObserverColumn> mObserverColumns = new List<IObserverColumn>();
 
         public GenericSQLColumn( PropertyInfo aPropertyInfo = null ) {
+            //if ( typeof( T ).GetGenericArguments()[0].GetGenericTypeDefinition() == typeof( Nullable<> ) ) {
+            //    mGenericType = typeof( T ).GetGenericArguments()[0].GetGenericArguments()[0];
+            //} else {
 
-            mGenericType = typeof( T ).GetGenericArguments()[0];
+                mGenericType = typeof( T ).GetGenericArguments()[0];
+            //}
 
             this.mPropertyInfo = aPropertyInfo;
+
+            this.mTypeTable = this.mPropertyInfo.DeclaringType;
 
             DALTable dalTable = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALTable>();
             if ( dalTable == null ) throw new ArgumentNullException();
@@ -76,12 +83,16 @@ namespace prestoMySQL.Column {
 
         }
 
-        private TableReference mTable;
+        internal TableReference mTable;
         public TableReference Table { get => this.mTable; }
 
 
         private Type mGenericType;
         public Type GenericType { get => mGenericType; }
+
+
+        private Type mTypeTable;
+        public Type TypeTable { get => mTypeTable; }
 
 
         protected PropertyInfo mPropertyInfo;
@@ -112,7 +123,7 @@ namespace prestoMySQL.Column {
             }
 
             this.mTypeWrapperValue = value;
-            
+
             if ( isChanged ) NotifyObserver();
         }
 
@@ -123,6 +134,15 @@ namespace prestoMySQL.Column {
                 return null;
             else
                 return ( ( object ) ( ( dynamic ) mTypeWrapperValue ).Value );
+        }
+
+        public T GetValue<T>() {
+            if ( mTypeWrapperValue is null )
+                throw new NullReferenceException( nameof( mTypeWrapperValue ) + " is null" );
+            if ( mTypeWrapperValue.IsNull )
+                return default( T );
+            else
+                return ( ( T ) ( ( dynamic ) mTypeWrapperValue ).Value );
         }
 
 
@@ -160,14 +180,18 @@ namespace prestoMySQL.Column {
         public event PropertyChangedEventHandler PropertyChanged;
         public virtual void OnPropertyChanged( string propertyName ) {
             if ( PropertyChanged != null ) {
-                PropertyChanged( this , new PropertyChangedEventArgs( propertyName ) );                
+                PropertyChanged( this , new PropertyChangedEventArgs( propertyName ) );
             }
         }
 
         public void Attach( IObserverColumn observer ) {
+
             //throw new NotImplementedException();
+
             if ( !( mObserverColumns.Contains( observer ) ) ) {
-                mObserverColumns.Add( observer );
+                //if ( !IsCircularReference( ( EntityForeignKey ) observer ) ) {
+                    mObserverColumns.Add( observer );
+                //}
             }
         }
 
@@ -176,20 +200,15 @@ namespace prestoMySQL.Column {
                 mObserverColumns.Remove( observer );
             }
         }
-        
+
         public void NotifyObserver() {
             mObserverColumns.ForEach( o => o.Update( this ) );
         }
 
-        //public event PropertyChangedEventHandler PropertyChanged;
-        //private void NotifyPropertyChanged( [System.Runtime.CompilerServices.CallerMemberName] String propertyName = "" ) {
+        public GenericSQLColumn<T> Copy() {
 
-        //    PropertyChanged?.Invoke( this , new PropertyChangedEventArgs( propertyName ) );
-
-        //    //if ( PropertyChanged != null ) {
-        //    //    PropertyChanged( this , new PropertyChangedEventArgs( propertyName ) );
-        //    //}
-        //}
+            return ( GenericSQLColumn<T> ) this.MemberwiseClone();
+        }
 
 
     }

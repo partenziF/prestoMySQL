@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace prestoMySQL.ForeignKey.Interface {
 
-	public delegate void DelegateCreateForeignKey(EntityForeignKey e);
+	public delegate void DelegateCreateForeignKey(EntityForeignKey e, params string[] columnNames );
 
 	public interface IForeignKey {
 
@@ -18,7 +18,7 @@ namespace prestoMySQL.ForeignKey.Interface {
 
 		void setKeyValues( params Object[] values );
 
-		public void createKey();
+		public void createKey(params string[] columnNames);
 
 		public void setDoCreateForeignKey( DelegateCreateForeignKey doCreateForeignKey );
 

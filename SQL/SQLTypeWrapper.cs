@@ -6,9 +6,20 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.SQL {
-    public class SQLTypeWrapper<T> : ISQLTypeWrapper, IConvertible where T : notnull{
+    public class SQLTypeWrapper<T> : ISQLTypeWrapper, IConvertible where T : notnull {
 
         public static readonly SQLTypeWrapper<T> NULL = new SQLTypeWrapper<T>( default( T ) ) { mIsNull = true };
+
+        public SQLTypeWrapper() {
+            if ( default( T ) is null ) {
+                this.mValue = default( T );
+                this.mIsNull = true;
+
+            } else {
+                this.mValue = default( T );
+                this.mIsNull = false;
+            }
+        }
 
         public SQLTypeWrapper( T mValue ) {
             this.mValue = mValue;
@@ -32,6 +43,11 @@ namespace prestoMySQL.SQL {
             if ( x is null ) throw new ArgumentNullException();
             if ( x.IsNull ) throw new InvalidOperationException();
             return x.mValue;
+        }
+
+
+        public SQLTypeWrapper<T> Copy() {
+            return ( SQLTypeWrapper<T> ) this.MemberwiseClone();
         }
 
 
@@ -163,6 +179,9 @@ namespace prestoMySQL.SQL {
         //public override int GetHashCode() {
         //    throw new NotImplementedException();
         //}
+
+
+
     }
 
     #endregion
@@ -180,5 +199,7 @@ namespace prestoMySQL.SQL {
     //    public LongSQLTypeWrapper( long mValue ) : base( mValue ) {
     //    }
     //}
+
+
 
 }

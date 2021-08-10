@@ -1,5 +1,5 @@
-﻿using PrestoMySQL.Database.Interface;
-using PrestoMySQL.Database.MySQL;
+﻿using prestoMySQL.Database.Interface;
+using prestoMySQL.Database.MySQL;
 
 namespace prestoMySQL.Adapter {
     public interface IQueryAdapter {

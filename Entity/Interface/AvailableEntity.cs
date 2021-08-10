@@ -20,6 +20,10 @@ namespace prestoMySQL.Entity.Interface {
 
         EntityState State { get; set; }
         string TableName { get; }
+
+        string AliasName { get; }
+
+        string ActualName { get; }
         EntityPrimaryKey createPrimaryKey();
         //List<EntityForeignKey> createForeignKey();
         void createForeignKey();

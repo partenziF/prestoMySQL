@@ -27,9 +27,14 @@ namespace prestoMySQL.Helper {
         public static String getTableName( AbstractEntity aInstance ) => aInstance.GetAttributeDALTable()?.TableName ?? aInstance.GetType().Name;
 
 
+        //public static String getTableAlias( Type T ) => GenericEntityAttributeExtension.GetAttributeDALTable( T )?.Alias;
+        //public static String getTableAlias<T>() where T : AbstractEntity => GenericEntityAttributeExtension.GetAttributeDALTable<T>()?.Alias;
+        //public static String getTableAlias( AbstractEntity aInstance ) => aInstance.GetAttributeDALTable()?.Alias;
+
         #endregion
 
         public static List<PropertyInfo> getPropertyIfColumnDefinition( Type T ) {
+            
             var Result = new List<PropertyInfo>();
             PropertyInfo[] props = T.GetProperties( BindingFlags.Public | BindingFlags.Instance );
 
@@ -100,7 +105,7 @@ namespace prestoMySQL.Helper {
 
                 if ( propertyInfo.PropertyType.IsGenericType
                      && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) )
-                     && ( propertyInfo.GetCustomAttribute<DDForeignKey>() != null )
+                     && ( propertyInfo.GetCustomAttributes<DDForeignKey>().FirstOrDefault() != null )
                      && ( propertyInfo.GetCustomAttribute<DDColumnAttribute>() != null )
                    ) {
 
@@ -215,9 +220,37 @@ namespace prestoMySQL.Helper {
             return l;
         }
 
-        public static string getColumnName( Type Table , string aColumn , bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) {
+        public static string getColumnName( AbstractEntity Table , string aColumn , bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) {
+
             string result = "";
-            String prefix = ( withTableNameAsPrefix ) ? getTableName( Table ) : String.Empty;
+            //String prefix = ( withTableNameAsPrefix ) ? ( getTableAlias( Table ) ?? getTableName( Table ) ) : String.Empty;
+            string prefix = withTableNameAsPrefix ? ( Table.ActualName ) : String.Empty;
+            PropertyInfo pi = getPropertyIfColumnDefinition( Table.GetType() ).FirstOrDefault( x => x.Name.Equals( aColumn , StringComparison.InvariantCultureIgnoreCase ) );
+
+            if ( pi != null ) {
+
+                String ColumName = "";
+
+                //ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + pi.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
+                ColumName = pi.ColumnName( null ).QuoteColumnName();
+
+                if ( withTableNameAsPrefix )
+                    ColumName = String.Concat( prefix.QuoteTableName() , '.' , ColumName );
+
+                result = ColumName;
+
+            } else {
+                throw new ArgumentException( "Column name not found." );
+            }
+
+            return result;
+        }
+
+        public static string getColumnName( Type Table , string aColumn , bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) {
+            
+            string result = "";
+            //String prefix = ( withTableNameAsPrefix ) ? ( getTableAlias( Table ) ?? getTableName( Table ) ) : String.Empty;
+            string prefix =  withTableNameAsPrefix  ? ( getTableName( Table ) ) : String.Empty;
             PropertyInfo pi = getPropertyIfColumnDefinition( Table ).FirstOrDefault( x => x.Name.Equals( aColumn , StringComparison.InvariantCultureIgnoreCase ) );
 
             if ( pi != null ) {
@@ -227,7 +260,8 @@ namespace prestoMySQL.Helper {
                 ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + pi.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
 
                 if ( withTableNameAsPrefix )
-                    ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER + prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
+                    ColumName = String.Concat( prefix.QuoteTableName(), '.' , ColumName );
+                    //ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER + prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
 
                 result = ColumName;
 
@@ -280,7 +314,8 @@ namespace prestoMySQL.Helper {
                 ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + f.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
 
                 if ( withTableNameAsPrefix )
-                    ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER + prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
+                    ColumName = String.Concat( prefix.QuoteTableName() , '.' , ColumName );
+                    //ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER + prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
 
                 if ( aExcludePrimaryKey ) {
                     if ( !Attribute.IsDefined( f , typeof( DDPrimaryKey ) ) ) {
@@ -316,7 +351,7 @@ namespace prestoMySQL.Helper {
 
             if ( Attribute.IsDefined( c , typeof( DALQueryJoinEntity ) ) ) {
 
-                result = c.GetCustomAttributes<DALQueryJoinEntity>()?.ToList().Select( x => ( ( DALQueryJoinEntity ) x ).Entity).ToList();
+                result = c.GetCustomAttributes<DALQueryJoinEntity>()?.ToList().Select( x => ( ( DALQueryJoinEntity ) x ).Entity ).ToList();
             }
 
             return result;
@@ -439,8 +474,8 @@ namespace prestoMySQL.Helper {
         }
 
 
-        public static IEnumerable<DALQueryJoinEntityConstraint> getQueryJoinConstraint(Type t) {
-            
+        public static IEnumerable<DALQueryJoinEntityConstraint> getQueryJoinConstraint( Type t ) {
+
             var result = new List<DALQueryJoinEntityConstraint>();
 
             if ( Attribute.IsDefined( t , typeof( DALQueryJoinEntityConstraint ) ) ) {

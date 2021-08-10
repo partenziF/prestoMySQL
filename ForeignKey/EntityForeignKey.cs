@@ -23,7 +23,10 @@ namespace prestoMySQL.ForeignKey {
 
         private readonly int mKeyLength;
         public int KeyLength { get => mKeyLength; }
-        public JoinType JoinType { get => this.mJoinType; set => this.mJoinType =  value ; }
+        public JoinType JoinType { get => this.mJoinType; set => this.mJoinType = value; }
+
+        private string mForeignkeyName;
+        public string ForeignkeyName { get => mForeignkeyName; }
 
         private DelegateCreateForeignKey delegatorCreateForeignKey = null;
 
@@ -31,7 +34,8 @@ namespace prestoMySQL.ForeignKey {
 
         protected EntityForeignKey( AbstractEntity aTableEntity , string ForeignkeyName ) : base( KeyState.Unset ) {
 
-            this.Table = aTableEntity;
+            this.mForeignkeyName = ForeignkeyName;
+            //this.Table = aTableEntity;
             initialize( aTableEntity , ForeignkeyName );
             mKeyLength = this.foreignKeyColumns.Count;
 
@@ -39,27 +43,45 @@ namespace prestoMySQL.ForeignKey {
 
 
         private void initialize( AbstractEntity aTableEntity , string foreignkeyName ) {
+
             try {
 
                 List<PropertyInfo> l = SQLTableEntityHelper.getPropertyIfForeignKey( aTableEntity.GetType() );
 
                 foreach ( PropertyInfo p in l ) {
 
-                    var a = p.GetCustomAttribute<DDForeignKey>();
-                    if ( a != null ) {
+                    foreach ( var a in p.GetCustomAttributes<DDForeignKey>() )
 
-                        if ( a.Name == foreignkeyName ) {
-                            var aa = p.GetCustomAttribute<DDColumnAttribute>();
-                            this.foreignKeyColumns.Add( aa.Name , p );
-                            this.mColumnName = aa.Name;
-                            this.mReferenceColumnName = a.Reference;
-                            this.TypeRefenceTable = a.TableReferences;
-                            this.JoinType = aa.NullValue == NullValue.NotNull ? JoinType.INNER : JoinType.LEFT;
+                        if ( a != null ) {
 
-                            this.mPropertyInfo = p;
+                            if ( a.Name == foreignkeyName ) {
+
+                                var aa = p.GetCustomAttribute<DDColumnAttribute>();
+
+                                this.foreignKeyColumns.Add( aa.Name , p );
+
+                                //this.TypeReferenceTable = a.TableReferences;
+
+                                //this.mReferenceColumnName = a.Reference;
+                                //this.mColumnName = aa.Name;
+                                this.JoinType = aa.NullValue == NullValue.NotNull ? JoinType.INNER : JoinType.LEFT;
+
+                                //this.mPropertyInfo = p;
+
+
+                                this.foreignKeyInfo.Add( new ForeignKeyInfo( p , a.TableReferences , a.TableAlias , a.Reference , aTableEntity , aa.Name ) );
+
+                                //if ( !foreignKeyInfo.ContainsKey( a.TableReferences ) ) {
+                                //    foreignKeyInfo.Add( a.TableReferences , new Dictionary<string , ForeignKeyInfo>() );
+                                //    foreignKeyInfo[a.TableReferences].Add( foreignkeyName , new ForeignKeyInfo( p , a.TableReferences , a.Reference , aTableEntity , aa.Name ) );
+
+                                //} else {
+                                //    foreignKeyInfo[a.TableReferences].Add( foreignkeyName , new ForeignKeyInfo( p , a.TableReferences , a.Reference , aTableEntity , aa.Name ) );
+                                //}
+
+                            }
+
                         }
-
-                    }
 
                 }
 
@@ -69,19 +91,35 @@ namespace prestoMySQL.ForeignKey {
 
         }
 
+        public bool IsIdentifyingRelationship {
+            get {
+                bool? result = null;
+                foreach ( var info in this.foreignKeyInfo ) {
+                    if ( info.ReferenceTable != null ) {
+                        if ( result is null )
+                            result = info.ReferenceTable.PrimaryKey.ColumnsName.Contains( info.mReferenceColumnName );
+                        else
+                            result &= info.ReferenceTable.PrimaryKey.ColumnsName.Contains( info.mReferenceColumnName );
+                    }
+                }
+
+                return result ?? false;
+            }
 
 
-        public virtual void doCreateForeignKey() {
+        }
+
+        public virtual void doCreateForeignKey( params string[] columnNames ) {
             if ( delegatorCreateForeignKey != null ) {
-                this.delegatorCreateForeignKey( this );
+                this.delegatorCreateForeignKey( this , columnNames );
             }
         }
 
-        public virtual void createKey() {
+        public virtual void createKey( params string[] columnNames ) {
 
             keyState = KeyState.Created;
 
-            doCreateForeignKey();
+            doCreateForeignKey( columnNames );
 
         }
 
@@ -92,15 +130,20 @@ namespace prestoMySQL.ForeignKey {
 
             if ( foreignKeyColumns.ContainsKey( aKey ) ) {
                 try {
-                    //var col = ( MySQLDefinitionColumn<SQLTypeWrapper<T>> ) p?.GetValue( this.Table );
-                    PropertyInfo p = foreignKeyColumns[aKey];
-                    dynamic col = p?.GetValue( this.Table );
-                    //return ( T ) col.TypeWrapperValue;
-                    return ( T ) col.GetValue();
+                    foreach ( var fk in foreignKeyInfo ) {
 
+                        PropertyInfo p = foreignKeyColumns[aKey];
+                        dynamic col = p?.GetValue( fk.Table );
+                        if ( col != null ) {
+                            return ( T ) col.GetValue();
+                        }
+                    }
                 } catch ( System.Exception e ) {
                     throw new System.Exception( "Error while read key value" );
                 }
+
+                throw new IndexOutOfRangeException( "Invalid key name " );
+
             } else {
                 throw new System.ArgumentException( "Invalid Key name" );
             }
@@ -126,37 +169,107 @@ namespace prestoMySQL.ForeignKey {
 
         public override string ToString() {
 
-            var a = SQLTableEntityHelper.getColumnName( TypeRefenceTable , ReferenceColumnName , true , true );
-            var b = SQLTableEntityHelper.getColumnName( Table.GetType() , ColumnName , true , true );
+            var j = new Dictionary<string , List<string>>();
 
-            var s = string.Format( "{0} JOIN {1} ON\r\n\t{2} = {3}" , this.JoinType.ToString() , SQLTableEntityHelper.getTableName( TypeRefenceTable ) , a , b );
-            return s;
+            foreach ( var info in this.foreignKeyInfo ) {
 
-        }
+                var t = SQLTableEntityHelper.getTableName( info.TypeReferenceTable );
 
-        public void Update( IObservableColumn subjectColumn ) {
-            //throw new NotImplementedException();
-            if ( Attribute.IsDefined( this.Field , typeof( DDPrimaryKey ) ) ) {
-                PropertyInfo pi = this.RefenceTable.GetType().GetProperty( this.ReferenceColumnName );
-                if ( pi != null ) {
-                    dynamic c = pi?.GetValue( this.RefenceTable );
-                    c.AssignValue( ( subjectColumn as ConstructibleColumn ).GetValue() ?? ReflectionTypeHelper.SQLTypeWrapperNULL( c?.GenericType ) );
+                var a = SQLTableEntityHelper.getColumnName( info.TypeReferenceTable , info.ReferenceColumnName , true , true );
+                var b = SQLTableEntityHelper.getColumnName( info.Table.GetType() , info.ColumnName , true , true );
+
+
+                if ( j.ContainsKey( t ) ) {
+                    j[t].Add( $"{a} = {b}" );
+                } else {
+                    j.Add( t , new List<string>() { $"{a} = {b}" } );
                 }
-            } else {
-                dynamic c = this.Field.GetValue( this.Table );
-                c.AssignValue( ( subjectColumn as ConstructibleColumn ).GetValue() ?? ReflectionTypeHelper.SQLTypeWrapperNULL( c?.GenericType ) );
+
             }
 
-            createKey();
+            var sb = new StringBuilder();
+
+            foreach ( var (joinTable, constraint) in j ) {
+
+                sb.Append( string.Format( "{0} JOIN {1} ON " , this.JoinType.ToString() , joinTable ) );
+                sb.AppendLine( String.Join( " AND " , constraint.ToArray() ) );
+
+            }
+
+            return sb.ToString();
 
         }
+
+        public abstract void Update( IObservableColumn subjectColumn );
+
+        //if ( Attribute.IsDefined( this.Field , typeof( DDPrimaryKey ) ) ) {
+
+
+        //    //PropertyInfo pi = this.ReferenceTable.GetType().GetProperty( this.ReferenceColumnName );
+        //    //if ( pi != null ) {
+        //    //    dynamic c = pi?.GetValue( this.ReferenceTable );
+        //    //    c.AssignValue( ( subjectColumn as ConstructibleColumn ).GetValue() ?? ReflectionTypeHelper.SQLTypeWrapperNULL( c?.GenericType ) );
+        //    //}
+
+        //    Dictionary<string , ForeignKeyInfo> infos;
+        //    if ( this.foreignKeysInfo.TryGetValue( ( subjectColumn as dynamic ).TypeTable, out infos ) ) {
+
+        //        foreach(var(_, info) in infos ) { 
+
+        //            if ( (info.TypeReferenceTable == ( subjectColumn as dynamic ).TypeTable ) && ( info.ReferenceColumnName == (subjectColumn as dynamic).ColumnName ) ) {
+
+        //                PropertyInfo pi = info.ReferenceTable.GetType().GetProperty( info.ReferenceColumnName );
+        //                if ( pi != null ) {
+        //                    dynamic c = pi?.GetValue( info.ReferenceTable );
+        //                    c.AssignValue( ( subjectColumn as ConstructibleColumn ).GetValue() ?? ReflectionTypeHelper.SQLTypeWrapperNULL( c?.GenericType ) );
+        //                }
+
+
+        //            }
+        //        }
+
+        //    }
+        //} else {
+        //    dynamic c = this.Field.GetValue( this.Table );
+        //    c.AssignValue( ( subjectColumn as ConstructibleColumn ).GetValue() ?? ReflectionTypeHelper.SQLTypeWrapperNULL( c?.GenericType ) );
+        //}
+
+        //createKey();
+
+        //}
 
         public void setKeyValue<T1>( string aKey , T1 aValue ) {
-            //var pi = this.RefenceTable.GetType().GetProperty( this.ReferenceColumnName );
-            var pi = this.RefenceTable.GetType().GetProperty( aKey );
-            if ( pi == null ) new NullReferenceException( "Property " + aKey + " not found." );
-            dynamic col = pi.GetValue( this.RefenceTable );
-            col.AssignValue( aValue ?? ReflectionTypeHelper.SQLTypeWrapperNULL( col?.GenericType ) );
+
+            foreach ( var fk in foreignKeyInfo ) {
+
+                var pi = fk.ReferenceTable.GetType().GetProperty( aKey );
+                if ( pi == null ) new NullReferenceException( "Property " + aKey + " not found." );
+                dynamic col = pi.GetValue( fk.ReferenceTable );
+                col.AssignValue( aValue ?? ReflectionTypeHelper.SQLTypeWrapperNULL( col?.GenericType ) );
+            }
+
         }
+
+
+
+        //public AbstractEntity ReferenceTables() {
+        //    if ( KeyLength > 0 ) {
+
+        //        foreach ( var (t, _) in foreignKeysInfo ) {
+
+        //            foreach ( var (name, _) in foreignKeysInfo[t] ) {
+        //                if ( foreignKeysInfo[t][name].mReferenceTable != null )
+        //                    return foreignKeysInfo[t][name].mReferenceTable;
+        //            }
+        //        }
+
+        //        return null;
+
+        //    } else {
+        //        return mReferenceTable;
+        //    }
+        //}
+
+
     }
 }

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using MySqlConnector;
-using PrestoMySQ.Database;
+using prestoMySQL.Database;
 using prestoMySQL.Extension;
 using System;
 using System.Data;
@@ -11,7 +11,7 @@ using System.Threading.Tasks;
  * Use this: dotnet add package MySqlConnector
  *                              Microsoft.Extensions.Logging.Abstractions              
 */
-namespace PrestoMySQL.Database.MySQL {
+namespace prestoMySQL.Database.MySQL {
 
     //https://www.thomasclaudiushuber.com/2020/09/01/c-9-0-records-work-with-immutable-data-classes/
 
@@ -241,7 +241,7 @@ namespace PrestoMySQL.Database.MySQL {
                 }
 
             } else {
-                throw new Exception( "Connection is closed" );
+                throw new System.Exception( "Connection is closed" );
             }
 
             return result;
@@ -262,13 +262,13 @@ namespace PrestoMySQL.Database.MySQL {
 
                     mCommand.Parameters.Clear();
 
-                    if ( args.Length > 0 ) {
+                    if ( args?.Length > 0 ) {
                         mCommand.Parameters.AddRange( args );
                     }
 
                     var rs = Command.ExecuteReader();
 
-                    if ( ( Logger is not null ) && ( args.Length > 0 ) ) {
+                    if ( ( Logger is not null ) && ( args?.Length > 0 ) ) {
                         args.ToList().ForEach( a => Logger?.LogDebug( a.ParameterName + " " + a.Value ) );
                     }
 
@@ -281,7 +281,7 @@ namespace PrestoMySQL.Database.MySQL {
                 }
 
             } else {
-                throw new Exception( "Connection is closed" );
+                throw new System.Exception( "Connection is closed" );
             }
 
             return null;
@@ -351,7 +351,7 @@ namespace PrestoMySQL.Database.MySQL {
                 }
 
             } else {
-                throw new Exception( "Connection is closed" );
+                throw new System.Exception( "Connection is closed" );
             }
 
             return null;
@@ -368,9 +368,9 @@ namespace PrestoMySQL.Database.MySQL {
                     this.LastError = null;
                     this.mTransaction = this.Connection.BeginTransaction();
                     return ( this.mTransaction != null );
-                } catch ( Exception e ) {
+                } catch ( System.Exception e ) {
                     if ( this.mLogger != null ) Logger.LogWarning( $"{nameof( Begin )} {{0}}" , e.Message );
-                    new Exception( "Error in begin transaction : " + e.Message );
+                    new System.Exception( "Error in begin transaction : " + e.Message );
                 }
             }
 
@@ -387,9 +387,9 @@ namespace PrestoMySQL.Database.MySQL {
                     this.LastError = null;
                     this.mTransaction.Commit();
                     return true;
-                } catch ( Exception e ) {
+                } catch ( System.Exception e ) {
                     if ( this.mLogger != null ) Logger.LogWarning( $"{nameof( Commit )} {{0}}" , e.Message );
-                    new Exception( "Error in begin transaction : " + e.Message );
+                    new System.Exception( "Error in begin transaction : " + e.Message );
                 }
             }
 
@@ -403,9 +403,9 @@ namespace PrestoMySQL.Database.MySQL {
                 try {
                     this.mTransaction.Rollback();
                     return true;
-                } catch ( Exception e ) {
+                } catch ( System.Exception e ) {
                     if ( this.mLogger != null ) Logger.LogWarning( $"{nameof( Rollback )} {{0}}" , e.Message );
-                    new Exception( "Error in begin transaction : " + e.Message );
+                    new System.Exception( "Error in begin transaction : " + e.Message );
                 }
             }
 
@@ -455,8 +455,9 @@ namespace PrestoMySQL.Database.MySQL {
 
 
 
-                    var id = Command.ExecuteScalar();
-                    result = id.ConvertTo<T>();
+                    var value = Command.ExecuteScalar();
+                    if ( value is not null ) result = value.ConvertTo<T>();
+                    else return default( T );
 
                     //return new MySQResultSet( rs );
 
@@ -466,7 +467,7 @@ namespace PrestoMySQL.Database.MySQL {
                 }
 
             } else {
-                throw new Exception( "Connection is closed" );
+                throw new System.Exception( "Connection is closed" );
             }
 
             return result;
@@ -509,7 +510,7 @@ namespace PrestoMySQL.Database.MySQL {
                 }
 
             } else {
-                throw new Exception( "Connection is closed" );
+                throw new System.Exception( "Connection is closed" );
             }
 
             return result;

@@ -9,39 +9,76 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.ForeignKey {
-    public abstract class ForeignKey {
 
-        protected Type mTypeRefenceTable;
-        public Type TypeRefenceTable { get => this.mTypeRefenceTable; set => this.mTypeRefenceTable = value; }
+    public class ForeignKeyInfo {
+
+        internal PropertyInfo mPropertyInfo;
+        
+        internal string mReferenceTableAlias;
+
+        public PropertyInfo Field => mPropertyInfo;
 
 
-        protected AbstractEntity mRefenceTable;
-        public AbstractEntity RefenceTable { get => mRefenceTable; set => mRefenceTable = value; }
+        internal AbstractEntity mReferenceTable;
 
+        internal Type mTypeReferenceTable;
+        //TypeReferenceTable
+        public Type TypeReferenceTable { get => this.mTypeReferenceTable; set => this.mTypeReferenceTable = value; }
 
-        protected string mColumnName;
-        public string ColumnName => mColumnName;
+        public AbstractEntity ReferenceTable { get => mReferenceTable; set => mReferenceTable = value; }
 
-        protected string mReferenceColumnName;
+        internal string mReferenceColumnName;
         public string ReferenceColumnName => mReferenceColumnName;
 
-        //private T[] mValues;
-        //public T[] Values => mValues;
 
-        protected PropertyInfo mPropertyInfo;
-        public PropertyInfo Field => mPropertyInfo;
+        internal AbstractEntity mTable;
+        public AbstractEntity Table { get => mTable; set => mTable = value; }
+
+        internal string mColumnName;
+        public string ColumnName => mColumnName;
+
+        public ForeignKeyInfo( PropertyInfo p , Type TypeReferenceTable,string referenceTableAlias , string referenceColumnName , AbstractEntity table , string columnName ) {
+
+            mPropertyInfo = p;
+            mReferenceTableAlias = referenceTableAlias;
+            mTypeReferenceTable = TypeReferenceTable; //mTypeReferenceTable
+            mReferenceColumnName = referenceColumnName;
+            mTable = table;
+            mColumnName = columnName;
+
+        }
+
+    }
+    public abstract class ForeignKey {
 
 
         private KeyState mKeyState = KeyState.Unset;
         public KeyState keyState { get => mKeyState; set => mKeyState = value; }
 
+        public AbstractEntity Table { get => foreignKeyInfo.Select( x => x.Table ).Distinct().FirstOrDefault();  }
 
+        //protected PropertyInfo mPropertyInfo;
+        //public PropertyInfo Field => mPropertyInfo;
 
-        protected AbstractEntity mTable;
-        public AbstractEntity Table { get => mTable; set => mTable = value; }
+        //protected Type mTypeReferenceTable;
+        //public Type TypeReferenceTable { get => this.mTypeReferenceTable; set => this.mTypeReferenceTable = value; }
 
+        //protected AbstractEntity mReferenceTable;
+        //public AbstractEntity ReferenceTable { get => mReferenceTable; set => mReferenceTable = value; }
+
+        //protected string mReferenceColumnName;
+        //public string ReferenceColumnName => mReferenceColumnName;
+
+        //protected AbstractEntity mTable;
+        //public AbstractEntity Table { get => mTable; set => mTable = value; }
+
+        //protected string mColumnName;
+        //public string ColumnName => mColumnName;
 
         protected IDictionary<string , PropertyInfo> foreignKeyColumns;
+        //public Dictionary<Type , Dictionary<string, ForeignKeyInfo>> foreignKeysInfo { get; set; }
+
+        public List<ForeignKeyInfo> foreignKeyInfo { get; set; }
 
         public PropertyInfo this[string index] {
 
@@ -59,16 +96,25 @@ namespace prestoMySQL.ForeignKey {
         public ForeignKey( KeyState aKeyState ) {
             this.mKeyState = aKeyState;
             this.foreignKeyColumns = new Dictionary<String , PropertyInfo>();
+            this.foreignKeyInfo = new List<ForeignKeyInfo>();
         }
 
-        public void InstantiateRefenceTable() {
+        public void InstantiateReferenceTable() {
 
-            if ( mRefenceTable == null ) {
+            foreach ( var fk in foreignKeyInfo.Where( x => x.mReferenceTable != null ).ToList() ) {
 
-                this.mRefenceTable = ( AbstractEntity ) Activator.CreateInstance( mTypeRefenceTable );
+                fk.mReferenceTable = ( AbstractEntity ) Activator.CreateInstance( fk.mTypeReferenceTable );
+                fk.mReferenceTable.mAliasName = fk.mReferenceTableAlias;
             }
+
+            //if ( mReferenceTable == null ) {
+
+            //    this.mReferenceTable = ( AbstractEntity ) Activator.CreateInstance( mTypeReferenceTable );
+            //}
 
         }
 
     }
+
+
 }

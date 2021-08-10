@@ -1,24 +1,18 @@
-﻿using prestoMySQL.Adapter;
-using prestoMySQL.Column;
+﻿using prestoMySQL.Column;
 using prestoMySQL.Column.Attribute;
 using prestoMySQL.Helper;
 using prestoMySQL.Query.Attribute;
 using prestoMySQL.Query.Interface;
 using prestoMySQL.Query.SQL;
-using prestoMySQL.SQL;
 using prestoMySQL.Table;
-using prestoMySQL.Query.Attribute;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using prestoMySQL.ForeignKey;
 using prestoMySQL.Utils;
-using prestoMySQL.Entity;
 
 namespace prestoMySQL.Query {
 
@@ -425,66 +419,65 @@ namespace prestoMySQL.Query {
 
         internal void JOIN( bool reverse  , EntityForeignKey fk , SQLQueryConditionExpression constraint = null ) {
 
-            var a = SQLTableEntityHelper.getColumnName( fk.TypeRefenceTable , fk.ReferenceColumnName , false );
-            var b = SQLTableEntityHelper.getColumnName( fk.Table.GetType() , fk.ColumnName , false );
+            if ( fk.foreignKeyInfo.Count == 1 ) {
 
-            //[DALQueryJoinEntityConstraint( typeof( ProvinceEntity ) , nameof( ProvinceEntity.Delete ) , ParamValue = false )]
+                var a = SQLTableEntityHelper.getColumnName( fk.foreignKeyInfo.FirstOrDefault().TypeReferenceTable , fk.foreignKeyInfo.FirstOrDefault().ReferenceColumnName , false );
+                var b = SQLTableEntityHelper.getColumnName( fk.Table.GetType() , fk.foreignKeyInfo.FirstOrDefault().ColumnName , false );
 
-            //Reverse visit
-            if ( reverse ) {
-
-
-                if ( constraint != null )
-                    mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , constraint ) );
-                else
-                    mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b ) );
+                //Reverse visit
+                if ( reverse ) {
 
 
-            } else {
+                    if ( constraint != null )
+                        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().TypeReferenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().TypeReferenceTable ) , a , SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().Table.GetType() ) , b , constraint ) );
+                    else
+                        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().TypeReferenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().TypeReferenceTable ) , a , SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().Table.GetType() ) , b ) );
 
-                if ( constraint != null )
-                    mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , constraint ) );
-                else
-                    mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a ) );
 
+                } else {
+
+                    if ( constraint != null )
+                        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().TypeReferenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().TypeReferenceTable ) , a , constraint ) );
+                    else
+                        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().TypeReferenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.foreignKeyInfo.FirstOrDefault().TypeReferenceTable ) , a ) );
+
+                }
+
+
+            } else if (fk.foreignKeyInfo.Count > 1 ) {
+                //fk.foreignKeyInfo.Skip( 1 ).ToList();
+                throw new NotImplementedException( "internal void JOIN( bool reverse  , EntityForeignKey fk , SQLQueryConditionExpression constraint = null ) not implemented" );
             }
 
-            //if ( TablesReferences.First().Equals( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , StringComparison.InvariantCultureIgnoreCase ) ) {
 
-            //    if ( constraint != null )
-            //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , constraint ) );
-            //    else
-            //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a ) );
+                //var a = SQLTableEntityHelper.getColumnName( fk.TypeReferenceTable , fk.ReferenceColumnName , false );
+                //var b = SQLTableEntityHelper.getColumnName( fk.Table.GetType() , fk.ColumnName , false );
+
+                ////[DALQueryJoinEntityConstraint( typeof( ProvinceEntity ) , nameof( ProvinceEntity.Delete ) , ParamValue = false )]
+
+                ////Reverse visit
+                //if ( reverse ) {
 
 
-            //} else {
+                //    if ( constraint != null )
+                //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeReferenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.TypeReferenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , constraint ) );
+                //    else
+                //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeReferenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.TypeReferenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b ) );
 
-            //    if ( constraint != null )
-            //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , constraint ) );
-            //    else
-            //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b ) );
-            //}
 
-            //var s = string.Format( "{0} JOIN {1} ON\r\n\t{2} = {3}" , this.JoinType.ToString() , SQLTableEntityHelper.getTableName( TypeRefenceTable ) , a , b );
-            //return s;
-            //if ( fk.JoinType == JoinType.LEFT ) {
-            //    //LEFTJOIN( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , null );
-            //} else if ( fk.JoinType == JoinType.INNER ) {
-            //    //INNERJOIN( SQLTableEntityHelper.getTableName( fk.TypeRefenceTable ) , a , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , null );
-            //};
+                //} else {
 
-            /*
-             *                 this.JoinTable[SQLTableEntityHelper.getTableName< RegioniEntity>() ].SqlQueryConditions = new SQLQueryConditionExpression[]{ new SQLQueryConditionExpression(
-                                LogicOperator.AND ,
-                                FactorySQLWhereCondition.MakeColumnEqual( Delete , this[nameof( pDelete )] , "@" ) ,
-                                FactorySQLWhereCondition.MakeColumnEqual( FkProvincia , this[nameof( pFkProvincia )] , "@" )
-                                )
-                            };
-            */
+                //    if ( constraint != null )
+                //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeReferenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.TypeReferenceTable ) , a , constraint ) );
+                //    else
+                //        mJoinTable.TryAdd( SQLTableEntityHelper.getTableName( fk.TypeReferenceTable ) , new SQLQueryJoinTable( this , fk.JoinType , SQLTableEntityHelper.getTableName( fk.Table.GetType() ) , b , SQLTableEntityHelper.getTableName( fk.TypeReferenceTable ) , a ) );
+
+                //}
 
 
 
-        }
+
+            }
 
         public SQLQuery GROUPBY( params SQLQueryGroupBy[] aGroupByEntity ) {
             //// TODO Auto-generated method stub

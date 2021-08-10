@@ -143,6 +143,25 @@ namespace prestoMySQL.Column.Attribute {
             return $" {SQL.SQLConstant.COLUMN_NAME_QUALIFIER}{columnName}{SQL.SQLConstant.COLUMN_NAME_QUALIFIER} ";
         }
 
+
+        public string ChangeColumn(string oldColumnName ) {
+            
+            var sb = new StringBuilder( $"ALTER TABLE CHANGE COLUMN {SQL.SQLConstant.COLUMN_NAME_QUALIFIER}{oldColumnName}{SQL.SQLConstant.COLUMN_NAME_QUALIFIER} " );
+
+            sb.AppendLine( this.ToString() ); 
+
+            return sb.ToString();
+            //                               ALTER TABLE `qualifiche`
+            //CHANGE COLUMN `Qualifica` `Descrizione` VARCHAR( 250 ) NOT NULL COLLATE 'latin1_swedish_ci' AFTER `PkQualifica`,
+            //DROP INDEX `UIQualifica`,
+            //ADD UNIQUE INDEX `UIQualifica` (`Descrizione`) USING BTREE;
+
+            //                       ALTER TABLE `qualifiche`
+            //CHANGE COLUMN `Created` `Created1` DATETIME NOT NULL AFTER `Qualifica`;
+
+
+        }
+
         protected StringBuilder BuildString() {
                         
             StringBuilder sb = new StringBuilder( this.BuildColumnName() );
@@ -312,6 +331,44 @@ namespace prestoMySQL.Column.Attribute {
 
 
     }
+
+
+    public sealed class DDColumnFixedPointAttribute : DDColumnAttribute {
+
+        public byte Size { get; set; }
+        public byte Precision { get; set; }
+
+        public DDColumnFixedPointAttribute( string aName , MySQLDataType aDataType , byte aSize , byte aPrecision , NullValue NullValue = NullValue.Null ) : base( aName , aDataType , NullValue ) {
+            this.Size = aSize;
+            this.Precision = aPrecision;
+        }
+        public override string BulldTypeString() {
+
+            MySQLColumnDataType dataType = new MySQLColumnDataType( ( MySQLDataType ) this.DataType );
+            StringBuilder sb = new StringBuilder( $" {dataType.ToString()}" );
+            if ( this.Size > 0 ) sb.Append( $"({Size}" );
+            if ( this.Precision > 0 ) sb.Append( $",{Precision}" );
+            sb.Append( ")" );
+            return sb.ToString();
+
+        }
+        public override string ToString() {
+
+            StringBuilder sb = base.BuildString();
+
+            //sb.Append( BulldTypeString() );
+
+            sb.Append( $" {this.NullValue.ToText()} " );
+
+            sb.Append( GetDefaultValueClause() );
+
+            return sb.ToString();
+
+        }
+
+
+    }
+
 
 
 }

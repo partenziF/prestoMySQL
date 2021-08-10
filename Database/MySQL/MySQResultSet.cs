@@ -1,5 +1,5 @@
 ﻿using MySqlConnector;
-using PrestoMySQL.Database.Interface;
+using prestoMySQL.Database.Interface;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -11,7 +11,8 @@ using prestoMySQL.Extension;
 using System.Collections;
 using System.Data;
 
-namespace PrestoMySQL.Database.MySQL {
+
+namespace prestoMySQL.Database.MySQL {
 
 
     public class ReadableResultSet<T> : IReadableResultSet where T : DbDataReader {
@@ -85,7 +86,7 @@ namespace PrestoMySQL.Database.MySQL {
                 return this.mResultSet.GetDouble( i );
 
             } else {
-                throw new Exception( "Invalid Resultset" );
+                throw new System.Exception( "Invalid Resultset" );
             }
         }
 
@@ -95,7 +96,7 @@ namespace PrestoMySQL.Database.MySQL {
                 return this.mResultSet.GetFloat( i );
 
             } else {
-                throw new Exception( "Invalid Resultset" );
+                throw new System.Exception( "Invalid Resultset" );
             }
         }
 
@@ -105,7 +106,7 @@ namespace PrestoMySQL.Database.MySQL {
                 return this.mResultSet.GetInt32( i );
 
             } else {
-                throw new Exception( "Invalid Resultset" );
+                throw new System.Exception( "Invalid Resultset" );
             }
         }
 
@@ -115,7 +116,7 @@ namespace PrestoMySQL.Database.MySQL {
                 return this.mResultSet.GetInt64( i );
 
             } else {
-                throw new Exception( "Invalid Resultset" );
+                throw new System.Exception( "Invalid Resultset" );
             }
         }
 
@@ -126,7 +127,7 @@ namespace PrestoMySQL.Database.MySQL {
                 return this.mResultSet[i];
 
             } else {
-                throw new Exception( "Invalid Resultset" );
+                throw new System.Exception( "Invalid Resultset" );
             }
         }
 
@@ -136,7 +137,7 @@ namespace PrestoMySQL.Database.MySQL {
                 return this.mResultSet.GetString( i );
 
             } else {
-                throw new Exception( "Invalid Resultset" );
+                throw new System.Exception( "Invalid Resultset" );
             }
         }
 
@@ -145,7 +146,7 @@ namespace PrestoMySQL.Database.MySQL {
             if ( ( this.mResultSet != null ) && ( !this.mResultSet.IsClosed ) ) {
                 return this.mResultSet[aColumnName].ConvertTo<T>();
             } else {
-                throw new Exception( "Invalid Resultset" );
+                throw new System.Exception( "Invalid Resultset" );
             }
 
         }
@@ -160,12 +161,27 @@ namespace PrestoMySQL.Database.MySQL {
             DataTable schema = mResultSet.GetSchemaTable();
 
             foreach ( DataRow rdrColumn in schema.Rows ) {
-                
+
                 String columnName = rdrColumn[schema.Columns["ColumnName"]].ToString();
                 //String dataType = rdrColumn[schema.Columns["DataType"]].ToString();
                 string tablename = rdrColumn[schema.Columns["BaseTableName"]].ToString();
                 int index = ( int ) rdrColumn[schema.Columns["ColumnOrdinal"]];
+                string BaseColumnName = rdrColumn[schema.Columns["BaseColumnName"]].ToString();
+                if ( !columnName.Equals( BaseColumnName ) ) {
+                    var beginChar = columnName.IndexOf( '{' );
+                    if ( beginChar != -1 ) {
+                        var endChar = columnName.IndexOf( '}' , beginChar );
 
+                        if ( ( beginChar != -1 ) && ( endChar != -1 ) ) {
+
+                            var aliasTable = columnName.Substring( beginChar + 1 , ( endChar - beginChar ) - 1 );
+                            tablename = aliasTable;
+                            columnName = BaseColumnName;
+                        } else {
+                            throw new System.Exception( "Invalid alias column format " + BaseColumnName );
+                        }
+                    }
+                }
                 if ( result.ContainsKey( tablename ) ) {
                     if ( result[tablename].ContainsKey( columnName ) ) {
                         result[tablename][columnName] = index;
@@ -190,17 +206,17 @@ namespace PrestoMySQL.Database.MySQL {
         }
 
         public U getValueAs<U>( int Index ) {
-            if ( ( this.mResultSet != null ) && ( !this.mResultSet.IsClosed ) ) {                    
+            if ( ( this.mResultSet != null ) && ( !this.mResultSet.IsClosed ) ) {
                 return this.mResultSet[Index].ConvertTo<U>();
             } else {
-                throw new Exception( "Invalid Resultset" );
+                throw new System.Exception( "Invalid Resultset" );
             }
 
         }
 
     }
 
-    public class MySQResultSet : ReadableResultSet<MySqlDataReader>  {
+    public class MySQResultSet : ReadableResultSet<MySqlDataReader> {
         public MySQResultSet( MySqlDataReader aResultSet ) : base( aResultSet ) {
         }
     }

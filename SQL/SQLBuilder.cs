@@ -6,9 +6,11 @@ using prestoMySQL.Column.DataType;
 using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity;
 using prestoMySQL.Exception;
+using prestoMySQL.Extension;
 using prestoMySQL.ForeignKey;
 using prestoMySQL.ForeignKey.Attributes;
 using prestoMySQL.Helper;
+using prestoMySQL.Index;
 using prestoMySQL.PrimaryKey.Attributes;
 using prestoMySQL.Query;
 using prestoMySQL.Query.Attribute;
@@ -36,6 +38,7 @@ namespace prestoMySQL.SQL {
             List<String> result = new List<String>();
 
             sb.Append( $"CREATE TABLE {( ifNotExists ? "IF NOT EXISTS" : "" )} {prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER}{SQLTableEntityHelper.getTableName<T>()}{prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER} (\n" );
+            //sb.Append( $"CREATE TABLE {( ifNotExists ? "IF NOT EXISTS" : "" )} {prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER}{SQLTableEntityHelper.getTableName<T>()}{prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER} (\n" );
             bool autoIncrementKey = false;
             try {
 
@@ -146,7 +149,8 @@ namespace prestoMySQL.SQL {
         public static string sqlTruncate<T>() where T : AbstractEntity {
             StringBuilder sb = new StringBuilder();
             sb.Append( "TRUNCATE TABLE " );
-            sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER );
+            sb.Append( SQLTableEntityHelper.getTableName<T>().QuoteTableName() );
+            //sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER );
             return sb.ToString();
         }
 
@@ -160,7 +164,8 @@ namespace prestoMySQL.SQL {
         public static string sqlDescribeTable<T>() where T : AbstractEntity {
             StringBuilder sb = new StringBuilder();
             sb.Append( "DESCRIBE " );
-            sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER );
+            sb.Append( SQLTableEntityHelper.getTableName<T>().QuoteTableName() );
+            //sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER );
             return sb.ToString();
         }
 
@@ -235,7 +240,7 @@ namespace prestoMySQL.SQL {
                 fks.Add( o );
                 //fks.Push( o );
                 //joins.Add( o.ToString() );
-                //List<String> joinTableColumnsNames = SQLTableEntityHelper.getColumnName( o.TypeRefenceTable , true , false );
+                //List<String> joinTableColumnsNames = SQLTableEntityHelper.getColumnName( o.TypeReferenceTable , true , false );
 
             }
 
@@ -270,78 +275,324 @@ namespace prestoMySQL.SQL {
         //Add Join
 
 
-        public static string sqlSelect<T>( T Entities , ref SQLQueryParams outParams , EntityConditionalExpression Constraint = null ) where T : EntitiesAdapter {
-
+        public static string sqlSelect<T, X>( Func<T , X> delegateMethod , EntitiesAdapter Entities , ref SQLQueryParams outParams , string ParamPlaceholder = "@" , EntityConditionalExpression Constraint = null ) where X : TableIndex
+                                                                                                                                                                                                                   where T : AbstractEntity {
             var tables = Entities._Graph.GetTopologicalOrder();
 
-            List<string> columnsName = new List<string>();
-            List<string> joins = new List<string>();
+            AbstractEntity UniqueKeyEntity = tables.FirstOrDefault( x => x.GetType() == typeof( T ) );
 
-            StringBuilder sb = new StringBuilder( "SELECT\r\n" );
+            X x = delegateMethod( ( T ) UniqueKeyEntity );
 
-            foreach ( var e in tables ) {
-                columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
+            DefinableConstraint[] constraints = new DefinableConstraint[x.ColumnsName.Length];
+
+            int i = 0;
+            foreach ( string c in x.ColumnsName ) {
+                PropertyInfo p = x[c];
+                var col = p.GetValue( UniqueKeyEntity );
+                DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( col , ParamPlaceholder );
+                constraints[i++] = o;
             }
 
-            joins.AddRange( Entities.GetForeignKeys().Select( fk => fk.ToString() ).ToList() );
+            EntityConditionalExpression constr = null;
 
-            sb.AppendLine( string.Join( "," , columnsName ) );
+            if ( Constraint is null )
+                constr = new EntityConstraintExpression( constraints );
+            else {
+                constr = new EntityConditionalExpression( LogicOperator.AND ,
+                                     new EntityConstraintExpression( constraints ) ,
+                                     Constraint );
+            }
 
-            sb.AppendLine( "FROM" );
-            sb.AppendLine( SQLTableEntityHelper.getTableName( tables.First().GetType() ) );
 
-            sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
+            //var startEntity = tables.First( e => e.GetType() == typeof( T ) );
+            var startEntity = tables.FirstOrDefault();
+            if ( startEntity is null ) throw new ArgumentException( "Invalid entity " + typeof( T ).Name );
 
-            if ( Constraint?.Length > 0 ) {
+            AbstractEntity[] primaryKeyTables = new AbstractEntity[] { };
 
-                sb.AppendLine( "WHERE" );
 
-                EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
-                outParams ??= new SQLQueryParams( expr.getParam() );
+            //if ( ( pkTables == null ) || ( pkTables.Length == 0 ) ) {
+            //    primaryKeyTables = new AbstractEntity[] { startEntity };
+            //} else {
+            //    primaryKeyTables = new AbstractEntity[pkTables.Length];
+            //    Array.Copy( pkTables , primaryKeyTables , pkTables.Length );
+            //}
 
-                sb.AppendLine( expr.ToString() );
+            return sqlSelect( startEntity , primaryKeyTables , tables , Entities , ref outParams , ParamPlaceholder , constr );
+
+
+
+            //List<dynamic> pkColumnDefinition = new List<dynamic>();
+            //foreach ( var pk in pkTables ) {
+            //    pkColumnDefinition.AddRange( SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( pk ) );
+            //}
+
+            //List<string> columnsName = new List<string>();
+            //List<string> joins = new List<string>();
+            //Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
+
+            //visited.Push( startEntity );
+
+            //StringBuilder sb = new StringBuilder( "SELECT\r\n" );
+
+            //foreach ( var e in tables ) {
+
+
+            //    columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
+            //    columnsName[columnsName.Count - 1] += "\r\n";
+
+            //}
+
+            //var listFK = Entities.GetForeignKeys();
+            //foreach ( var fks in listFK ) {
+
+            //    //foreach ( var info in fks.foreignKeyInfo ) {
+            //    var join = sqlJoin( ref visited , fks );
+            //    if ( !String.IsNullOrWhiteSpace( join ) ) {
+            //        joins.Add( join );
+            //    }
+
+            //}
+
+
+            //sb.AppendLine( string.Join( "," , columnsName ) );
+
+            //sb.AppendLine( "FROM" );
+            //sb.AppendLine( SQLTableEntityHelper.getTableName( startEntity.GetType() ) );
+
+            //sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
+
+            //EntityConditionalExpression constraintExpression = null;
+
+            //if ( Constraint?.Length > 0 ) {
+
+            //    constraintExpression = new EntityConditionalExpression( LogicOperator.AND ,
+
+            //    new EntityConditionalExpression( LogicOperator.AND ,
+            //         new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() ) ,
+            //         new EntityConditionalExpression( LogicOperator.AND , Constraint )
+            //        ) );
+
+            //} else {
+            //    constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() );
+            //}
+
+            //outParams ??= new SQLQueryParams( constraintExpression.getParam() );
+
+            //sb.AppendLine( "WHERE" );
+            //sb.AppendLine( constraintExpression.ToString() );
+
+
+            //return sb.ToString();
+
+
+            //var tables = Entities._Graph.GetTopologicalOrder();
+
+            //List<string> columnsName = new List<string>();
+            //List<string> joins = new List<string>();
+
+            //StringBuilder sb = new StringBuilder( "SELECT\r\n" );
+
+            //foreach ( var e in tables ) {
+            //    columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
+            //}
+
+            //joins.AddRange( Entities.GetForeignKeys().Select( fk => fk.ToString() ).ToList() );
+
+            //sb.AppendLine( string.Join( "," , columnsName ) );
+
+            //sb.AppendLine( "FROM" );
+            //sb.AppendLine( SQLTableEntityHelper.getTableName( tables.First().GetType() ) );
+
+            //sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
+
+            //if ( Constraint?.Length > 0 ) {
+
+            //    sb.AppendLine( "WHERE" );
+
+            //    EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
+            //    outParams ??= new SQLQueryParams( expr.getParam() );
+
+            //    sb.AppendLine( expr.ToString() );
+            //}
+
+            //return sb.ToString();
+
+        }
+
+
+        public static string sqlJoin( ref Stack<AbstractEntity> visited , EntityForeignKey fks ) {
+
+            var j = new Dictionary<AbstractEntity , List<string>>();
+            AbstractEntity t;
+            //string alias = null;
+            var a = "";
+            var b = "";
+
+
+            foreach ( var info in fks.foreignKeyInfo ) {
+
+                if ( visited.Contains( info.Table ) ) {
+
+                    if ( !visited.Contains( info.ReferenceTable ) ) {
+                        t = info.ReferenceTable;
+                        a = SQLTableEntityHelper.getColumnName( info.ReferenceTable , info.ReferenceColumnName , true , true );
+                        b = SQLTableEntityHelper.getColumnName( info.Table , info.ColumnName , true , true );
+                    } else {
+                        t = null;
+                    }
+
+                } else if ( visited.Contains( info.ReferenceTable ) ) {
+
+                    if ( !visited.Contains( info.Table ) ) {
+                        t = info.Table;
+                        b = SQLTableEntityHelper.getColumnName( info.ReferenceTable , info.ReferenceColumnName , true , true );
+                        a = SQLTableEntityHelper.getColumnName( info.Table , info.ColumnName , true , true );
+                    } else {
+                        t = null;
+                    }
+                } else {
+                    t = null;
+                }
+
+                if ( t != null ) {
+                    if ( j.ContainsKey( t ) ) {
+                        j[t].Add( $"{a} = {b}" );
+                    } else {
+                        j.Add( t , new List<string>() { $"{a} = {b}" } );
+                    }
+                }
+
+            }
+
+
+            //foreach ( var info in fks.foreignKeyInfo ) {
+            //    if ( visited.Contains( info.ReferenceTable ) ) {
+            //        t = SQLTableEntityHelper.getTableName( info.Table.GetType() );
+
+            //        b = SQLTableEntityHelper.getColumnName( info.TypeReferenceTable , info.ReferenceColumnName , true , true );
+            //        a = SQLTableEntityHelper.getColumnName( info.Table.GetType() , info.ColumnName , true , true );
+
+            //    } else if ( visited.Contains( info.Table ) ) {
+            //        t = SQLTableEntityHelper.getTableName( info.TypeReferenceTable );
+
+            //        a = SQLTableEntityHelper.getColumnName( info.TypeReferenceTable , info.ReferenceColumnName , true , true );
+            //        b = SQLTableEntityHelper.getColumnName( info.Table.GetType() , info.ColumnName , true , true );
+            //    } else {
+            //        Console.WriteLine( "sdfa" );
+            //    }
+
+            //if ( j.ContainsKey( t ) ) {
+            //    j[t].Add( $"{a} = {b}" );
+            //} else {
+            //    j.Add( t , new List<string>() { $"{a} = {b}" } );
+            //}
+
+            //}
+
+            var sb = new StringBuilder();
+
+            foreach ( var (joinTable, constraint) in j ) {
+
+                visited?.Push( joinTable );
+
+                if ( joinTable.AliasName is null ) {
+                    sb.Append( string.Format( "{0} JOIN {1} ON " , fks.JoinType.ToString() , joinTable.ActualName.QuoteTableName() ) );
+                } else {
+                    sb.Append( string.Format( "{0} JOIN {1} {2} ON " , fks.JoinType.ToString() , joinTable.TableName.QuoteTableName() , joinTable.ActualName.QuoteTableName() ) );
+                }
+
+                sb.AppendLine( String.Join( "\r\nAND " , constraint.ToArray() ) );
+
             }
 
             return sb.ToString();
 
         }
-        public static string sqlSelect( EntitiesAdapter Entities , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) {
 
-            var tables = Entities._Graph.GetTopologicalOrder();
+        private static string sqlSelect( AbstractEntity startEntity , AbstractEntity[] pkTables , List<AbstractEntity> tables , EntitiesAdapter Entities , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) {
 
-            List<dynamic> pkColumnDefinition = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( tables.First() );
+            List<dynamic> pkColumnDefinition = new List<dynamic>();
+            foreach ( var pk in pkTables ) {
+                pkColumnDefinition.AddRange( SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( pk ) );
+            }
+
             List<string> columnsName = new List<string>();
             List<string> joins = new List<string>();
+            Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
+
+            visited.Push( startEntity );
 
             StringBuilder sb = new StringBuilder( "SELECT\r\n" );
 
             foreach ( var e in tables ) {
+
                 columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
+                columnsName[columnsName.Count - 1] += "\r\n";
+
             }
 
-            joins.AddRange( Entities.GetForeignKeys().Select( fk => fk.ToString() ).ToList() );
+            List<ForeignkeyConstraint> fkConstraint = new List<ForeignkeyConstraint>();
+
+            var listFK = Entities.GetForeignKeys();
+            foreach ( var fks in listFK ) {
+
+                //foreach ( var info in fks.foreignKeyInfo ) {
+                var join = sqlJoin( ref visited , fks );
+                if ( !String.IsNullOrWhiteSpace( join ) ) {
+                    joins.Add( join );
+                } else {
+
+                    fkConstraint.Add( new ForeignkeyConstraint( fks ) );
+
+                }
+            }
+
 
             sb.AppendLine( string.Join( "," , columnsName ) );
 
             sb.AppendLine( "FROM" );
-            sb.AppendLine( SQLTableEntityHelper.getTableName( tables.First().GetType() ) );
+            sb.AppendLine( SQLTableEntityHelper.getTableName( startEntity.GetType() ) );
 
             sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
 
             EntityConditionalExpression constraintExpression = null;
 
-            if ( Constraint?.Length > 0 ) {
+            List<EntityConditionalExpression> conditionalExpression = new List<EntityConditionalExpression>();
 
-                constraintExpression = new EntityConditionalExpression( LogicOperator.AND ,
-
-                new EntityConditionalExpression( LogicOperator.AND ,
-                     new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() ) ,
-                     new EntityConditionalExpression( LogicOperator.AND , Constraint )
-                    ) );
-
-            } else {
-                constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() );
+            if ( pkColumnDefinition.Count > 0 ) {
+                conditionalExpression.Add( new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() ) );
             }
+
+            if ( ( Constraint is not null ) && ( !Constraint.isEmpty ) ) {
+                conditionalExpression.Add( Constraint );
+            }
+            if ( (fkConstraint is not null ) && ( fkConstraint.Count>0 ) ) {
+                conditionalExpression.Add( new EntityConditionalExpression( LogicOperator.AND , fkConstraint.ToArray() ) );
+
+            }
+
+
+            //if ( ( Constraint is not null ) && ( !Constraint.isEmpty ) ) {
+
+            //    if ( pkColumnDefinition.Count > 0 ) {
+
+            //        constraintExpression = new EntityConditionalExpression( LogicOperator.AND ,
+
+            //        new EntityConditionalExpression( LogicOperator.AND ,
+            //             new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() ) ,
+            //             new EntityConditionalExpression( LogicOperator.AND , Constraint )
+            //            ) );
+
+            //    } else {
+            //        constraintExpression = Constraint;
+            //    }
+
+            //} else {
+            //    constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() );
+            //}
+
+            constraintExpression = new EntityConditionalExpression( LogicOperator.AND , conditionalExpression.ToArray() );
 
             outParams ??= new SQLQueryParams( constraintExpression.getParam() );
 
@@ -350,8 +601,132 @@ namespace prestoMySQL.SQL {
 
 
             return sb.ToString();
+
         }
 
+        public static string sqlSelect<T>( EntitiesAdapter Entities , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null , params AbstractEntity[] pkTables ) {
+
+            var tables = Entities._Graph.GetTopologicalOrder();
+
+            var startEntity = tables.First( e => e.GetType() == typeof( T ) );
+            if ( startEntity is null ) throw new ArgumentException( "Invalid entity " + typeof( T ).Name );
+
+            AbstractEntity[] primaryKeyTables = null;
+            if ( ( pkTables == null ) || ( pkTables.Length == 0 ) ) {
+                primaryKeyTables = new AbstractEntity[] { startEntity };
+            } else {
+                primaryKeyTables = new AbstractEntity[pkTables.Length];
+                Array.Copy( pkTables , primaryKeyTables , pkTables.Length );
+            }
+
+            return sqlSelect( startEntity , primaryKeyTables , tables , Entities , ref outParams , ParamPlaceholder , Constraint );
+
+            //List<dynamic> pkColumnDefinition = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( startEntity );
+            //List<string> columnsName = new List<string>();
+            //List<string> joins = new List<string>();
+            //Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
+
+            ////var aliases = new Dictionary<string , AbstractEntity>( tables.Count );
+            ////foreach ( var t in tables ) {
+            ////    if ( aliases.ContainsKey( t.TableName ) ) {
+            ////        if ( t.FkNames.Count == 1 ) {
+            ////            if ( !aliases.ContainsKey( t.FkNames.FirstOrDefault() ) ) {
+            ////                aliases.Add( t.FkNames.FirstOrDefault() , t );
+            ////                t.AliasName = t.FkNames.FirstOrDefault();
+            ////            }
+            ////        } else {
+            ////            throw new NotImplementedException( "sqlSelect t.FkNames.Count > 1" );
+            ////        }
+            ////    } else {
+            ////        aliases.Add( t.TableName , t );
+            ////    }
+            ////}
+
+            //visited.Push( startEntity );
+
+            //StringBuilder sb = new StringBuilder( "SELECT\r\n" );
+
+            //foreach ( var e in tables ) {
+
+            //    //foreach ( var c in SQLTableEntityHelper.getDefinitionColumn( e , true ) ) {
+            //    //    c.Table.TableAlias = e.AliasName ?? c.Table.ActualName;
+            //    //    columnsName.Add( ( string ) c.ToString() );
+            //    //}
+
+            //    columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
+            //    columnsName[columnsName.Count - 1] += "\r\n";
+
+            //}
+            ////columnsName.RemoveAt( columnsName.Count() - 1 );
+
+            ////joins.AddRange( Entities.GetForeignKeys().Select( fk => fk.ToString() ).ToList() );
+
+            //var listFK = Entities.GetForeignKeys();
+            //foreach ( var fks in listFK ) {
+
+            //    foreach ( var info in fks.foreignKeyInfo ) {
+
+            //        joins.Add( sqlJoin( visited , fks ) );
+
+            //        if ( !visited.Contains( info.Table ) ) {
+            //            visited?.Push( info.Table );
+            //        } else if ( !visited.Contains( info.ReferenceTable ) ) {
+            //            visited?.Push( info.ReferenceTable );
+            //        } else {
+            //            //Console.WriteLine( "provva" );
+            //            throw new NotImplementedException( "sqlSelect else not implemented" );
+            //        }
+
+
+            //    }
+
+
+            //}
+
+
+            //sb.AppendLine( string.Join( "," , columnsName ) );
+
+            //sb.AppendLine( "FROM" );
+            //sb.AppendLine( SQLTableEntityHelper.getTableName( startEntity.GetType() ) );
+
+            //sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
+
+            //EntityConditionalExpression constraintExpression = null;
+
+            //if ( Constraint?.Length > 0 ) {
+
+            //    constraintExpression = new EntityConditionalExpression( LogicOperator.AND ,
+
+            //    new EntityConditionalExpression( LogicOperator.AND ,
+            //         new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() ) ,
+            //         new EntityConditionalExpression( LogicOperator.AND , Constraint )
+            //        ) );
+
+            //} else {
+            //    constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() );
+            //}
+
+            //outParams ??= new SQLQueryParams( constraintExpression.getParam() );
+
+            //sb.AppendLine( "WHERE" );
+            //sb.AppendLine( constraintExpression.ToString() );
+
+
+            //return sb.ToString();
+
+        }
+
+        public static string sqlSelect( EntitiesAdapter Entities , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) {
+
+            var tables = Entities._Graph.GetTopologicalOrder();
+
+            var startEntity = tables.First();
+            if ( startEntity is null ) throw new ArgumentException( "Invalid entity " + startEntity.GetType().Name );
+
+            return sqlSelect( startEntity , new AbstractEntity[] { startEntity } , tables , Entities , ref outParams , ParamPlaceholder , Constraint );
+
+
+        }
 
         public static string sqlSelect( AbstractEntity EntityInstance , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) {
 
@@ -603,58 +978,61 @@ namespace prestoMySQL.SQL {
 
         public static SQLQuery SELECT<T>( T myQuery ) where T : SQLQuery {
 
+            //throw new NotImplementedException();
+
             myQuery.Initialize();
             myQuery.SelectExpression = SQLTableEntityHelper.getProjectionColumnName<T>( myQuery );
             Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
 
             var queryConstraints = SQLTableEntityHelper.getQueryJoinConstraint( myQuery.GetType() );
             bool isReversed = false;
-            foreach ( var fk in myQuery.Graph.GetForeignKeys() ) {
+            foreach ( var fks in myQuery.Graph.GetForeignKeys() ) {
 
                 List<DefinableConstraint> constraints = new List<DefinableConstraint>();
                 List<DALQueryJoinEntityConstraint> constraint;
-                isReversed = ( myQuery.TablesReferences.Contains( fk.Table.TableName ) || ( visited.Contains( fk.Table ) ) );
-                
-                constraint = isReversed
-                    ? queryConstraints.Where( x => x.Entity == fk.RefenceTable.GetType() ).ToList()
-                    : queryConstraints.Where( x => x.Entity == fk.Table.GetType() ).ToList();
+                isReversed = ( myQuery.TablesReferences.Contains( fks.Table.TableName ) || ( visited.Contains( fks.Table ) ) );
 
-                foreach ( DALQueryJoinEntityConstraint a in constraint ) {
-                    dynamic instance = isReversed
-                        ? SQLTableEntityHelper.getDefinitionColumn( fk.RefenceTable , true ).FirstOrDefault( x => x.ColumnName == a.FieldName )
-                        : SQLTableEntityHelper.getDefinitionColumn( fk.Table , true ).FirstOrDefault( x => x.ColumnName == a.FieldName );
+                foreach ( var fk in fks.foreignKeyInfo ) {
+
                     
-                    if ( instance is null ) throw new ArgumentNullException( "invalid fieldname " + a.FieldName );
+                    constraint = isReversed
+                        ? queryConstraints.Where( x => x.Entity == fk.ReferenceTable.GetType() ).ToList()
+                        : queryConstraints.Where( x => x.Entity == fk.Table.GetType() ).ToList();
+
+                    foreach ( DALQueryJoinEntityConstraint a in constraint ) {
+                        dynamic instance = isReversed
+                            ? SQLTableEntityHelper.getDefinitionColumn( fk.ReferenceTable , true ).FirstOrDefault( x => x.ColumnName == a.FieldName )
+                            : SQLTableEntityHelper.getDefinitionColumn( fk.Table , true ).FirstOrDefault( x => x.ColumnName == a.FieldName );
+
+                        if ( instance is null ) throw new ArgumentNullException( "invalid fieldname " + a.FieldName );
 
 
-                    dynamic c = a.ParamName != null
-                        ? FactoryEntityConstraint.MakeEqual( instance , ( MySQLQueryParam ) myQuery[a.ParamName] , a.Placeholder )
-                        : FactoryEntityConstraint.MakeEqual( instance , a.ParamValue , a.Placeholder );
+                        dynamic c = a.ParamName != null
+                            ? FactoryEntityConstraint.MakeEqual( instance , ( MySQLQueryParam ) myQuery[a.ParamName] , a.Placeholder )
+                            : FactoryEntityConstraint.MakeEqual( instance , a.ParamValue , a.Placeholder );
 
-                    constraints.Add( myQuery.MakeUniqueParamName( c ) );
+                        constraints.Add( myQuery.MakeUniqueParamName( c ) );
+
+                    }
+
+                    if ( constraints.Count > 0 ) {
+                        myQuery.JOIN( isReversed , fks , new SQLQueryConditionExpression( LogicOperator.AND , constraints.ToArray() ) );
+                    } else {
+                        myQuery.JOIN( isReversed , fks );
+                    }
+
+                    if ( isReversed ) {
+                        visited.Push( fk.ReferenceTable );
+                    } else {
+                        visited.Push( fk.Table );
+                    }
+
 
                 }
-
-                if ( constraints.Count > 0 ) {
-                    myQuery.JOIN( isReversed , fk , new SQLQueryConditionExpression( LogicOperator.AND , constraints.ToArray() ) );
-                } else {
-                    myQuery.JOIN( isReversed , fk );
-                }
-
-                if ( isReversed ) {
-                    visited.Push( fk.RefenceTable );
-                } else {
-                    visited.Push( fk.Table );
-                }
-
 
             }
-
-
-            //myQuery.setOrderBy( f );
-            //myQuery.setGroupBy( f );
-
             return myQuery;
+
         }
 
     }

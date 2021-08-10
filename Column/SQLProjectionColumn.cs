@@ -6,6 +6,7 @@ using prestoMySQL.Entity.Attributes;
 using prestoMySQL.Helper;
 using prestoMySQL.Query;
 using prestoMySQL.Query.Attribute;
+using prestoMySQL.SQL;
 using prestoMySQL.SQL.Interface;
 using prestoMySQL.Table;
 using System;
@@ -17,7 +18,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.Column {
-
 
     public abstract class GenericQueryColumn : QueryableColumn {
 
@@ -71,17 +71,17 @@ namespace prestoMySQL.Column {
         public abstract string ColumnName { get; }
 
 
-        protected readonly string mColumnAlias;
+        internal readonly string mColumnAlias;
+
         public abstract string ColumnAlias { get; }
 
         public abstract string ActualName { get; }
-
-
 
     }
 
     public class QueryColumn<T> : GenericQueryColumn where T : ISQLTypeWrapper {
         public QueryColumn( string aDeclaredVariableName , PropertyInfo aMethodBase = null ) : base( aMethodBase ) {
+
             if ( string.IsNullOrEmpty( aDeclaredVariableName ) ) {
                 throw new ArgumentException( $"'{nameof( aDeclaredVariableName )}' non può essere null o vuoto." , nameof( aDeclaredVariableName ) );
             }
@@ -156,6 +156,10 @@ namespace prestoMySQL.Column {
         public override string ToString() {
             return this.Table.getResultColumn( ColumnName , ColumnAlias );
             //return this.getTableReference().getResultColumn( getColumnName() , getAlias() );
+        }
+
+        public static implicit operator SQLProjectionColumn<T>( MySQLDefinitionColumn<SQLTypeWrapper<uint>> v ) {
+            throw new NotImplementedException();
         }
         //Se devo usarlo in una condizione non serve l'alias
 

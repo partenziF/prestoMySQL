@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PrestoMySQL.Database.Interface;
+using prestoMySQL.Database.Interface;
 
-namespace PrestoMySQ.Database {
+namespace prestoMySQL.Database {
 
-    public record LastErrorInfo( Exception e ) : ILastErrorInfo {
+    public record LastErrorInfo( System.Exception e ) : ILastErrorInfo {
 
         public string Message { get; init; } = e.Message;
 
@@ -83,15 +79,15 @@ namespace PrestoMySQ.Database {
                     if ( DoCloseConnection() ) {
                         mIsConnected = false;
                     } else {
-                        throw new Exception( "Error while try close connection" );
+                        throw new System.Exception( "Error while try close connection" );
                     }
-                } catch ( Exception e ) {
+                } catch ( System.Exception e ) {
 
                     LastError = new LastErrorInfo( e );
 
                     Logger?.LogWarning( $"{nameof( OpenConnection )} Exception message : {{0}}" , e.Message );
 
-                    throw new Exception( "Error while try close connection" , e );
+                    throw new System.Exception( "Error while try close connection" , e );
                 }
             }
 
@@ -102,12 +98,12 @@ namespace PrestoMySQ.Database {
                     if ( DoOpenConnection() ) {
                         mIsConnected = true;
                     } else {
-                        throw new Exception( "Error while try to open connection " );
+                        throw new System.Exception( "Error while try to open connection " );
                     }
 
-                } catch ( Exception e ) {
+                } catch ( System.Exception e ) {
                     Logger?.LogWarning( $"{nameof( OpenConnection )} Exception message : {{0}}" , e.Message );
-                    throw new Exception( "Error while try to open connection" , e );
+                    throw new System.Exception( "Error while try to open connection" , e );
                 }
 
             }
@@ -128,15 +124,15 @@ namespace PrestoMySQ.Database {
                     if ( await DoCloseConnectionAsync() ) {
                         mIsConnected = false;
                     } else {
-                        throw new Exception( "Error while try close connection" );
+                        throw new System.Exception( "Error while try close connection" );
                     }
-                } catch ( Exception e ) {
+                } catch ( System.Exception e ) {
 
                     LastError = new LastErrorInfo( e );
 
                     Logger?.LogWarning( $"{nameof( OpenConnection )} Exception message : {{0}}" , e.Message );
 
-                    throw new Exception( "Error while try close connection" , e );
+                    throw new System.Exception( "Error while try close connection" , e );
                 }
             }
 
@@ -147,12 +143,12 @@ namespace PrestoMySQ.Database {
                     if ( await DoOpenConnectionAsync() ) {
                         mIsConnected = true;
                     } else {
-                        throw new Exception( "Error while try to open connection " );
+                        throw new System.Exception( "Error while try to open connection " );
                     }
 
-                } catch ( Exception e ) {
+                } catch ( System.Exception e ) {
                     Logger?.LogWarning( $"{nameof( OpenConnection )} Exception message : {{0}}" , e.Message );
-                    throw new Exception( "Error while try to open connection" , e );
+                    throw new System.Exception( "Error while try to open connection" , e );
                 }
 
             }

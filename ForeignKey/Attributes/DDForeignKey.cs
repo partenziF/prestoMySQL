@@ -14,6 +14,8 @@ namespace prestoMySQL.ForeignKey.Attributes {
         public string Reference { get; set; }
         public string Name { get; set; }
 
+        public string TableAlias { get; set; }
+
         public override string ToString() {
             return base.ToString();
         }

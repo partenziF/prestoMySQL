@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PrestoMySQL.Database.Interface {
+namespace prestoMySQL.Database.Interface {
     public interface IReadableResultSet {
 
 

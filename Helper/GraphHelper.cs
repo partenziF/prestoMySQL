@@ -63,21 +63,55 @@ namespace prestoMySQL.Helper {
                 Graph.Add( Head , new List<EntityForeignKey>() { Node } );
             }
         }
+        //public static bool IsConnected( this Dictionary<AbstractEntity , List<EntityForeignKey>> Graph , EntityForeignKey Node ) {
         public static bool IsConnected( this Dictionary<AbstractEntity , List<EntityForeignKey>> Graph , EntityForeignKey Node ) {
 
-            foreach ( var entity in Graph.Keys.ToList() ) {
+            var result = true;
+            if ( Graph.Keys.Count > 0 ) {
+                foreach ( var entity in Graph.Keys.ToList() ) {
 
-                if ( entity.GetType() == Node.Table.GetType() ) {
-                    //var xxxxx = Graph[entity].FirstOrDefault( x => x.TypeRefenceTable == Node.TypeRefenceTable );
-                    foreach ( var x in Graph[entity] ) {
-                        if ( Node.TypeRefenceTable == x.TypeRefenceTable ) {
-                            return true;
+                    if ( Node.foreignKeyInfo.Count > 0 ) {
+                        foreach ( var info in Node.foreignKeyInfo ) {
+
+                            if ( entity.GetType() == info.Table.GetType() ) {
+
+                                foreach ( var x in Graph[entity] ) {
+                                    foreach ( var xx in x.foreignKeyInfo ) {
+
+                                        result = result && ( info.TypeReferenceTable == xx.TypeReferenceTable );
+                                        //if ( info.TypeReferenceTable == xx.TypeReferenceTable ) {
+
+                                        //}
+                                    }
+                                }
+                            } else {
+                                return false;
+                            }
+
                         }
+                    } else {
+                        return false;
                     }
 
                 }
 
+            } else {
+                return false;
             }
+            //foreach ( var entity in Graph.Keys.ToList() ) {
+
+
+            //    if ( entity.GetType() == Node.Table.GetType() ) {
+            //        //var xxxxx = Graph[entity].FirstOrDefault( x => x.TypeReferenceTable == Node.TypeReferenceTable );
+            //        foreach ( var x in Graph[entity] ) {
+            //            if ( Node.TypeReferenceTable == x.TypeReferenceTable ) {
+            //                return true;
+            //            }
+            //        }
+
+            //    }
+
+            //}
             return false;
 
         }

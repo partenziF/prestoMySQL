@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 namespace prestoMySQL.Query.SQL {
     public class EntityConditionalExpression : DefinableConditionalExpression {
         public EntityConditionalExpression( LogicOperator logicOperator , params dynamic[] aEntityConstraint ) {
-            
+
             this.mLogicOperator = logicOperator;
-            mConditions = aEntityConstraint.Where( x => ( x != null )).ToArray() ?? null;
+            mConditions = aEntityConstraint.Where( x => ( x != null ) ).ToArray() ?? null;
 
         }
 
@@ -33,6 +33,20 @@ namespace prestoMySQL.Query.SQL {
 
         public LogicOperator LogicOperator { get => this.mLogicOperator; set => this.mLogicOperator = value; }
         public int Length { get => mConditions.Length; }
+
+        public bool isEmpty {
+            get {
+                var result = true;
+                if ( ( mConditions is not null ) && ( mConditions.Length > 0 ) ) {
+                    result = false;
+                }
+                if ( ( mConditionExpressions is not null ) && ( mConditionExpressions.Length > 0 ) ) {
+                    result = false;
+                }
+
+                return result;
+            }
+        }
 
         public override string ToString() {
 
@@ -135,7 +149,7 @@ namespace prestoMySQL.Query.SQL {
     }
 
     public class EntityConstraintExpression : EntityConditionalExpression {
-        public EntityConstraintExpression( params dynamic[] aSqlQueryConditions ) : base( LogicOperator.AND, aSqlQueryConditions ) {
+        public EntityConstraintExpression( params dynamic[] aSqlQueryConditions ) : base( LogicOperator.AND , aSqlQueryConditions ) {
         }
     }
 

@@ -27,13 +27,12 @@ namespace prestoMySQL.Index {
             }
         }
 
-        protected IDictionary<string , PropertyInfo> IndexColumns;
-
         protected TableIndex() {
             this.IndexColumns = new Dictionary<string , PropertyInfo>();
         }
 
-        
+
+        protected IDictionary<string , PropertyInfo> IndexColumns;
 
         public PropertyInfo this[string index] {
 

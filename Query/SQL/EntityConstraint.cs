@@ -27,7 +27,7 @@ namespace prestoMySQL.Query.SQL {
 
             DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition , SQLBinaryOperator.equal() , new SQLQueryParams( new[] { p } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
 
-            return o;    
+            return o;
 
         }
 
@@ -76,10 +76,10 @@ namespace prestoMySQL.Query.SQL {
             Type myParameterizedSomeClass = typeof( EntityAssignement<> ).MakeGenericType( generic );
             ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
 
-            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { 
-                aColumnDefinition , 
-                new SQLQueryParams( new[] { new MySQLQueryParam( value , aColumnDefinition.ActualName ) } ) , 
-                aParamPlaceHolder } 
+            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] {
+                aColumnDefinition ,
+                new SQLQueryParams( new[] { new MySQLQueryParam( value , aColumnDefinition.ActualName ) } ) ,
+                aParamPlaceHolder }
             ) ) ?? throw new ArgumentNullException();
 
             return o;
@@ -107,12 +107,18 @@ namespace prestoMySQL.Query.SQL {
     }
 
 
-public class EntityConstraint<T> : GenericEntityConstraint<T> where T : notnull {
+    public class EntityConstraint<T> : GenericEntityConstraint<T> where T : notnull {
 
         public EntityConstraint( MySQLDefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition , EvaluableBinaryOperator aOperator , IQueryParams aQueryPararm , string aParamPlaceHolder = "" ) :
             base( aColumnDefinition , aOperator , aQueryPararm , aParamPlaceHolder ) {
         }
 
+    }
+
+
+    public class ForeignkeyConstraint : GenericForeignKeyConstraint {
+        public ForeignkeyConstraint( ForeignKey.ForeignKey foreignKey ) : base( foreignKey ) {
+        }
     }
 
 

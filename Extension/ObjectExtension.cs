@@ -1,4 +1,5 @@
-﻿using System;
+﻿using prestoMySQL.SQL;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -185,6 +186,19 @@ namespace prestoMySQL.Extension {
             return new string( input.ToCharArray()
                 .Where( c => !Char.IsWhiteSpace( c ) )
                 .ToArray() );
+        }
+
+        public static string SurroundWith( this string text , string ends ) {
+            return ends + text + ends;
+        }
+        public static string SurroundWith( this string text , char quote ) {
+            return quote + text + quote;
+        }
+        public static string QuoteTableName(this string table ) {
+            return table.SurroundWith( SQLConstant.TABLE_NAME_QUALIFIER );
+        }
+        public static string QuoteColumnName( this string column ) {
+            return column.SurroundWith( SQLConstant.COLUMN_NAME_QUALIFIER );
         }
 
     }

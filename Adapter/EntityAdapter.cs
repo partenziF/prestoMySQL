@@ -4,16 +4,18 @@ using prestoMySQL.Adapter.Enum;
 using prestoMySQL.Column.Attribute;
 using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity;
+using prestoMySQL.Entity.Interface;
 using prestoMySQL.Extension;
 using prestoMySQL.ForeignKey;
 using prestoMySQL.Helper;
 using prestoMySQL.Index;
+using prestoMySQL.PrimaryKey.Attributes;
 using prestoMySQL.Query;
 using prestoMySQL.Query.Interface;
 using prestoMySQL.Query.SQL;
 using prestoMySQL.SQL;
-using PrestoMySQL.Database.Interface;
-using PrestoMySQL.Database.MySQL;
+using prestoMySQL.Database.Interface;
+using prestoMySQL.Database.MySQL;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,7 +24,43 @@ using System.Reflection;
 
 namespace prestoMySQL.Adapter {
 
-    public abstract class EntityAdapter<T> : TableEntity where T : AbstractEntity {
+    public enum KeyTypeDescribe {
+        None,
+        Primary,
+        Unique
+
+    }
+
+    public struct TableDescribe {
+        public TableDescribe( string Field , string Type , bool Null , string Key , object Default , string Extra ) {
+            this.Field = Field;
+            this.Type = Type;
+            this.Null = Null;
+
+            if ( Key.Equals( "PRI" ) ) {
+                this.Key = KeyTypeDescribe.Primary;
+            } else if ( Key.Equals( "UNI" ) ) {
+                this.Key = KeyTypeDescribe.Unique;
+            } else {
+                this.Key = KeyTypeDescribe.None;
+            }
+
+            this.Default = Default;
+            this.Extra = Extra;
+        }
+
+        public string Field { get; }
+        public string Type { get; }
+        public bool Null { get; }
+        public KeyTypeDescribe Key { get; }
+        public object Default { get; }
+
+        public string Extra { get; }
+
+    }
+
+
+    public abstract class EntityAdapter<T> : TableEntity, IEnumerable<T> where T : AbstractEntity {
 
         private const string ERROR_EXECUTE_QUERY = "Error execute query ";
         //private Dictionary<AbstractEntity , List<EntityForeignKey>> mGraph = new Dictionary<AbstractEntity , List<EntityForeignKey>>();
@@ -33,15 +71,17 @@ namespace prestoMySQL.Adapter {
 
             CreateEvents();
 
-            //this.BuildEntityGraph();
+            OnInitData( EventArgs.Empty );
 
         }
+
 
         #region sezione eventi
         public event EventHandler InitData;
         public virtual void OnInitData( EventArgs e ) {
             EventHandler handler = InitData;
             handler?.Invoke( this , e );
+
         }
 
 
@@ -177,6 +217,10 @@ namespace prestoMySQL.Adapter {
 
         }
 
+        public static implicit operator T( EntityAdapter<T> v ) {
+            return ( T ) v.Entity;
+        }
+
 
         public static OperationResult DropTable( bool ifExists , MySQLDatabase mDatabase , ILogger mLogger = null ) {
 
@@ -248,7 +292,7 @@ namespace prestoMySQL.Adapter {
             var rs = mDatabase.ReadQuery( SQLBuilder.sqlDescribeTable<T>() );
             //var allFieldsExists = true;
 
-            if ( rs != null ) {
+            if ( ( bool ) !( rs?.isEmpty() ) ) {
 
                 var properties = SQLTableEntityHelper.getPropertyIfColumnDefinition<T>();
                 Dictionary<string , DDColumnAttribute> attributes = new Dictionary<string , DDColumnAttribute>();
@@ -272,48 +316,87 @@ namespace prestoMySQL.Adapter {
 
                 }
 
+
+
                 if ( rs.fetch() ) {
+
+                    var FieldsDescribe = new List<TableDescribe>();
 
                     do {
 
-                        if ( attributes.ContainsKey( rs.getValueAs<string>( "Field" ) ) ) {
-                            var a = attributes[rs.getValueAs<string>( "Field" )];
-                            var sClassType = a.BulldTypeString().RemoveAllWhitespace();
-                            var sDbType = rs.getValueAs<string>( "Type" ).RemoveAllWhitespace();
-                            if ( sClassType.Equals( sDbType , StringComparison.InvariantCultureIgnoreCase ) ) {
-                                //ok
-                            } else {
-                                //fail
-                            }
-
-                            if ( ( rs.getValueAs<string>( "Null" ).Equals( "YES" , StringComparison.InvariantCultureIgnoreCase ) ) && ( a.NullValue == NullValue.Null ) ) {
-                                //ok
-                            } else {
-                                //fail
-                            }
-
-                            var sDbNull = rs.getValueAs<string>( "Null" );
-
-                            if ( ( rs.getValueAs<string>( "Null" ).Equals( "NO" , StringComparison.InvariantCultureIgnoreCase ) ) && ( a.NullValue == NullValue.NotNull ) ) {
-                                //ok
-                            } else {
-                                //fail
-                            }
-
-                            if ( a.GetDefaultValueClause().Equals( rs.getValueAs<string>( "Default" ) , StringComparison.InvariantCultureIgnoreCase ) ) {
-
-                            }
-
-
-                        } else {
-                            //allFieldsExists = false;
-                        }
+                        FieldsDescribe.Add( new TableDescribe( rs.getValueAs<string>( "Field" ) ,
+                            rs.getValueAs<string>( "Type" ) ,
+                            rs.getValueAs<string>( "Null" ).Equals( "YES" ) ,
+                            rs.getValueAs<string>( "Key" ) ,
+                            rs.getValueAs<object>( "Default" ) ,
+                            rs.getValueAs<string>( "Extra" ) ) );
 
 
                     } while ( rs.fetch() );
 
                     rs?.close();
+
+
+                    if ( attributes.Count == FieldsDescribe.Count ) {
+                        //Alter Table
+
+                        for ( int i = 0; i < attributes.Count; i++ ) {
+
+                            var FieldName = attributes.Keys.ToArray()[i];
+                            if ( !( FieldsDescribe[i].Field.Equals( FieldName ) ) ) {
+
+                                attributes[FieldName].ChangeColumn( FieldsDescribe[i].Field );
+
+                            }
+                            //if ( properties[i]. == FieldsDescribe[i] ) {
+
+                            //}
+                        }
+
+                    } else if ( properties.Count > FieldsDescribe.Count ) {
+                        //Add new field
+
+                    } else if ( properties.Count < FieldsDescribe.Count ) {
+                        //Delete field from table
+                    }
+
+
+                    //if ( attributes.ContainsKey( rs.getValueAs<string>( "Field" ) ) ) {
+                    //    var a = attributes[rs.getValueAs<string>( "Field" )];
+                    //    var sClassType = a.BulldTypeString().RemoveAllWhitespace();
+                    //    var sDbType = rs.getValueAs<string>( "Type" ).RemoveAllWhitespace();
+                    //    if ( sClassType.Equals( sDbType , StringComparison.InvariantCultureIgnoreCase ) ) {
+                    //        //ok
+                    //    } else {
+                    //        //fail
+                    //    }
+
+                    //    if ( ( rs.getValueAs<string>( "Null" ).Equals( "YES" , StringComparison.InvariantCultureIgnoreCase ) ) && ( a.NullValue == NullValue.Null ) ) {
+                    //        //ok
+                    //    } else {
+                    //        //fail
+                    //    }
+
+                    //    var sDbNull = rs.getValueAs<string>( "Null" );
+
+                    //    if ( ( rs.getValueAs<string>( "Null" ).Equals( "NO" , StringComparison.InvariantCultureIgnoreCase ) ) && ( a.NullValue == NullValue.NotNull ) ) {
+                    //        //ok
+                    //    } else {
+                    //        //fail
+                    //    }
+
+                    //    if ( a.GetDefaultValueClause().Equals( rs.getValueAs<string>( "Default" ) , StringComparison.InvariantCultureIgnoreCase ) ) {
+
+                    //    }
+
+
+                    //} else {
+                    //    //allFieldsExists = false;
+                    //}
+
+
                     return OperationResult.OK;
+
 
                 } else {
                     rs?.close();
@@ -393,6 +476,9 @@ namespace prestoMySQL.Adapter {
             }
 
             InitEntity();
+            MapToEntity();
+            Entity.State = EntityState.Created;
+
 
         }
 
@@ -400,6 +486,8 @@ namespace prestoMySQL.Adapter {
 
             Entity ??= CreateInstace<T>();
             InitEntity();
+            MapToEntity();
+            Entity.State = EntityState.Created;
 
             //CreateInstace<T>();
             if ( this.Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
@@ -412,16 +500,72 @@ namespace prestoMySQL.Adapter {
         }
 
 
-        public override OperationResult New() {
+        public override OperationResult New( AbstractEntity newEntity = null ) {
 
             //CreateInstace<T>( true );
-            Entity = CreateInstace<T>();
+            Entity = ( T ) ( newEntity ?? CreateInstace<T>() );
+
             InitEntity();
+
+            if ( newEntity is null ) MapToEntity();
+            else MapFromAdapter();
+
+            Entity.State = EntityState.Created;
+
             if ( this.Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
 
-            Entity.PrimaryKey?.createKey();
+            if ( ( newEntity != null ) && ( Entity.PrimaryKey?.KeyState != KeyState.Created ) )
+                Entity.PrimaryKey?.createKey();
+
             createForeignKey();
             CreatePrimaryKey();
+
+            //Entity.GetAllForeignkey().ForEach( fks => {
+            //    if ( fks.ReferenceTable == null ) {
+            //        var f = mEntities.FirstOrDefault().GetAllForeignkey().FirstOrDefault( x => x.ForeignkeyName == fks.ForeignkeyName );
+            //        if ( f != null ) {
+            //            fks.addEntities( new List<AbstractEntity>() { f.ReferenceTables() } );
+            //            fks.ReferenceTable = f.ReferenceTables();
+            //        }
+            //    }
+
+
+            Entity.GetAllForeignkey().ForEach( fks => {
+
+                foreach ( var info in fks.foreignKeyInfo ) {
+
+                    if ( info.ReferenceTable == null ) {
+
+                        var f = mEntities.FirstOrDefault().GetAllForeignkey().FirstOrDefault( x => x.ForeignkeyName == fks.ForeignkeyName );
+
+                        if ( f != null ) {
+                            foreach ( var ff in f.foreignKeyInfo ) {
+
+                                info.ReferenceTable = ff.ReferenceTable;
+                                fks.addEntities( new List<AbstractEntity>() { ff.ReferenceTable } );
+
+                            }
+                        }
+
+                    }
+
+                }
+
+
+                //var l = Helper.SQLTableEntityHelper.getDefinitionColumn( fk.ReferenceTable , true );
+
+                //ConstructibleColumn xx = l.FirstOrDefault( x => (x as ConstructibleColumn ).ColumnName == fk.ReferenceColumnName );
+
+                //foreach ( var (name, pi) in fk.foreignKeyColumns ) {
+
+                //    var x = pi.GetCustomAttribute<DDForeignKey>()?.Name;
+                //    ReflectionTypeHelper.AssignValue<T>( this , pi , ( T ) entityLeft );
+
+                //}
+
+            } );
+
+
 
             return OperationResult.OK;
 
@@ -876,101 +1020,106 @@ namespace prestoMySQL.Adapter {
 
         }
 
+        public U defaultValue<U>( string propertyName ) {
 
-        //private void BuildEntityGraph() {
+            var pi = SQLTableEntityHelper.getPropertyIfColumnDefinition<T>().FirstOrDefault( x => x.Name.Equals( propertyName ) );
+            var a = pi.GetCustomAttribute( typeof( DDColumnAttribute ) );
+            //var isPK = pi.GetCustomAttribute( typeof( DDPrimaryKey ) );
+            if ( a is not null ) {
 
-        //    //mGraph.Clear();
+                //if ( ( isPK is null ) && ( ( ( a as DDColumnAttribute ).NullValue == NullValue.NotNull ) && ( default( T ) == null ) ) ) {
+                //    if ( typeof( U ) != typeof( string ) ) {
+                //        throw new NullReferenceException( $"Default value for {propertyName} can't be null." );
+                //    }
+                //}
 
-        //    //if ( ( this.Entity.mforeignKeys != null ) && ( this.Entity.mforeignKeys.Count > 0 ) ) {
+                if ( ( a as DDColumnAttribute ).DefaultValue != null ) {
 
-        //    //    Stack<EntityForeignKey> foreignKeys = new Stack<EntityForeignKey>();
-        //    //    this.Entity.mforeignKeys.ForEach( fk => {
+                    if ( ( a as DDColumnAttribute ).DefaultValue.Equals( ( DefaultValues.AUTOINCREMENT ) ) ) {
+                        var value = default( U );
+                        //ReflectionTypeHelper.SetValueToColumn( ( AbstractEntity ) this , pi , ( ( a as DDColumnAttribute ).NullValue == NullValue.NotNull ) ? value : null);
+                        return value;
 
-        //    //        mGraph.Connect( this.Entity , fk );
+                    } else if ( ( a as DDColumnAttribute ).DefaultValue.Equals( ( DefaultValues.CURDATE ) ) ) {
+                        return default( U );
+                    } else if ( ( a as DDColumnAttribute ).DefaultValue.Equals( ( DefaultValues.NULL ) ) ) {
+                        var value = default( U );
+                        //ReflectionTypeHelper.SetValueToColumn( ( AbstractEntity ) this , pi , ( ( a as DDColumnAttribute ).NullValue == NullValue.NotNull ) ? value : null );
+                        return value;
+                    } else {
+                        return ( U ) ( a as DDColumnAttribute ).DefaultValue.ConvertTo<U>();
 
-        //    //        fk.InstantiateRefenceTable();
-        //    //        mGraph.Add( fk.RefenceTable );
-        //    //        fk.RefenceTable.mforeignKeys.ForEach( x => { foreignKeys.Push( x ); mGraph.Connect( fk.RefenceTable , x ); } );
+                    }
+                } else {
+                    if ( typeof( U ) == typeof( string ) ) {
+                        if ( ( a as DDColumnAttribute ).NullValue == NullValue.NotNull ) {
+                            return ( dynamic ) "";
+                        } else {
+                            return default( U );
+                        }
+                    } else {
+                        return default( U );
+                    }
 
+                }
+            }
 
-        //    //    } );
+            return default( U );
+        }
 
-        //    //    EntityForeignKey fk = null;
-        //    //    while ( foreignKeys.TryPop( out fk ) ) {
+        public void MapToEntity( AbstractEntity entity = null ) {
+            var entityProperty = this.GetType().GetProperties().FirstOrDefault( x => x.PropertyType.IsAssignableTo( typeof( AbstractEntity ) ) );
+            AbstractEntity Entity = entity ?? ( AbstractEntity ) ( entityProperty?.GetValue( this ) );
+            if ( Entity != null ) {
+                var fields = this.GetType().GetFields();
+                var properties = Entity.GetType().GetProperties();
+                foreach ( var field in fields ) {
+                    var p = properties.FirstOrDefault( p => p.Name.Equals( field.Name ) );
+                    if ( p != null ) {
+                        var value = field.GetValue( this );
+                        ReflectionTypeHelper.SetValueToColumn( ( AbstractEntity ) Entity , p , value );
+                    }
 
-        //    //        //Avoid circular refernce
-        //    //        if ( fk.TypeRefenceTable != this.Entity.GetType() ) {
-        //    //            //this.Entity.mforeignKeys.Add( fk );
-        //    //            fk.InstantiateRefenceTable();
-        //    //            mGraph.Add( fk.RefenceTable );
-        //    //            fk.RefenceTable.mforeignKeys.ForEach( x => { foreignKeys.Push( x ); mGraph.Connect( fk.RefenceTable , x ); } );
+                }
 
-        //    //            foreignKeyTables.Add( fk.RefenceTable );
-        //    //        }                    
+            }
+        }
 
-        //    //    }
+        public void MapFromAdapter( AbstractEntity entity = null ) {
 
-        //    //    //var _Entities = mGraph.Keys.ToList();
-        //    //    //foreach ( var e in _Entities.OrderBy( a => a.mforeignKeys?.Count() ).ToList() ) {
-        //    //    //    foreach ( var _fk in mGraph[e] ) {
+            var entityProperty = this.GetType().GetProperties().FirstOrDefault( x => x.PropertyType.IsAssignableTo( typeof( AbstractEntity ) ) );
+            AbstractEntity Entity = entity ?? ( AbstractEntity ) ( entityProperty?.GetValue( this ) );
+            if ( Entity != null ) {
+                var fields = this.GetType().GetFields();
+                var properties = Entity.GetType().GetProperties();
+                foreach ( var field in fields ) {
+                    var p = properties.FirstOrDefault( p => p.Name.Equals( field.Name ) );
+                    if ( p != null ) {
 
-        //    //    //        if ( _fk.RefenceTable != null ) {
-        //    //    //            _fk.addEntities( _Entities );
-        //    //    //            _fk.createKey();
+                        dynamic type = ReflectionTypeHelper.GetValueFromColumn( ( AbstractEntity ) Entity , p );
 
-        //    //    //        }
-        //    //    //    }
-        //    //    //}
+                        if ( type.IsNull ) {
+                            field.SetValue( this , null );
+                        } else {
+                            field.SetValue( this , type.Value );
+                        }
 
-        //    //} else {
-        //    //    mGraph.Add( this.Entity );
-        //    //}
-        //}
+                    }
 
+                }
 
-        //public int IndexOf( AbstractEntity item ) {
-        //    return ( ( IList<AbstractEntity> ) this.foreignKeyTables ).IndexOf( item );
-        //}
+                Entity.State = EntityState.Created;
+            }
+        }
 
-        //public void Insert( int index , AbstractEntity item ) {
-        //    ( ( IList<AbstractEntity> ) this.foreignKeyTables ).Insert( index , item );
-        //}
+        public IEnumerator<T> GetEnumerator() {
+            return ( ( IEnumerable<T> ) this.mEntities ).GetEnumerator();
+        }
 
-        //public void RemoveAt( int index ) {
-        //    ( ( IList<AbstractEntity> ) this.foreignKeyTables ).RemoveAt( index );
-        //}
-
-        //public void Add( AbstractEntity item ) {
-        //    ( ( ICollection<AbstractEntity> ) this.foreignKeyTables ).Add( item );
-        //}
-
-        //public void Clear() {
-        //    ( ( ICollection<AbstractEntity> ) this.foreignKeyTables ).Clear();
-        //}
-
-        //public bool Contains( AbstractEntity item ) {
-        //    return ( ( ICollection<AbstractEntity> ) this.foreignKeyTables ).Contains( item );
-        //}
-
-        //public void CopyTo( AbstractEntity[] array , int arrayIndex ) {
-        //    ( ( ICollection<AbstractEntity> ) this.foreignKeyTables ).CopyTo( array , arrayIndex );
-        //}
-
-        //public bool Remove( AbstractEntity item ) {
-        //    return ( ( ICollection<AbstractEntity> ) this.foreignKeyTables ).Remove( item );
-        //}
-
-        //public IEnumerator<AbstractEntity> GetEnumerator() {
-        //    return ( ( IEnumerable<AbstractEntity> ) this.foreignKeyTables ).GetEnumerator();
-        //}
-
-        //IEnumerator IEnumerable.GetEnumerator() {
-        //    return ( ( IEnumerable ) this.foreignKeyTables ).GetEnumerator();
-        //}
-
-
+        IEnumerator IEnumerable.GetEnumerator() {
+            return ( ( IEnumerable ) this.mEntities ).GetEnumerator();
+        }
     }
-
 
     public class BindDataFromEventArgs<U> : EventArgs {
         public U Entity { get; set; }
@@ -979,6 +1128,8 @@ namespace prestoMySQL.Adapter {
     public class BindDataToEventArgs<U> : EventArgs {
         public U Entity { get; set; }
     }
+
+
 
 
 }

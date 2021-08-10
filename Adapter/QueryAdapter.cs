@@ -3,8 +3,8 @@ using prestoMySQL.Column.Interface;
 using prestoMySQL.Database.Cursor;
 using prestoMySQL.Query;
 using prestoMySQL.Query.Interface;
-using PrestoMySQL.Database.Interface;
-using PrestoMySQL.Database.MySQL;
+using prestoMySQL.Database.Interface;
+using prestoMySQL.Database.MySQL;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -30,7 +30,7 @@ namespace prestoMySQL.Adapter {
 
         public abstract MySQResultSet ExecuteQuery( out ILastErrorInfo Message );
 
-        protected abstract void BindData( Dictionary<string , Dictionary<string , int>> s,MySQResultSet resultSet );
+        protected abstract void BindData( Dictionary<string , Dictionary<string , int>> s , IReadableResultSet resultSet );
 
 
     }

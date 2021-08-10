@@ -367,7 +367,13 @@ namespace prestoMySQL.Column {
         }
 
         object IConvertible.ToType( Type conversionType , IFormatProvider provider ) {
-            throw new NotImplementedException( $"{this.ColumnName} not converted {nameof( IConvertible.ToType )}" );
+
+            //if ( conversionType.GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) ) {                
+            //    return new SQLProjectionColumn<SQLTypeWrapper<uint>>();
+            //}
+
+
+            throw new InvalidCastException( $"{this.ColumnName} not converted in {conversionType.GetGenericTypeDefinition()}" );
         }
 
         ushort IConvertible.ToUInt16( IFormatProvider provider ) {
@@ -404,7 +410,7 @@ namespace prestoMySQL.Column {
                 throw new InvalidCastException( "Unknow type for value " + TypeWrapperValue.ToString() );
             }
 
-            
+
         }
 
         //sbyte => short, int, long, float, double, decimal o nint
@@ -491,6 +497,12 @@ namespace prestoMySQL.Column {
             //Value = new SQLTypeWrapper<uint>( y );
 
 
+        }
+
+
+        public SQLColumn<T> Copy() {
+
+            return ( SQLColumn<T> ) base.Copy();
         }
 
     }

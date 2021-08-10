@@ -4,6 +4,7 @@ using prestoMySQL.Column.DataType;
 using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity;
 using prestoMySQL.Extension;
+using prestoMySQL.ForeignKey;
 using prestoMySQL.Query;
 using prestoMySQL.SQL;
 using prestoMySQL.SQL.Interface;
@@ -188,6 +189,12 @@ namespace prestoMySQL.Column {
 
         }
 
+        public MySQLDefinitionColumn<T> Copy() {
+
+            return ( MySQLDefinitionColumn<T> ) base.Copy();
+        }
+
 
     }
+
 }

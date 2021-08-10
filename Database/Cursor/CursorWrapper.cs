@@ -1,6 +1,6 @@
 ﻿using MySqlConnector;
-using PrestoMySQL.Database.Interface;
-using PrestoMySQL.Database.MySQL;
+using prestoMySQL.Database.Interface;
+using prestoMySQL.Database.MySQL;
 using System;
 using System.Collections;
 using System.Collections.Generic;

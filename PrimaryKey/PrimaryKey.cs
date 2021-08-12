@@ -13,7 +13,7 @@ namespace prestoMySQL.PrimaryKey {
   //      private prestoMySQL.Entity.AbstractEntity mTable;
 //        public AbstractEntity Table { get => this.mTable; set => this.mTable = value; }
 
-        public KeyState mKeyState = KeyState.Unset;
+        public KeyState mKeyState = KeyState.UnsetKey;
         public KeyState KeyState { get => mKeyState; set => mKeyState = value; }
 
         

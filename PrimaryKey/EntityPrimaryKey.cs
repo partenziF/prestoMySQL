@@ -22,7 +22,7 @@ namespace prestoMySQL.PrimaryKey {
         private DelegateCreatePrimaryKey delegatorCreatePrimaryKey = null;
 
         // Constructor ///////////////////////////////
-        public EntityPrimaryKey( AbstractEntity aTableEntity ) : base( KeyState.Unset ) {
+        public EntityPrimaryKey( AbstractEntity aTableEntity ) : base( KeyState.UnsetKey ) {
             this.Table = aTableEntity;
             initialize( aTableEntity );
             mKeyLength = IndexColumns.Count;
@@ -81,7 +81,7 @@ namespace prestoMySQL.PrimaryKey {
 
         internal virtual void setKeyValues( params object[] values ) {
             int i = 0;
-            KeyState = KeyState.Set;
+            KeyState = KeyState.SetKey;
 
             if ( values.Length != KeyLength )
                 throw new ArgumentOutOfRangeException( "Invalid key length" );
@@ -115,7 +115,7 @@ namespace prestoMySQL.PrimaryKey {
 
         public void createKey( dynamic value = null ) {
             
-            KeyState = KeyState.Created;
+            KeyState = KeyState.CreatedKey;
 
             if ( !isAutoIncrement ) {
 
@@ -197,6 +197,10 @@ namespace prestoMySQL.PrimaryKey {
             get {
                 return this.IndexColumns.Keys.ToArray();
             }
+        }
+
+        public EntityPrimaryKey Copy() {
+            return ( EntityPrimaryKey ) this.MemberwiseClone();
         }
 
     }

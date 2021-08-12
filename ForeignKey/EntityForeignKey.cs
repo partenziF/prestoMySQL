@@ -32,7 +32,7 @@ namespace prestoMySQL.ForeignKey {
 
         //public Stack<EntityPrimaryKey[]> stackPrimaryKey;
 
-        protected EntityForeignKey( AbstractEntity aTableEntity , string ForeignkeyName ) : base( KeyState.Unset ) {
+        protected EntityForeignKey( AbstractEntity aTableEntity , string ForeignkeyName ) : base( KeyState.UnsetKey ) {
 
             this.mForeignkeyName = ForeignkeyName;
             //this.Table = aTableEntity;
@@ -117,7 +117,7 @@ namespace prestoMySQL.ForeignKey {
 
         public virtual void createKey( params string[] columnNames ) {
 
-            keyState = KeyState.Created;
+            keyState = KeyState.CreatedKey;
 
             doCreateForeignKey( columnNames );
 
@@ -158,7 +158,7 @@ namespace prestoMySQL.ForeignKey {
         }
 
         public virtual void setKeyValues( params object[] values ) {
-            this.keyState = KeyState.Set;
+            this.keyState = KeyState.SetKey;
             if ( values.Length != KeyLength )
                 throw new System.ArgumentOutOfRangeException( "Invalid key length" );
 

@@ -216,7 +216,7 @@ namespace prestoMySQL.Entity {
 
                     //ReflectionTypeHelper.SetValueToColumn( copy , p , ( sourceCol as dynamic ).TypeWrapperValue.Value );
                     ( destCol as dynamic ).TypeWrapperValue = ( sourceCol as dynamic ).TypeWrapperValue.Copy();
-                    ( destCol as dynamic ).mTable = ( sourceCol as dynamic ).Table.Copy();                    
+                    ( destCol as dynamic ).mTable = ( sourceCol as dynamic ).Table.Copy();
                 }
 
 
@@ -232,6 +232,11 @@ namespace prestoMySQL.Entity {
 
             }
 
+            var copied = PrimaryKey.Copy();
+
+            copy.mPrimaryKey.KeyState = PrimaryKey.KeyState;
+
+            copy.State = EntityState.Created;
             return copy;
 
         }

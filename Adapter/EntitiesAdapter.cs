@@ -1048,10 +1048,12 @@ namespace prestoMySQL.Adapter {
         public void BindData( IReadableResultSet rs , List<AbstractEntity> copyEntity = null ) {
 
             List<dynamic> definitionColumns = new List<dynamic>();
+            Dictionary<string , Dictionary<Type , List<object>>> primaryKeysValues = new Dictionary<string , Dictionary<Type , List<object>>>();
 
             var tables = copyEntity ?? _Graph.GetTopologicalOrder();
             foreach ( var e in tables ) {
                 definitionColumns.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() );
+                primaryKeysValues.Add( e.ActualName , new Dictionary<Type , List<object>>() );
             }
 
             var s = rs.ResultSetSchemaTable();
@@ -1078,7 +1080,18 @@ namespace prestoMySQL.Adapter {
                                                            new object[] { ( int ) index } );
 
                 if ( column.isPrimaryKey ) {
-                    tables.FirstOrDefault( x => x.GetType().Equals( ( column as dynamic ).TypeTable ) )?.PrimaryKey.createKey( v );
+                    if ( primaryKeysValues.ContainsKey( column.Table.ActualName ) ) {
+
+                        if ( primaryKeysValues[column.Table.ActualName].ContainsKey( ( column as dynamic ).TypeTable ) ) {
+                            ( primaryKeysValues[column.Table.ActualName][( column as dynamic ).TypeTable] as List<object> ).Add( v );
+                        } else {
+                            primaryKeysValues[column.Table.ActualName][( column as dynamic ).TypeTable] = new List<object>() { v };
+
+                        }
+                    } else {
+                        throw new System.Exception( $"Can't find table name {column.Table.ActualName} in primarykeysvalues" );
+                    }
+
                 } else {
 
                     if ( v.IsDBNull() ) {
@@ -1090,7 +1103,13 @@ namespace prestoMySQL.Adapter {
                     }
 
                 }
-                
+
+            }
+
+            foreach ( var (tablename, tablenames) in primaryKeysValues ) {
+                foreach ( var (typetable, values) in tablenames ) {
+                    tables.FirstOrDefault( x => ( ( x.ActualName == tablename ) && ( x.GetType().Equals( typetable ) ) ) )?.PrimaryKey.setKeyValues( values.ToArray() );
+                }
             }
 
         }
@@ -1135,7 +1154,7 @@ namespace prestoMySQL.Adapter {
                             foreach ( var tableEntity in list ) {
                                 //tableEntity.New();
                                 var copy = ( tableEntity as dynamic ).Entity.Copy();
-                                copy.State = EntityState.Set;
+                                copy.State = EntityState.Created;
                                 newEntities.Add( copy );
                             }
                         }
@@ -1244,12 +1263,12 @@ namespace prestoMySQL.Adapter {
                 if ( r == OperationResult.OK ) {
                     foreach ( var e in tables ) {
                         e.State = prestoMySQL.Entity.Interface.EntityState.Set;
-                        e.PrimaryKey.KeyState = KeyState.Set;
+                        e.PrimaryKey.KeyState = KeyState.SetKey;
                     }
                 } else {
                     foreach ( var e in tables ) {
                         e.State = prestoMySQL.Entity.Interface.EntityState.Undefined;
-                        e.PrimaryKey.KeyState = KeyState.Unset;
+                        e.PrimaryKey.KeyState = KeyState.UnsetKey;
                     }
                 }
 
@@ -1281,12 +1300,52 @@ namespace prestoMySQL.Adapter {
                 if ( r == OperationResult.OK ) {
                     foreach ( var e in tables ) {
                         e.State = prestoMySQL.Entity.Interface.EntityState.Set;
-                        e.PrimaryKey.KeyState = KeyState.Set;
+                        e.PrimaryKey.KeyState = KeyState.SetKey;
                     }
                 } else {
                     foreach ( var e in tables ) {
                         e.State = prestoMySQL.Entity.Interface.EntityState.Undefined;
-                        e.PrimaryKey.KeyState = KeyState.Unset;
+                        e.PrimaryKey.KeyState = KeyState.UnsetKey;
+                    }
+                }
+
+                return r;
+
+            } catch ( ArgumentOutOfRangeException e1 ) {
+                throw new ArgumentOutOfRangeException( "Invalid key valus length for primary key" );
+            } catch ( System.Exception e ) {
+                throw new System.Exception( e.Message );
+            }
+
+        }
+
+
+        public OperationResult Read<T, PK1, PK2, PK3>( EntityConditionalExpression Constraint = null , params object[] KeyValues ) where T : AbstractEntity
+                                                                                                                             where PK1 : AbstractEntity
+                                                                                                                             where PK2 : AbstractEntity
+                                                                                                                             where PK3 : AbstractEntity {
+
+            try {
+
+                var tables = _Graph.GetTopologicalOrder();
+                bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
+
+                T fromTable = ( T ) tables.FirstOrDefault( e => e.GetType() == typeof( T ) );
+                PK1 pkTable1 = ( PK1 ) tables.FirstOrDefault( e => e.GetType() == typeof( PK1 ) );
+                PK2 pkTable2 = ( PK2 ) tables.FirstOrDefault( e => e.GetType() == typeof( PK2 ) );
+                PK3 pkTable3 = ( PK3 ) tables.FirstOrDefault( e => e.GetType() == typeof( PK3 ) );
+
+                var r = Read<T>( fromTable , new AbstractEntity[] { pkTable1 , pkTable2 , pkTable3 } , AlmostIsIdentifying , Constraint , KeyValues );
+
+                if ( r == OperationResult.OK ) {
+                    foreach ( var e in tables ) {
+                        e.State = prestoMySQL.Entity.Interface.EntityState.Set;
+                        e.PrimaryKey.KeyState = KeyState.SetKey;
+                    }
+                } else {
+                    foreach ( var e in tables ) {
+                        e.State = prestoMySQL.Entity.Interface.EntityState.Undefined;
+                        e.PrimaryKey.KeyState = KeyState.UnsetKey;
                     }
                 }
 
@@ -1315,12 +1374,12 @@ namespace prestoMySQL.Adapter {
                 if ( r == OperationResult.OK ) {
                     foreach ( var e in tables ) {
                         e.State = prestoMySQL.Entity.Interface.EntityState.Set;
-                        e.PrimaryKey.KeyState = KeyState.Set;
+                        e.PrimaryKey.KeyState = KeyState.SetKey;
                     }
                 } else {
                     foreach ( var e in tables ) {
                         e.State = prestoMySQL.Entity.Interface.EntityState.Undefined;
-                        e.PrimaryKey.KeyState = KeyState.Unset;
+                        e.PrimaryKey.KeyState = KeyState.UnsetKey;
                     }
                 }
 
@@ -1356,12 +1415,12 @@ namespace prestoMySQL.Adapter {
                 if ( r == OperationResult.OK ) {
                     foreach ( var e in tables ) {
                         e.State = prestoMySQL.Entity.Interface.EntityState.Set;
-                        e.PrimaryKey.KeyState = KeyState.Set;
+                        e.PrimaryKey.KeyState = KeyState.SetKey;
                     }
                 } else {
                     foreach ( var e in tables ) {
                         e.State = prestoMySQL.Entity.Interface.EntityState.Undefined;
-                        e.PrimaryKey.KeyState = KeyState.Unset;
+                        e.PrimaryKey.KeyState = KeyState.UnsetKey;
                     }
                 }
 
@@ -1407,12 +1466,12 @@ namespace prestoMySQL.Adapter {
                 if ( r == OperationResult.OK ) {
                     foreach ( var e in tables ) {
                         e.State = prestoMySQL.Entity.Interface.EntityState.Set;
-                        e.PrimaryKey.KeyState = KeyState.Set;
+                        e.PrimaryKey.KeyState = KeyState.SetKey;
                     }
                 } else {
                     foreach ( var e in tables ) {
                         e.State = prestoMySQL.Entity.Interface.EntityState.Undefined;
-                        e.PrimaryKey.KeyState = KeyState.Unset;
+                        e.PrimaryKey.KeyState = KeyState.UnsetKey;
                     }
                 }
 

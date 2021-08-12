@@ -77,24 +77,28 @@ namespace prestoMySQL.Adapter {
 
 
         #region sezione eventi
-        public event EventHandler InitData;
-        public virtual void OnInitData( EventArgs e ) {
+        protected event EventHandler InitData;
+        protected virtual void OnInitData( EventArgs e ) {
             EventHandler handler = InitData;
             handler?.Invoke( this , e );
 
         }
 
+        public void DoInitData() {
+            OnInitData( EventArgs.Empty );
+        }
 
-        public delegate void BindDataFromEventHandler( Object sender , BindDataFromEventArgs<T> e );
-        public event BindDataFromEventHandler BindDataFrom;
-        public virtual void OnBindDataFrom( BindDataFromEventArgs<T> e ) {
+
+        protected delegate void BindDataFromEventHandler( Object sender , BindDataFromEventArgs<T> e );
+        protected event BindDataFromEventHandler BindDataFrom;
+        protected virtual void OnBindDataFrom( BindDataFromEventArgs<T> e ) {
             BindDataFromEventHandler handler = BindDataFrom;
             handler?.Invoke( this , e );
         }
 
 
-        public delegate void BindDataToEventHandler( Object sender , BindDataToEventArgs<T> e );
-        public event BindDataToEventHandler BindDataTo;
+        protected delegate void BindDataToEventHandler( Object sender , BindDataToEventArgs<T> e );
+        protected event BindDataToEventHandler BindDataTo;
         protected virtual void OnBindDataTo( BindDataToEventArgs<T> e ) {
             BindDataToEventHandler handler = BindDataTo;
             handler?.Invoke( this , e );
@@ -104,7 +108,7 @@ namespace prestoMySQL.Adapter {
         #endregion
 
         private List<AbstractEntity> foreignKeyTables = new List<AbstractEntity>();
-        public readonly MySQLDatabase mDatabase;
+        protected readonly MySQLDatabase mDatabase;
         private readonly ILogger mLogger;
 
         public T Entity { get => mEntities.LastOrDefault(); set => mEntities.Add( value ); }
@@ -504,6 +508,7 @@ namespace prestoMySQL.Adapter {
 
             //CreateInstace<T>( true );
             Entity = ( T ) ( newEntity ?? CreateInstace<T>() );
+            if ( this.Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
 
             InitEntity();
 
@@ -512,10 +517,13 @@ namespace prestoMySQL.Adapter {
 
             Entity.State = EntityState.Created;
 
-            if ( this.Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
-
-            if ( ( newEntity != null ) && ( Entity.PrimaryKey?.KeyState != KeyState.Created ) )
+            if ( newEntity is null ) {
                 Entity.PrimaryKey?.createKey();
+            } else {
+                if ( Entity.PrimaryKey?.KeyState == KeyState.CreatedKey )
+                    Entity.PrimaryKey?.createKey();
+            }
+
 
             createForeignKey();
             CreatePrimaryKey();
@@ -638,9 +646,9 @@ namespace prestoMySQL.Adapter {
                 var r = FetchResultSet( rs );
 
                 if ( r == OperationResult.OK ) {
-                    Entity.PrimaryKey.KeyState = KeyState.Set;
+                    Entity.PrimaryKey.KeyState = KeyState.SetKey;
                 } else {
-                    Entity.PrimaryKey.KeyState = KeyState.Unset;
+                    Entity.PrimaryKey.KeyState = KeyState.UnsetKey;
                 }
 
                 return r;
@@ -683,9 +691,9 @@ namespace prestoMySQL.Adapter {
             var r = FetchResultSet( rs );
 
             if ( r == OperationResult.OK ) {
-                Entity.PrimaryKey.KeyState = KeyState.Set;
+                Entity.PrimaryKey.KeyState = KeyState.SetKey;
             } else if ( r != OperationResult.Empty ) {
-                Entity.PrimaryKey.KeyState = KeyState.Unset;
+                Entity.PrimaryKey.KeyState = KeyState.UnsetKey;
             }
 
             return r;
@@ -806,14 +814,14 @@ namespace prestoMySQL.Adapter {
                             case true:
                             entity.PrimaryKey.doCreatePrimaryKey();
                             SetPrimaryKey();
-                            entity.PrimaryKey.KeyState = KeyState.Set;
+                            entity.PrimaryKey.KeyState = KeyState.SetKey;
                             break;
                             case false:
                             primaryKeyValues = entity.PrimaryKey.getKeyValues();
                             if ( entity.PrimaryKey.isAutoIncrement ) {
                                 SetPrimaryKey();
                             }
-                            entity.PrimaryKey.KeyState = KeyState.Set;
+                            entity.PrimaryKey.KeyState = KeyState.SetKey;
                             break;
                         }
 
@@ -884,7 +892,7 @@ namespace prestoMySQL.Adapter {
                 }
 
             } else {
-                return OperationResult.Fail;
+                return OperationResult.Unchange;
             }
 
         }
@@ -900,11 +908,10 @@ namespace prestoMySQL.Adapter {
             foreach ( T aEntity in mEntities ) {
 
 
-
                 switch ( aEntity.PrimaryKey?.KeyState ) {
 
                     case null:
-                    case KeyState.Created:
+                    case KeyState.CreatedKey:
 
                     if ( result ) {
 
@@ -921,12 +928,15 @@ namespace prestoMySQL.Adapter {
                             case OperationResult.Exception:
                             result &= false;
                             break;
+                            case OperationResult.Unchange:
+                            result &= true;
+                            break;
                         }
                     }
 
                     break;
 
-                    case KeyState.Set:
+                    case KeyState.SetKey:
                     //result = Update() == OperationResult.OK;
                     if ( result ) {
                         switch ( Update( aEntity ) ) {
@@ -944,13 +954,16 @@ namespace prestoMySQL.Adapter {
                             case OperationResult.Exception:
                             result &= false;
                             break;
+                            case OperationResult.Unchange:
+                            result &= true;
+                            break;
 
                         }
                     }
 
                     break;
 
-                    case KeyState.Unset:
+                    case KeyState.UnsetKey:
                     result = false;
                     throw new System.Exception( "Unset primary key" );
                 }
@@ -1004,14 +1017,12 @@ namespace prestoMySQL.Adapter {
 
         public void BindData() {
 
-
             //if ( this.Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
             //CreateNew();
             //return OperationResult.OK;
 
             //this.Entity = ( T ) Activator.CreateInstance( typeof( T ) );
             //CreateEntity();
-
             //CreateNew();
 
             var args = new BindDataToEventArgs<T> { Entity = this.Entity };

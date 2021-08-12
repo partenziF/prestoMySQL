@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 namespace prestoMySQL {
 
 	public enum KeyState {
-		Created,
-		Set,
-		Unset
+		CreatedKey, // New key for insert
+		SetKey,	// Key is set for update
+		UnsetKey
 	}
 
 	public delegate void DelegateCreatePrimaryKey( AbstractEntity e );

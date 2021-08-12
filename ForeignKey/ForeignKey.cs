@@ -52,7 +52,7 @@ namespace prestoMySQL.ForeignKey {
     public abstract class ForeignKey {
 
 
-        private KeyState mKeyState = KeyState.Unset;
+        private KeyState mKeyState = KeyState.UnsetKey;
         public KeyState keyState { get => mKeyState; set => mKeyState = value; }
 
         public AbstractEntity Table { get => foreignKeyInfo.Select( x => x.Table ).Distinct().FirstOrDefault();  }

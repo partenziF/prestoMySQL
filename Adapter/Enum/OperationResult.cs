@@ -4,6 +4,7 @@
         Empty,
         Fail,
         Error,
-        Exception
+        Exception,
+        Unchange
     }
 }

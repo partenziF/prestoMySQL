@@ -14,6 +14,10 @@ namespace prestoMySQL.Adapter {
 
         protected List<DefinableColumn<SQLTypeWrapper<object>>> definitionColumns;
 
+        protected string mSQLQuery = null;
+
+        public string SQLQuery { get => this.mSQLQuery; }
+
         protected TableEntity() {
         }
 

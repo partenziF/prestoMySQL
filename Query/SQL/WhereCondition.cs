@@ -31,7 +31,7 @@ namespace prestoMySQL.Query.SQL {
 
         }
 
-        public static DefinableConstraint MakeColumnEqual( dynamic aColumnDefinition , object value , string aParamPlaceHolder = "" ) {
+        public static DefinableConstraint MakeEqual( dynamic aColumnDefinition , object value , string aParamPlaceHolder = "" ) {
 
             //Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
             Type generic = aColumnDefinition.GenericType;
@@ -43,7 +43,7 @@ namespace prestoMySQL.Query.SQL {
             types[3] = typeof( string );
             Type myParameterizedSomeClass = typeof( WhereCondition<> ).MakeGenericType( generic );
             ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
-            
+            if ( ctor is null ) throw new NullReferenceException( "Costructor not found for type " + aColumnDefinition.GetType() );
             var p = new MySQLQueryParam( value , aColumnDefinition.ActualName  );
 
             //WhereCondition( SQLProjectionColumn < SQLTypeWrapper < T >> aColumnDefinition , EvaluableBinaryOperator aOperator , IQueryParams aQueryPararm , string aParamPlaceHolder = "" ) :

@@ -26,6 +26,8 @@ namespace prestoMySQL.Helper {
         public static String getTableName<T>() where T : AbstractEntity => GenericEntityAttributeExtension.GetAttributeDALTable<T>()?.TableName ?? typeof( T ).Name;
         public static String getTableName( AbstractEntity aInstance ) => aInstance.GetAttributeDALTable()?.TableName ?? aInstance.GetType().Name;
 
+        public static TableReference getTableReference<T>() where T : AbstractEntity => new TableReference( GenericEntityAttributeExtension.GetAttributeDALTable<T>()?.TableName ?? typeof( T ).Name );
+
 
         //public static String getTableAlias( Type T ) => GenericEntityAttributeExtension.GetAttributeDALTable( T )?.Alias;
         //public static String getTableAlias<T>() where T : AbstractEntity => GenericEntityAttributeExtension.GetAttributeDALTable<T>()?.Alias;
@@ -34,7 +36,7 @@ namespace prestoMySQL.Helper {
         #endregion
 
         public static List<PropertyInfo> getPropertyIfColumnDefinition( Type T ) {
-            
+
             var Result = new List<PropertyInfo>();
             PropertyInfo[] props = T.GetProperties( BindingFlags.Public | BindingFlags.Instance );
 
@@ -247,10 +249,10 @@ namespace prestoMySQL.Helper {
         }
 
         public static string getColumnName( Type Table , string aColumn , bool withTableNameAsPrefix = false , bool aExcludePrimaryKey = false ) {
-            
+
             string result = "";
             //String prefix = ( withTableNameAsPrefix ) ? ( getTableAlias( Table ) ?? getTableName( Table ) ) : String.Empty;
-            string prefix =  withTableNameAsPrefix  ? ( getTableName( Table ) ) : String.Empty;
+            string prefix = withTableNameAsPrefix ? ( getTableName( Table ) ) : String.Empty;
             PropertyInfo pi = getPropertyIfColumnDefinition( Table ).FirstOrDefault( x => x.Name.Equals( aColumn , StringComparison.InvariantCultureIgnoreCase ) );
 
             if ( pi != null ) {
@@ -260,8 +262,8 @@ namespace prestoMySQL.Helper {
                 ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + pi.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
 
                 if ( withTableNameAsPrefix )
-                    ColumName = String.Concat( prefix.QuoteTableName(), '.' , ColumName );
-                    //ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER + prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
+                    ColumName = String.Concat( prefix.QuoteTableName() , '.' , ColumName );
+                //ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER + prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
 
                 result = ColumName;
 
@@ -315,7 +317,7 @@ namespace prestoMySQL.Helper {
 
                 if ( withTableNameAsPrefix )
                     ColumName = String.Concat( prefix.QuoteTableName() , '.' , ColumName );
-                    //ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER + prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
+                //ColumName = String.Concat( SQLConstant.TABLE_NAME_QUALIFIER + prefix + SQLConstant.TABLE_NAME_QUALIFIER , '.' , ColumName );
 
                 if ( aExcludePrimaryKey ) {
                     if ( !Attribute.IsDefined( f , typeof( DDPrimaryKey ) ) ) {
@@ -405,6 +407,26 @@ namespace prestoMySQL.Helper {
 
         }
 
+        public static List<PropertyInfo> getProjectionFields( SQLQuery  aInstance){
+
+
+            var Result = new List<PropertyInfo>();
+            PropertyInfo[] props = aInstance.GetType().GetProperties( BindingFlags.Public | BindingFlags.Instance ); //| BindingFlags.FlattenHierarchy 
+
+            foreach ( PropertyInfo propertyInfo in props ) {
+
+                if ( propertyInfo.PropertyType.IsGenericType && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( SQLProjectionColumn<> ) ) ) {
+
+                    Result.Add( propertyInfo );
+
+                }
+
+            }
+
+            return Result;
+
+        }
+
         public static List<dynamic> getProjectionColumn<T>( T aQueryInstance ) where T : SQLQuery {
 
             //            List<string> result = new List<string>();
@@ -439,6 +461,27 @@ namespace prestoMySQL.Helper {
             return result;
 
         }
+
+        public static List<dynamic> getProjectionColumn( SQLQuery aQueryInstance )  {
+
+            List<dynamic> result = new List<dynamic>();
+
+            foreach ( System.Reflection.PropertyInfo f in getProjectionFields( aQueryInstance ) ) {
+
+                if ( Attribute.IsDefined( f , typeof( DALProjectionColumn ) ) ) {
+
+                    dynamic o = f.GetValue( aQueryInstance );
+                    if ( o != null ) {
+                        result.Add( o );
+                    }
+
+                }
+            }
+
+            return result;
+
+        }
+
 
         public static List<string> getProjectionColumnName<T>( T aQueryInstance ) where T : SQLQuery {
 

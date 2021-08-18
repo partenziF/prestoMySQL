@@ -8,6 +8,7 @@ namespace prestoMySQL.Query.Interface {
     public interface ISQLQuery {
 
         public void Prepare();
+        
         public int countParam { get; }
         public int execute();
 

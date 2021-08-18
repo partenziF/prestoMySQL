@@ -1,4 +1,5 @@
 ﻿using prestoMySQL.Column;
+using prestoMySQL.Extension;
 using prestoMySQL.Query.Interface;
 using prestoMySQL.SQL;
 using System;
@@ -130,8 +131,13 @@ namespace prestoMySQL.Query.SQL {
         }
 
         public new string ToString() {
+            //string.IsNullOrWhiteSpace( columnDefinition.Table.TableAlias )
+            //                ? string.Format( "{0}.{1}" , this.TableName.QuoteTableName() , aColumnName.QuoteColumnName() )
+            //                : string.Format( "{0}.{1} AS {2}" , this.TableAlias.QuoteTableName() , aColumnName.QuoteColumnName() , String.Concat( "{" , this.ActualName , "}" , aColumnName ).QuoteColumnName() );
 
-            return String.Concat( columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) );
+
+            return $"{columnDefinition.Table.ActualName.QuoteTableName()}.{columnDefinition.ColumnName.QuoteColumnName()} {BinaryOperator} {this.QueryParams[0].AsQueryParam( ParamPlaceHolder )}";
+//                $" columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) );
         }
 
 

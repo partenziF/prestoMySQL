@@ -640,15 +640,19 @@ namespace prestoMySQL.Adapter {
                 //var r = this.Select( Constraint , Entity.PrimaryKey.getKeyValues() );
 
                 SQLQueryParams outparam = null;
-                var s = SQLBuilder.sqlSelect( Entity , ref outparam , ParamPlaceholder: "@" , Constraint );
-                var rs = mDatabase.ReadQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+                mSQLQuery = SQLBuilder.sqlSelect( Entity , ref outparam , ParamPlaceholder: "@" , Constraint );
+                var rs = mDatabase.ReadQuery( SQLQuery , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
                 var r = FetchResultSet( rs );
 
                 if ( r == OperationResult.OK ) {
-                    Entity.PrimaryKey.KeyState = KeyState.SetKey;
+
+                    foreach ( var e in this )
+                        e.PrimaryKey.KeyState = KeyState.SetKey;
+
                 } else {
-                    Entity.PrimaryKey.KeyState = KeyState.UnsetKey;
+                    foreach ( var e in this )
+                        e.PrimaryKey.KeyState = KeyState.UnsetKey;
                 }
 
                 return r;
@@ -691,9 +695,12 @@ namespace prestoMySQL.Adapter {
             var r = FetchResultSet( rs );
 
             if ( r == OperationResult.OK ) {
-                Entity.PrimaryKey.KeyState = KeyState.SetKey;
+
+                foreach ( var e in this )
+                    e.PrimaryKey.KeyState = KeyState.SetKey;
             } else if ( r != OperationResult.Empty ) {
-                Entity.PrimaryKey.KeyState = KeyState.UnsetKey;
+                foreach ( var e in this )
+                    e.PrimaryKey.KeyState = KeyState.UnsetKey;
             }
 
             return r;
@@ -1006,14 +1013,6 @@ namespace prestoMySQL.Adapter {
                 return result;
 
         }
-
-
-        //protected override void CreateNew() {
-        //    this.BuildEntityGraph();
-        //    Entity.PrimaryKey.createKey();
-        //    createForeignKey();
-        //    CreatePrimaryKey();
-        //}
 
         public void BindData() {
 

@@ -12,80 +12,83 @@ namespace prestoMySQL.Utils {
     public class TableGraph : IDictionary<AbstractEntity , List<EntityForeignKey>> {
 
         private Dictionary<AbstractEntity , List<EntityForeignKey>> mGraph;
-        public Dictionary<Type , List<AbstractEntity>> mCache;
+        private Dictionary<Type , List<AbstractEntity>> mCache;
 
         public TableGraph() {
-            mGraph = new Dictionary<AbstractEntity , List<EntityForeignKey>>();
-            mCache = new Dictionary<Type , List<AbstractEntity>>();
+            Graph = new Dictionary<AbstractEntity , List<EntityForeignKey>>();
+            Cache = new Dictionary<Type , List<AbstractEntity>>();
         }
 
-        public List<EntityForeignKey> this[AbstractEntity key] { get => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph )[key]; set => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph )[key] = value; }
+        public List<EntityForeignKey> this[AbstractEntity key] { get => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.Graph )[key]; set => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.Graph )[key] = value; }
 
-        public ICollection<AbstractEntity> Keys => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph ).Keys;
+        public ICollection<AbstractEntity> Keys => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.Graph ).Keys;
 
-        public ICollection<List<EntityForeignKey>> Values => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph ).Values;
+        public ICollection<List<EntityForeignKey>> Values => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.Graph ).Values;
 
-        public int Count => ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.mGraph ).Count;
+        public int Count => ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.Graph ).Count;
 
-        public bool IsReadOnly => ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.mGraph ).IsReadOnly;
+        public bool IsReadOnly => ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.Graph ).IsReadOnly;
+
+        public Dictionary<Type , List<AbstractEntity>> Cache { get => this.mCache; set => this.mCache =  value ; }
+        public Dictionary<AbstractEntity , List<EntityForeignKey>> Graph { get => this.mGraph; set => this.mGraph =  value ; }
 
         public void Add( AbstractEntity key , List<EntityForeignKey> value ) {
-            ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph ).Add( key , value );
+            ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.Graph ).Add( key , value );
         }
 
         public void Add( KeyValuePair<AbstractEntity , List<EntityForeignKey>> item ) {
-            ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.mGraph ).Add( item );
+            ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.Graph ).Add( item );
         }
 
         public void Clear() {
-            ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.mGraph ).Clear();
+            ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.Graph ).Clear();
         }
 
         public bool Contains( KeyValuePair<AbstractEntity , List<EntityForeignKey>> item ) {
-            return ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.mGraph ).Contains( item );
+            return ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.Graph ).Contains( item );
         }
 
         public bool ContainsKey( AbstractEntity key ) {
-            return ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph ).ContainsKey( key );
+            return ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.Graph ).ContainsKey( key );
         }
 
         public void CopyTo( KeyValuePair<AbstractEntity , List<EntityForeignKey>>[] array , int arrayIndex ) {
-            ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.mGraph ).CopyTo( array , arrayIndex );
+            ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.Graph ).CopyTo( array , arrayIndex );
         }
 
         public IEnumerator<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> GetEnumerator() {
-            return ( ( IEnumerable<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.mGraph ).GetEnumerator();
+            return ( ( IEnumerable<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.Graph ).GetEnumerator();
         }
 
         public bool Remove( AbstractEntity key ) {
-            return ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph ).Remove( key );
+            return ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.Graph ).Remove( key );
         }
 
         public bool Remove( KeyValuePair<AbstractEntity , List<EntityForeignKey>> item ) {
-            return ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.mGraph ).Remove( item );
+            return ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.Graph ).Remove( item );
         }
 
         public bool TryGetValue( AbstractEntity key , [MaybeNullWhen( false )] out List<EntityForeignKey> value ) {
-            return ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph ).TryGetValue( key , out value );
+            return ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.Graph ).TryGetValue( key , out value );
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
-            return ( ( IEnumerable ) this.mGraph ).GetEnumerator();
+            return ( ( IEnumerable ) this.Graph ).GetEnumerator();
         }
 
 
         public void Add( AbstractEntity Head ) {
-            if ( !mGraph.ContainsKey( Head ) )
-                mGraph.Add( Head , new List<EntityForeignKey>() );
+            if ( !Graph.ContainsKey( Head ) )
+                Graph.Add( Head , new List<EntityForeignKey>() );
         }
 
         public void Connect( AbstractEntity Head , EntityForeignKey Node ) {
-            if ( mGraph.ContainsKey( Head ) ) {
-                if ( !mGraph[Head].Contains( Node ) ) {
-                    mGraph[Head].Add( Node );
+            if ( Graph.ContainsKey( Head ) ) {
+                if ( !Graph[Head].Contains( Node ) ) {
+                    Graph[Head].Add( Node );
                 }
             } else {
-                mGraph.Add( Head , new List<EntityForeignKey>() { Node } );
+                Graph.Add( Head , new List<EntityForeignKey>() { Node } );
             }
         }
 
@@ -116,7 +119,7 @@ namespace prestoMySQL.Utils {
 
                 //var x = mGraph.Keys.FirstOrDefault( x => (x.GetType() == fkey.TypeReferenceTable) && ( (x.FkNames == null) || (x.FkNames == fkey.ForeignkeyName)) );
                 //fkey.TypeReferenceTable ) && ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( fkey.ForeignkeyName ) ) ) ).ToList();
-                var xlist = mGraph.Keys.Where( x => ( x.GetType() == foreignKeyInfo.TypeReferenceTable ) ).ToList();
+                var xlist = Graph.Keys.Where( x => ( x.GetType() == foreignKeyInfo.TypeReferenceTable ) ).ToList();
 
                 if ( xlist.Count() > 1 ) {
                     //&& ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( ForeignkeyName )
@@ -293,7 +296,7 @@ namespace prestoMySQL.Utils {
             ///old.FkNames.ForEach( x => @new.FkNames.Add( x ) );
 
             var tableEntity = new List<AbstractEntity>() { @new };
-            foreach ( var (e, list) in mGraph ) {
+            foreach ( var (e, list) in Graph ) {
                 foreach ( var fk in list ) {
                     foreach ( var info in fk.foreignKeyInfo ) {
                         if ( ( info.ReferenceTable != null ) && ( info.ReferenceTable == old ) ) {
@@ -307,13 +310,13 @@ namespace prestoMySQL.Utils {
                 }
             }
 
-            mGraph.Remove( old );
+            Graph.Remove( old );
 
-            if ( mCache.ContainsKey( old.GetType() ) )
-                mCache[old.GetType()].Remove( old );
+            if ( Cache.ContainsKey( old.GetType() ) )
+                Cache[old.GetType()].Remove( old );
 
-            mGraph.Add( @new );
-            mCache.AddOrCreate( @new );
+            Graph.Add( @new );
+            Cache.AddOrCreate( @new );
 
 
             tableEntity.ToList().ForEach( a => {
@@ -321,7 +324,7 @@ namespace prestoMySQL.Utils {
                 ( ( AbstractEntity ) a ).GetAllForeignkey().ForEach( x => {
                     foreignKeys.Push( x );
                     foreach ( var info in x.foreignKeyInfo ) {
-                        mGraph.Connect( info.Table , x );
+                        Graph.Connect( info.Table , x );
                     }
                 } );
 
@@ -338,7 +341,7 @@ namespace prestoMySQL.Utils {
             }
 
 
-            var _Entities = mGraph.Keys.ToList();
+            var _Entities = Graph.Keys.ToList();
             var _order = new Dictionary<AbstractEntity , int>();
 
             foreach ( var e in _Entities ) {
@@ -351,7 +354,7 @@ namespace prestoMySQL.Utils {
 
 
             foreach ( (AbstractEntity e, _) in _order.OrderBy( v => v.Value ) ) {
-                foreach ( var fk in mGraph[e] ) {
+                foreach ( var fk in Graph[e] ) {
                     //foreach ( var info in fk.foreignKeyInfo.Where( x => x.ReferenceTable != null ) ) {
                     fk.addEntities( _Entities );
                     //}
@@ -487,19 +490,19 @@ namespace prestoMySQL.Utils {
 
         public void BuildEntityGraph( params AbstractEntity[] tableEntity ) {
 
-            this.mGraph.Clear();
+            this.Graph.Clear();
             Stack<EntityForeignKey> foreignKeys = new Stack<EntityForeignKey>();
 
 
             tableEntity.ToList().ForEach( a => {
 
-                mGraph.Add( ( AbstractEntity ) a );
-                mCache.AddOrCreate( ( AbstractEntity ) a );
+                Graph.Add( ( AbstractEntity ) a );
+                Cache.AddOrCreate( ( AbstractEntity ) a );
 
                 ( ( AbstractEntity ) a ).GetAllForeignkey().ForEach( x => {
                     foreignKeys.Push( x );
                     foreach ( var info in x.foreignKeyInfo ) {
-                        mGraph.Connect( info.Table , x );
+                        Graph.Connect( info.Table , x );
                     }
                 } );
 
@@ -512,18 +515,18 @@ namespace prestoMySQL.Utils {
 
                     if ( InstantiateReferenceTable( fkey.ForeignkeyName , info ) ) {
 
-                        mGraph.Add( info.ReferenceTable );
+                        Graph.Add( info.ReferenceTable );
                         var allfk = info.ReferenceTable.GetAllForeignkey();
 
                         foreach ( var ffk in allfk ) {
 
-                            if ( !mGraph.IsConnected( ffk ) ) {
+                            if ( !Graph.IsConnected( ffk ) ) {
 
                                 foreignKeys.Push( ffk );
                                 foreach ( var infoffk in ffk.foreignKeyInfo ) {
 
                                     InstantiateReferenceTable( ffk );
-                                    mGraph.Connect( infoffk.ReferenceTable , ffk );
+                                    Graph.Connect( infoffk.ReferenceTable , ffk );
                                 }
 
                             }
@@ -538,7 +541,7 @@ namespace prestoMySQL.Utils {
             }
 
 
-            var _Entities = mGraph.Keys.ToList();
+            var _Entities = Graph.Keys.ToList();
 
             var _order = new Dictionary<AbstractEntity , int>();
 
@@ -552,7 +555,7 @@ namespace prestoMySQL.Utils {
 
 
             foreach ( (AbstractEntity e, _) in _order.OrderBy( v => v.Value ) ) {
-                foreach ( var fk in mGraph[e] ) {
+                foreach ( var fk in Graph[e] ) {
                     //foreach ( var info in fk.foreignKeyInfo.Where( x => x.ReferenceTable != null ) ) {
                     fk.addEntities( _Entities );
                     //}
@@ -825,7 +828,7 @@ namespace prestoMySQL.Utils {
 
         public List<AbstractEntity> GetTopologicalOrder() {
             List<AbstractEntity> result = new List<AbstractEntity>();
-            mCache.Values.ToList().ForEach( l => l.ForEach( a => result.Add( ( ( dynamic ) a ) ) ) );
+            Cache.Values.ToList().ForEach( l => l.ForEach( a => result.Add( ( ( dynamic ) a ) ) ) );
             //var x = mCache.Values.ToList().Select( l => l.Select( a => ( ( dynamic ) a ).Entity ).ToList() ).ToList();            
             return result;
         }
@@ -834,7 +837,7 @@ namespace prestoMySQL.Utils {
         private bool CacheContainsEntityType( EntityForeignKey foreignKey ) {
 
             //throw new NotImplementedException();
-            foreach ( var (_, list) in mCache ) {
+            foreach ( var (_, list) in Cache ) {
 
                 foreach ( AbstractEntity e in list ) {
 
@@ -876,75 +879,108 @@ namespace prestoMySQL.Utils {
         }
 
 
-        public List<EntityForeignKey> GetForeignKeys() {
+        private bool CacheContainsEntityType( ForeignKeyInfo fk ) {
 
-            //throw new NotImplementedException();
 
-            //Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
-            Dictionary<AbstractEntity , bool> visited = new Dictionary<AbstractEntity , bool>();
-            //List<EntityForeignKey> result = new List<EntityForeignKey>();
+            foreach ( var (t, list) in this.mCache ) {
+                foreach ( var a in list ) {
+                    if ( ( ( dynamic ) a ).GetType() == fk.TypeReferenceTable ) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+
+        //public List<EntityForeignKey> GetForeignKeys() {
+
+        //    //throw new NotImplementedException();
+
+        //    //Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
+        //    Dictionary<AbstractEntity , bool> visited = new Dictionary<AbstractEntity , bool>();
+        //    //List<EntityForeignKey> result = new List<EntityForeignKey>();
+        //    List<EntityForeignKey> result = new List<EntityForeignKey>();
+        //    List<EntityForeignKey> edge = new List<EntityForeignKey>();
+
+        //    foreach ( var (e, listFK) in this ) {
+
+        //        if ( ( !visited.ContainsKey( e ) ) ) {
+
+        //            visited?.TryAdd( e , ( listFK.Count > 0 ) );
+        //        }
+
+        //        foreach ( EntityForeignKey fk in listFK ) {
+        //            foreach ( var info in fk.foreignKeyInfo ) {
+
+        //                if ( info.ReferenceTable != null ) {
+
+
+        //                    if ( ( info.ReferenceTable != null ) && ( CacheContainsEntityType( fk ) ) ) {
+
+        //                        if ( visited.ContainsKey( info.ReferenceTable ) ) {
+
+        //                            if ( visited[info.ReferenceTable] )
+        //                                continue;
+        //                            else {
+        //                                if ( !result.Contains( fk ) )
+        //                                    result.Add( fk );
+        //                                visited[info.ReferenceTable] = true;
+        //                            }
+
+        //                        } else {
+        //                            if ( !result.Contains( fk ) )
+        //                                result.Add( fk );
+        //                            visited?.TryAdd( info.ReferenceTable , true );
+        //                        }
+
+        //                    }
+
+        //                }
+
+
+        //            }
+
+        //        }
+
+        //    }
+
+        //    return result;
+
+
+        //}
+
+        public List<EntityForeignKey> GetForeignKeys( AbstractEntity startNode = null ) {
+
+            if ( startNode is not null ) throw new NotImplementedException( "GetForeignKeys with start node not implemented" );
+
+            Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
+            Stack<Tuple<AbstractEntity , AbstractEntity>> visitedArc = new Stack<Tuple<AbstractEntity , AbstractEntity>>();
             List<EntityForeignKey> result = new List<EntityForeignKey>();
-            List<EntityForeignKey> edge = new List<EntityForeignKey>();
 
             foreach ( var (e, listFK) in this ) {
 
-                if ( ( !visited.ContainsKey( e ) ) ) {
+                if ( !visited.Contains( e ) ) {
 
-                    visited?.TryAdd( e , ( listFK.Count > 0 ) );
+                    visited?.Push( e );
                 }
 
-                //foreach ( EntityForeignKey fk in listFK.Where( x => x.ReferenceTable != null ).ToList() ) {
-                //foreach ( ForeignKeyInfo info in listFK.SelectMany( y => y.foreignKeyInfo ).Where( x => x.ReferenceTable != null ).ToList() ) {
+                foreach ( EntityForeignKey efk in listFK ) {
 
-                foreach ( EntityForeignKey fk in listFK ) {
-                    foreach ( var info in fk.foreignKeyInfo ) {
+                    foreach ( var fk in efk.foreignKeyInfo ) {
 
-                        if ( info.ReferenceTable != null ) {
+                        if ( ( fk.ReferenceTable != null ) && ( CacheContainsEntityType( fk ) ) ) {
 
-
-                            if ( ( info.ReferenceTable != null ) && ( CacheContainsEntityType( fk ) ) ) {
-
-                                if ( visited.ContainsKey( info.ReferenceTable ) ) {
-
-                                    if ( visited[info.ReferenceTable] )
-                                        continue;
-                                    else {
-                                        if ( !result.Contains( fk ) )
-                                            result.Add( fk );
-                                        visited[info.ReferenceTable] = true;
-                                    }
-
-                                } else {
-                                    if ( !result.Contains( fk ) )
-                                        result.Add( fk );
-                                    visited?.TryAdd( info.ReferenceTable , true );
-                                }
-
-                                //if (( visited.ContainsKey( fk.ReferenceTable ) ) && ( visited[fk.ReferenceTable] )) {
-                                //    //if ( visited[fk.ReferenceTable])
-                                //    continue;
-                                //}
-                                //if ( ( !visited.Contains( fk.ReferenceTable ) ) ) 
-                                //    visited?.Push( fk.ReferenceTable );
-
-
-                            }
+                            var arc = new Tuple<AbstractEntity , AbstractEntity>( fk.Table , fk.ReferenceTable );
+                            if ( visitedArc.Contains( arc ) ) continue;
+                            visitedArc?.Push( arc );
+                            visited?.Push( fk.ReferenceTable );
+                            result.Add( efk );
 
                         }
 
-                        //bool add = true;
-                        //if ( edge.Count > 0 ) {
-                        //    foreach ( EntityForeignKey f in edge ) {
-                        //        if ( ( ( ( f.ReferenceTable == fk.ReferenceTable ) && ( f.Table == fk.Table ) ) || ( ( f.ReferenceTable == fk.Table ) && ( f.Table == fk.ReferenceTable ) ) ) ) {
-                        //            add = false;
-                        //            break;
-                        //        }
-                        //    }
-                        //}
-                        //if (add) edge.Add( fk ); 
-
                     }
-
                 }
 
             }
@@ -953,7 +989,6 @@ namespace prestoMySQL.Utils {
 
 
         }
-
 
     }
 

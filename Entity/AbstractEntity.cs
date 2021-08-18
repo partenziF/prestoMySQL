@@ -74,6 +74,8 @@ namespace prestoMySQL.Entity {
         public EntityPrimaryKey PrimaryKey { get => mPrimaryKey; }
 
 
+        public TableReference tableReference { get => new TableReference( mTableName , mAliasName ); }
+
         //public ICollection<Type> Keys => this.EntityTree.Keys;
 
         //public ICollection<List<AbstractEntity>> Values => this.EntityTree.Values;

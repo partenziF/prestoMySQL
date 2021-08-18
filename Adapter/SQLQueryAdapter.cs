@@ -21,40 +21,30 @@ using prestoMySQL.Column.Interface;
 
 namespace prestoMySQL.Adapter {
 
+
     public abstract class SQLQueryAdapter<T, X> : QueryAdapter, IEnumerable<X> where T : SQLQuery where X : IInstantiableAdapterRow {
 
+        internal string mSQLQueryString;
+        public string SQLQueryString { get => mSQLQueryString; }
 
-        public SQLQueryAdapter( MySQLDatabase db ) {
+        public SQLQueryAdapter( MySQLDatabase database ) : base( database ) {
 
-            List<AbstractEntity> entities = new List<AbstractEntity>();
-            mDatabase = db;
             mSqlQuery = ( T ) createSqlQuery();
 
+            //SQLTableEntityHelper.getQueryEntity( typeof( T ) )?.ForEach( e => {
+            //    entities.Add( ( AbstractEntity ) Activator.CreateInstance( e ) );
+            //} );
+            //SQLTableEntityHelper.getQueryJoinEntity( typeof( T ) )?.ForEach( e => {
+            //    entities.Add( ( AbstractEntity ) Activator.CreateInstance( e ) );
+            //} );
 
-            SQLTableEntityHelper.getQueryEntity( typeof( T ) )?.ForEach( e => {
-                entities.Add( ( AbstractEntity ) Activator.CreateInstance( e ) );
-            } );
+            mSqlQuery.BuildEntityGraph();
 
-            SQLTableEntityHelper.getQueryJoinEntity( typeof( T ) )?.ForEach( e => {
-                entities.Add( ( AbstractEntity ) Activator.CreateInstance( e ) );
-            } );
-
-
-            mSqlQuery.Graph.BuildEntityGraph( entities.ToArray() );
-
-            /*                var a = new ComuniEntity();
-                            var b = new ProvinceEntity();
-                            var c = new RegioniEntity();
-
-                            Graph.BuildEntityGraph( a , b , c );
-*/
-
-            //mCache = new Dictionary<Type , List<TableEntity>>();
         }
 
         protected override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
 
-        protected T mSqlQuery;
+        public T mSqlQuery;
         public T sqlQuery { get => mSqlQuery; }
         public override int SQLCount {
             get {
@@ -64,16 +54,18 @@ namespace prestoMySQL.Adapter {
                 sqlQuery.Prepare();
                 sqlQuery.SelectExpression.Clear();
                 sqlQuery.SelectExpression.Add( "COUNT(*)" );
-                var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
-                return mDatabase.ExecuteScalar<int?>( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
+                var xxx = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+                mSQLQueryString = xxx;
+                return mDatabase.ExecuteScalar<int?>( xxx, outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
 
             }
         }
 
-        public readonly MySQLDatabase mDatabase;
-
         protected virtual T createSqlQuery() {
-            return ( T ) Activator.CreateInstance( typeof( T ) );
+            //T result = ( T ) Activator.CreateInstance( typeof( T ) );            
+            var ctor = typeof( T ).GetConstructor( new Type[] { this.GetType() } );
+            T result = ( T ) ctor?.Invoke( new object[] { this } );
+            return result;
         }
 
         public class AdapterIterator<X> : IEnumerator<X> where X : IInstantiableAdapterRow {
@@ -162,7 +154,8 @@ namespace prestoMySQL.Adapter {
 
             int? index = null;
 
-            foreach ( GenericQueryColumn column in ProjectionColumns ) {
+            //foreach ( GenericQueryColumn column in ProjectionColumns ) {
+            foreach ( dynamic column in ProjectionColumns ) {
 
                 index = null;
 
@@ -178,7 +171,7 @@ namespace prestoMySQL.Adapter {
 
                 if ( index == null ) throw new System.Exception( "Invalid index column." );
 
-                var v = ReflectionTypeHelper.InvokeGenericFunction( column.GenericType ,
+                object v = ReflectionTypeHelper.InvokeGenericFunction( column.GenericType ,
                                                            typeof( MySQResultSet ) ,
                                                            resultSet ,
                                                            nameof( MySQResultSet.getValueAs ) ,
@@ -208,9 +201,11 @@ namespace prestoMySQL.Adapter {
 
             sqlQuery.LIMIT( Offset , RowCount );
 
-            var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+            var xxx = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
 
-            var result = mDatabase.ReadQuery( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+            this.mSQLQueryString = xxx;
+
+            var result = mDatabase.ReadQuery( xxx, outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
             Message = mDatabase.LastError;
 
@@ -221,257 +216,258 @@ namespace prestoMySQL.Adapter {
         IEnumerator<X> IEnumerable<X>.GetEnumerator() {
 
             ProjectionColumns?.Clear();
-            ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( sqlQuery );
+            //ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( sqlQuery );
+            ProjectionColumns = sqlQuery.GetProjectionColumns();
 
             return ( IEnumerator<X> ) this.GetEnumerator();
         }
     }
 
 
-    public abstract class SQLQueryAdapter<T, U, X> : QueryAdapter, IEnumerable<X> where T : EntityAdapter<U> where U : AbstractEntity where X : IInstantiableAdapterRow {
 
+    //public abstract class SQLQueryAdapter<T, U, X> : QueryAdapter, IEnumerable<X> where T : EntityAdapter<U> where U : AbstractEntity where X : IInstantiableAdapterRow {
 
+    //    public SQLQueryAdapter( MySQLDatabase db ) {
 
-        public SQLQueryAdapter( MySQLDatabase db ) {
+    //        List<AbstractEntity> entities = new List<AbstractEntity>();
+    //        mDatabase = db;
+    //        //mSqlQuery = ( T ) createSqlQuery();
 
-            List<AbstractEntity> entities = new List<AbstractEntity>();
-            mDatabase = db;
-            //mSqlQuery = ( T ) createSqlQuery();
+    //        mAdapter = ReflectionTypeHelper.NewInstanceAdapter<T>( mDatabase );
+    //        mAdapter.Create();
+    //    }
 
-            mAdapter = ReflectionTypeHelper.NewInstanceAdapter<T>( mDatabase );
-            mAdapter.Create();
-        }
+    //    public readonly MySQLDatabase mDatabase;
 
-        public readonly MySQLDatabase mDatabase;
+    //    private T mAdapter;
 
-        private T mAdapter;
+    //    public override int SQLCount {
+    //        get {
 
-        public override int SQLCount {
-            get {
+    //            return 0;
+    //            //sqlQuery.UpdateValueToQueryParam();
 
-                return 0;
-                //sqlQuery.UpdateValueToQueryParam();
+    //            //SQLQueryParams outparam = null;
+    //            //sqlQuery.Prepare();
+    //            //sqlQuery.SelectExpression.Clear();
+    //            //sqlQuery.SelectExpression.Add( "COUNT(*)" );
+    //            //var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+    //            //return mDatabase.ExecuteScalar<int?>( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
 
-                //SQLQueryParams outparam = null;
-                //sqlQuery.Prepare();
-                //sqlQuery.SelectExpression.Clear();
-                //sqlQuery.SelectExpression.Add( "COUNT(*)" );
-                //var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
-                //return mDatabase.ExecuteScalar<int?>( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
+    //        }
+    //    }
 
-            }
-        }
+    //    public class AdapterIterator<X> : IEnumerator<X> where X : IInstantiableAdapterRow {
+    //        public AdapterIterator( dynamic queryAdapter ) {
+    //            mQueryAdapter = queryAdapter;
+    //        }
 
-        public class AdapterIterator<X> : IEnumerator<X> where X : IInstantiableAdapterRow {
-            public AdapterIterator( dynamic queryAdapter ) {
-                mQueryAdapter = queryAdapter;
-            }
+    //        private dynamic mQueryAdapter;
 
-            private dynamic mQueryAdapter;
+    //        private X mCurrent;
+    //        public X Current => mCurrent;
 
-            private X mCurrent;
-            public X Current => mCurrent;
+    //        object IEnumerator.Current => throw new NotImplementedException();
 
-            object IEnumerator.Current => throw new NotImplementedException();
+    //        public void Dispose() {
+    //            mQueryAdapter.Cursor.Close();
+    //        }
 
-            public void Dispose() {
-                mQueryAdapter.Cursor.Close();
-            }
+    //        public bool MoveNext() {
 
-            public bool MoveNext() {
+    //            try {
 
-                try {
+    //                if ( mQueryAdapter.Cursor.MoveNext() ) {
 
-                    if ( mQueryAdapter.Cursor.MoveNext() ) {
+    //                    var rs = mQueryAdapter.Cursor.Current;
+    //                    Dictionary<string , Dictionary<string , int>> s = rs.ResultSetSchemaTable();
+    //                    this.mQueryAdapter.BindData( s , rs );
+    //                    Type t = typeof( T );
 
-                        var rs = mQueryAdapter.Cursor.Current;
-                        Dictionary<string , Dictionary<string , int>> s = rs.ResultSetSchemaTable();
-                        this.mQueryAdapter.BindData( s , rs );
-                        Type t = typeof( T );
+    //                    var ctor = typeof( X ).GetConstructor( new Type[] { t } );
+    //                    this.mQueryAdapter.mAdapter.MapFromAdapter();
+    //                    mCurrent = ( X ) ctor?.Invoke( new object[] { this.mQueryAdapter.mAdapter } );
+    //                    return true;
+    //                } else {
+    //                    return false;
+    //                }
 
-                        var ctor = typeof( X ).GetConstructor( new Type[] { t } );
-                        this.mQueryAdapter.mAdapter.MapFromAdapter();
-                        mCurrent = ( X ) ctor?.Invoke( new object[] { this.mQueryAdapter.mAdapter } );
-                        return true;
-                    } else {
-                        return false;
-                    }
+    //            } catch ( System.Exception e ) {
+    //                throw new ArgumentNullException( e.Message );
+    //            }
 
-                } catch ( System.Exception e ) {
-                    throw new ArgumentNullException( e.Message );
-                }
+    //        }
 
-            }
+    //        public void Reset() {
+    //            throw new NotImplementedException();
+    //        }
+    //    }
 
-            public void Reset() {
-                throw new NotImplementedException();
-            }
-        }
 
+    //    public IEnumerator GetEnumerator() {
 
-        public IEnumerator GetEnumerator() {
+    //        AdapterIterator<X> ai = null;
 
-            AdapterIterator<X> ai = null;
+    //        ILastErrorInfo message = null;
 
-            ILastErrorInfo message = null;
+    //        try {
 
-            try {
+    //            Cursor = new CursorWrapper<MySQResultSet , MySqlDataReader>( ExecuteQuery( out message ) , message );
+    //            ai = new AdapterIterator<X>( this );
+    //            if ( Cursor.mResultSet is null ) {
+    //                throw new ArgumentNullException( "Invalid resultset. " + Cursor.LastError.ToString() );
+    //            }
 
-                Cursor = new CursorWrapper<MySQResultSet , MySqlDataReader>( ExecuteQuery( out message ) , message );
-                ai = new AdapterIterator<X>( this );
-                if ( Cursor.mResultSet is null ) {
-                    throw new ArgumentNullException( "Invalid resultset. " + Cursor.LastError.ToString() );
-                }
+    //        } catch ( ArgumentNullException ex ) {
+    //            throw new System.Exception( "Invalid resultset. " + ex.Message );
+    //        } catch ( System.Exception e ) {
+    //            throw new System.Exception( "Error while reading data." );
+    //        }
 
-            } catch ( ArgumentNullException ex ) {
-                throw new System.Exception( "Invalid resultset. " + ex.Message );
-            } catch ( System.Exception e ) {
-                throw new System.Exception( "Error while reading data." );
-            }
+    //        return ai;
 
-            return ai;
+    //    }
 
-        }
+    //    IEnumerator<X> IEnumerable<X>.GetEnumerator() {
 
-        IEnumerator<X> IEnumerable<X>.GetEnumerator() {
+    //        ProjectionColumns?.Clear();
 
-            ProjectionColumns?.Clear();
-            //var definitionColumn = SQLTableEntityHelper.getDefinitionColumn( mAdapter.Entity , true );
-            //foreach ( var column in definitionColumn ) {
-                
-            //    SQLTypeWrapper<uint> b = null;
-            //    MySQLDefinitionColumn<SQLTypeWrapper<uint>> a = null;
+    //        //var definitionColumn = SQLTableEntityHelper.getDefinitionColumn( mAdapter.Entity , true );
+    //        //foreach ( var column in definitionColumn ) {
 
-            //    var ttt = ( column as dynamic ).GenericType;
+    //        //    SQLTypeWrapper<uint> b = null;
+    //        //    MySQLDefinitionColumn<SQLTypeWrapper<uint>> a = null;
 
+    //        //    var ttt = ( column as dynamic ).GenericType;
 
-            //    var t = typeof( SQLTypeWrapper<> ).MakeGenericType( ( column as dynamic ).GenericType );
-            //    var tt = typeof( MySQLDefinitionColumn<> ).MakeGenericType( t );
-            //    var x = Convert.ChangeType( column ,tt);
-            //    //SQLProjectionColumn < SQLTypeWrapper<uint> > x = column;
 
-            //    ProjectionColumns?.Add( x );
+    //        //    var t = typeof( SQLTypeWrapper<> ).MakeGenericType( ( column as dynamic ).GenericType );
+    //        //    var tt = typeof( MySQLDefinitionColumn<> ).MakeGenericType( t );
+    //        //    var x = Convert.ChangeType( column ,tt);
+    //        //    //SQLProjectionColumn < SQLTypeWrapper<uint> > x = column;
 
-            //}
-                        //ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( sqlQuery );
+    //        //    ProjectionColumns?.Add( x );
 
-            return ( IEnumerator<X> ) this.GetEnumerator();
-        }
+    //        //}
+    //        //ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( sqlQuery );
 
+    //        return ( IEnumerator<X> ) this.GetEnumerator();
+    //    }
 
-        protected override void BindData( Dictionary<string , Dictionary<string , int>> s , IReadableResultSet resultSet ) {
 
+    //    protected override void BindData( Dictionary<string , Dictionary<string , int>> s , IReadableResultSet resultSet ) {
 
-            int? index = null;
 
-            List<dynamic> definitionColumns = new List<dynamic>();
-            definitionColumns.AddRange( SQLTableEntityHelper.getDefinitionColumn( mAdapter.Entity , true ).ToList() );
-            foreach ( ConstructibleColumn column in definitionColumns ) {
+    //        int? index = null;
 
-                index = null;
+    //        List<dynamic> definitionColumns = new List<dynamic>();
+    //        definitionColumns.AddRange( SQLTableEntityHelper.getDefinitionColumn( mAdapter.Entity , true ).ToList() );
+    //        foreach ( ConstructibleColumn column in definitionColumns ) {
 
-                if ( s.ContainsKey( column.Table.ActualName ) ) {
-                    if ( s[column.Table.ActualName].ContainsKey( column.ActualName ) ) {
-                        index = s[column.Table.ActualName][column.ActualName];
-                    }
-                }
+    //            index = null;
 
+    //            if ( s.ContainsKey( column.Table.ActualName ) ) {
+    //                if ( s[column.Table.ActualName].ContainsKey( column.ActualName ) ) {
+    //                    index = s[column.Table.ActualName][column.ActualName];
+    //                }
+    //            }
 
-                if ( index == null ) throw new System.Exception( "Invalid index column. (" + column.ActualName + ")" );
 
+    //            if ( index == null ) throw new System.Exception( "Invalid index column. (" + column.ActualName + ")" );
 
-                var v = ReflectionTypeHelper.InvokeGenericFunction( column.GenericType ,
-                                                           typeof( MySQResultSet ) ,
-                                                           resultSet ,
-                                                           nameof( MySQResultSet.getValueAs ) ,
-                                                           new Type[] { typeof( int ) } ,
-                                                           new object[] { ( int ) index } );
 
-                    if ( v.IsDBNull() ) {
-                        ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
-                    } else if ( v is null ) {
-                        ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
-                    } else {
-                        column.AssignValue( v );
-                    }
+    //            var v = ReflectionTypeHelper.InvokeGenericFunction( column.GenericType ,
+    //                                                       typeof( MySQResultSet ) ,
+    //                                                       resultSet ,
+    //                                                       nameof( MySQResultSet.getValueAs ) ,
+    //                                                       new Type[] { typeof( int ) } ,
+    //                                                       new object[] { ( int ) index } );
 
+    //            if ( v.IsDBNull() ) {
+    //                ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+    //            } else if ( v is null ) {
+    //                ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+    //            } else {
+    //                column.AssignValue( v );
+    //            }
 
-            }
 
+    //        }
 
-        }
 
+    //    }
 
-        protected override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
 
-        public override MySQResultSet ExecuteQuery( out ILastErrorInfo Message ) {
+    //    protected override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
 
-            //sqlQuery.UpdateValueToQueryParam();
+    //    public override MySQResultSet ExecuteQuery( out ILastErrorInfo Message ) {
 
-            SQLQueryParams outparam = null;
+    //        SQLQueryParams outparam = null;
 
-            //sqlQuery.Prepare();
+    //        //sqlQuery.Prepare();
 
-            //sqlQuery.LIMIT( Offset , RowCount );
+    //        //sqlQuery.LIMIT( Offset , RowCount );
 
-            //var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
-            var sql = SQLBuilder.sqlSelect<U>( ref outparam );
+    //        //var sql = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+    //        var sql = SQLBuilder.sqlSelect<U>( ref outparam );
 
-            var result = mDatabase.ReadQuery( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+    //        var result = mDatabase.ReadQuery( sql , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
-            Message = mDatabase.LastError;
+    //        Message = mDatabase.LastError;
 
-            return result;
+    //        return result;
 
 
-            /*
-             *             SQLQueryParams outparam = null;
+    //        /*
+    //         *             SQLQueryParams outparam = null;
 
-                        MySQLDatabase db = new MySQLDatabase( "root" , "root" , "localhost" , "multilevelmarketing" , 3306 , logger );
+    //                    MySQLDatabase db = new MySQLDatabase( "root" , "root" , "localhost" , "multilevelmarketing" , 3306 , logger );
 
-                        var a = new EntityAdapterAlbums.AlbumsEntity();
+    //                    var a = new EntityAdapterAlbums.AlbumsEntity();
 
-                        EntityConstraint<dynamic>[] c = new EntityConstraint<dynamic>[1];
-                        MySQLQueryParam p1 = new MySQLQueryParam( 1 , nameof( a.AlbumId ) );
-                        MySQLQueryParam p2 = new MySQLQueryParam( "ciao" , nameof( a.Title ) );
+    //                    EntityConstraint<dynamic>[] c = new EntityConstraint<dynamic>[1];
+    //                    MySQLQueryParam p1 = new MySQLQueryParam( 1 , nameof( a.AlbumId ) );
+    //                    MySQLQueryParam p2 = new MySQLQueryParam( "ciao" , nameof( a.Title ) );
 
-                        EntityConstraint<uint> Key1 = new EntityConstraint<uint>( a.AlbumId , SQLBinaryOperator.equal() , new SQLQueryParams( new[] { p1 } ) , "@" );
-                        EntityConstraint<string> Key2 = new EntityConstraint<string>( a.Title , SQLBinaryOperator.equal() , new SQLQueryParams( new[] { p2 } ) , "@" );
-                        BetweenEntityConstraint<short> Key3 = new BetweenEntityConstraint<short>( a.ArtistId , new SQLQueryParams( new[] { new MySQLQueryParam( 1 , nameof( a.ArtistId ) + "1" ) , new MySQLQueryParam( 5 , nameof( a.ArtistId ) + "2" ) } ) , "@" );
+    //                    EntityConstraint<uint> Key1 = new EntityConstraint<uint>( a.AlbumId , SQLBinaryOperator.equal() , new SQLQueryParams( new[] { p1 } ) , "@" );
+    //                    EntityConstraint<string> Key2 = new EntityConstraint<string>( a.Title , SQLBinaryOperator.equal() , new SQLQueryParams( new[] { p2 } ) , "@" );
+    //                    BetweenEntityConstraint<short> Key3 = new BetweenEntityConstraint<short>( a.ArtistId , new SQLQueryParams( new[] { new MySQLQueryParam( 1 , nameof( a.ArtistId ) + "1" ) , new MySQLQueryParam( 5 , nameof( a.ArtistId ) + "2" ) } ) , "@" );
 
 
-                        var s = SQLBuilder.sqlSelect<EntityAdapterAlbums.AlbumsEntity>( ref outparam , Constraint: new EntityConstraintExpression( Key1 , Key2 , Key3 ) );
+    //                    var s = SQLBuilder.sqlSelect<EntityAdapterAlbums.AlbumsEntity>( ref outparam , Constraint: new EntityConstraintExpression( Key1 , Key2 , Key3 ) );
 
-                        if ( db.OpenConnection() ) {
+    //                    if ( db.OpenConnection() ) {
 
-                            var rs = db.ReadQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+    //                        var rs = db.ReadQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
-                            var cursor = new CursorWrapper<MySQResultSet , MySqlDataReader>( rs );
-                            foreach ( PrestoMySQL.Database.MySQL.MySQResultSet row in cursor ) Console.WriteLine( row.getString( 1 ) );
+    //                        var cursor = new CursorWrapper<MySQResultSet , MySqlDataReader>( rs );
+    //                        foreach ( PrestoMySQL.Database.MySQL.MySQResultSet row in cursor ) Console.WriteLine( row.getString( 1 ) );
 
-                            if ( rs != null ) {
+    //                        if ( rs != null ) {
 
-                                Console.WriteLine( s );
+    //                            Console.WriteLine( s );
 
-                                foreach ( MySQLQueryParam x in outparam )
-                                    Console.WriteLine( x.Name + " " + x );
+    //                            foreach ( MySQLQueryParam x in outparam )
+    //                                Console.WriteLine( x.Name + " " + x );
 
-                                while ( rs.fetch() ) {
+    //                            while ( rs.fetch() ) {
 
-                                    Console.WriteLine( rs.getInt( 0 ) + " " + rs.getString( 1 ) );
+    //                                Console.WriteLine( rs.getInt( 0 ) + " " + rs.getString( 1 ) );
 
-                                }
+    //                            }
 
-                            }
+    //                        }
 
-                        }
+    //                    }
 
-                        db.Close();
-            */
+    //                    db.Close();
+    //        */
 
-        }
+    //    }
 
 
-    }
+    //}
+
+
 
 }

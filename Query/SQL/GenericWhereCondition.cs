@@ -1,4 +1,5 @@
 ﻿using prestoMySQL.Column;
+using prestoMySQL.Extension;
 using prestoMySQL.Query.Interface;
 using prestoMySQL.SQL;
 using System;
@@ -38,7 +39,8 @@ namespace prestoMySQL.Query.SQL {
 
         public override string ToString() {
 
-            return String.Concat( "( " , columnDefinition.AsCondition() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " )" );
+            //return String.Concat( "( " , columnDefinition.AsCondition() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " )" );
+            return String.Concat( "( " , columnDefinition.Table.ActualName.QuoteTableName() , "." , columnDefinition.ColumnName.QuoteColumnName() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " )" );
         }
 
 

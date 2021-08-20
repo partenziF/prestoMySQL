@@ -52,14 +52,6 @@ namespace prestoMySQL.Query.SQL {
 
             if ( ( mConditions != null ) && ( mConditions.Length > 0 ) ) {
 
-                //string[] s = new string[mConditions.Length];
-                //int i = 0;
-                ////JAVA TO C# CONVERTER WARNING: Java wildcard generics have no direct equivalent in C#:
-                ////ORIGINAL LINE: for (SQLQueryCondition<?> c : mConditions)
-                //foreach ( dynamic c in mConditions ) {
-                //    s[i++] = c.ToString();
-                //}
-
                 var s = mConditions.Select( x => x.ToString() ).ToArray();
 
                 switch ( mLogicOperator ) {

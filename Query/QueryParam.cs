@@ -23,17 +23,39 @@ namespace prestoMySQL.Query {
         public string Name { get => mName; }
 
         public string AsQueryParam( string aPlaceholder = "" ) {
-            if ( aPlaceholder == "@" ) {
-                return String.Concat( "@" , Name );
-            } else if ( !String.IsNullOrWhiteSpace( aPlaceholder ) ) {
-                return String.Format( aPlaceholder );
+            
+            if ( mValue.GetType().IsArray ) {
+            
+                var l = ( ( Array ) mValue ).Length;
+                string[] result = new string[l];
+                for (int i = 0; i<l; i++ ) {
+
+                    if ( aPlaceholder == "@" ) {
+                        result[i] =  String.Concat( "@" , String.Concat( Name , "_" , i.ToString() ) );
+                    } else if ( !String.IsNullOrWhiteSpace( aPlaceholder ) ) {
+                        result[i] = String.Format( aPlaceholder );
+                    } else {
+                        result[i] = ToString();
+                    }
+
+                }
+
+                return string.Join( "," , result );
+
+
             } else {
-                return ToString();
+                if ( aPlaceholder == "@" ) {
+                    return String.Concat( "@" , Name );
+                } else if ( !String.IsNullOrWhiteSpace( aPlaceholder ) ) {
+                    return String.Format( aPlaceholder );
+                } else {
+                    return ToString();
+                }
             }
 
         }
 
-        internal void rename(string name ) {
+        internal void rename( string name ) {
             this.mName = name;
         }
         protected abstract object GetValue();
@@ -41,6 +63,7 @@ namespace prestoMySQL.Query {
         public static explicit operator MySqlParameter( QueryParam v ) {
             return new MySqlParameter( v.Name , v.Value );
         }
+
     }
 
 }

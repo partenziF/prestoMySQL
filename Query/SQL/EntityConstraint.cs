@@ -48,6 +48,7 @@ namespace prestoMySQL.Query.SQL {
 
             return o;
         }
+        
         public static DefinableConstraint MakeAssignement( dynamic aColumnDefinition , string aParamPlaceHolder = "" ) {
 
             Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
@@ -66,6 +67,7 @@ namespace prestoMySQL.Query.SQL {
         }
 
         public static DefinableConstraint MakeEqual( dynamic aColumnDefinition , object value , string aParamPlaceHolder = "" ) {
+
 
             Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
 
@@ -104,6 +106,24 @@ namespace prestoMySQL.Query.SQL {
         }
 
 
+        public static DefinableConstraint MakeAllEqual( dynamic aColumnDefinition , string paramName , object value , string aParamPlaceHolder = "" ) {
+
+            Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
+
+            Type[] types = new Type[3];
+            types[0] = ( aColumnDefinition.GetType() );
+            //types[1] = typeof( EvaluableBinaryOperator );
+            types[1] = typeof( IQueryParams );
+            types[2] = typeof( string );
+            Type myParameterizedSomeClass = typeof( EntityAllEqual<> ).MakeGenericType( generic );
+            ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
+
+            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition , new SQLQueryParams( new[] { new MySQLQueryParam( value , paramName ) } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
+
+            return o;
+        }
+
+
 
     }
 
@@ -123,7 +143,6 @@ namespace prestoMySQL.Query.SQL {
     }
 
 
-
     public class EntityAssignement<T> : GenericEntityConstraint<T> where T : notnull {
 
         public EntityAssignement( MySQLDefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition , IQueryParams aQueryPararm , string aParamPlaceHolder = "" ) :
@@ -135,12 +154,31 @@ namespace prestoMySQL.Query.SQL {
             //                ? string.Format( "{0}.{1}" , this.TableName.QuoteTableName() , aColumnName.QuoteColumnName() )
             //                : string.Format( "{0}.{1} AS {2}" , this.TableAlias.QuoteTableName() , aColumnName.QuoteColumnName() , String.Concat( "{" , this.ActualName , "}" , aColumnName ).QuoteColumnName() );
 
-
             return $"{columnDefinition.Table.ActualName.QuoteTableName()}.{columnDefinition.ColumnName.QuoteColumnName()} {BinaryOperator} {this.QueryParams[0].AsQueryParam( ParamPlaceHolder )}";
 //                $" columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) );
         }
 
 
     }
+
+    public class EntityAllEqual<T> : GenericEntityConstraint<T> where T : notnull {
+
+        public EntityAllEqual( MySQLDefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition , IQueryParams aQueryPararm , string aParamPlaceHolder = "" ) :
+            base( aColumnDefinition , SQLBinaryOperator.@in() , aQueryPararm , aParamPlaceHolder ) {
+        }
+
+        public new string ToString() {
+            //string.IsNullOrWhiteSpace( columnDefinition.Table.TableAlias )
+            //                ? string.Format( "{0}.{1}" , this.TableName.QuoteTableName() , aColumnName.QuoteColumnName() )
+            //                : string.Format( "{0}.{1} AS {2}" , this.TableAlias.QuoteTableName() , aColumnName.QuoteColumnName() , String.Concat( "{" , this.ActualName , "}" , aColumnName ).QuoteColumnName() );
+
+            return $"{columnDefinition.Table.ActualName.QuoteTableName()}.{columnDefinition.ColumnName.QuoteColumnName()} {BinaryOperator} ( {this.QueryParams[0].AsQueryParam( ParamPlaceHolder )} )";
+            //                $" columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) );
+        }
+
+
+    }
+
+
 
 }

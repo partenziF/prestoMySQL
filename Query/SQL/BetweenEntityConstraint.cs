@@ -1,4 +1,5 @@
 ﻿using prestoMySQL.Column;
+using prestoMySQL.Extension;
 using prestoMySQL.Query.Interface;
 using prestoMySQL.SQL;
 using System;
@@ -31,7 +32,7 @@ namespace prestoMySQL.Query.SQL {
 
 
         public override QueryParam[] getParam() {
-            return new QueryParam[] { ( QueryParam ) this.QueryParams[0], ( QueryParam ) this.QueryParams[1] };
+            return new QueryParam[] { ( QueryParam ) this.QueryParams[0] , ( QueryParam ) this.QueryParams[1] };
         }
 
         public override string[] getParamAsString() {
@@ -39,11 +40,12 @@ namespace prestoMySQL.Query.SQL {
         }
 
         public override string ToString() {
-            return String.Concat( "( " , columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " AND " , this.QueryParams[1].AsQueryParam( ParamPlaceHolder ) , "  )" );
+            //return String.Concat( "( " , columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " AND " , this.QueryParams[1].AsQueryParam( ParamPlaceHolder ) , "  )" );
+            return String.Concat( "( " , columnDefinition.Table.ActualName.QuoteTableName() , "." , columnDefinition.ColumnName.QuoteColumnName() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " AND " , this.QueryParams[1].AsQueryParam( ParamPlaceHolder ) , "  )" );
         }
 
         public override T[] ColumnValue() {
-            return new T[] { ( T ) this.QueryParams[0].Value, ( T ) this.QueryParams[1].Value };
+            return new T[] { ( T ) this.QueryParams[0].Value , ( T ) this.QueryParams[1].Value };
         }
 
     }

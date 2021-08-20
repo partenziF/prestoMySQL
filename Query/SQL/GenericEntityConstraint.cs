@@ -8,8 +8,24 @@ using System.Text;
 using System.Threading.Tasks;
 using prestoMySQL.ForeignKey;
 using prestoMySQL.Extension;
+using MySqlConnector;
 
 namespace prestoMySQL.Query.SQL {
+
+    public class Node {
+        public uint id;
+        public string label;
+        public bool expand;
+        public List<Node> children;
+        
+
+        public Node( uint id , string label , List<Node> children ) {
+            this.id = id;
+            this.label = label;
+            this.children = children;
+            expand = true;
+        }
+    }
     public class GenericEntityConstraint<T> : DefinableConstraint {
 
 
@@ -40,7 +56,8 @@ namespace prestoMySQL.Query.SQL {
 
         public override string ToString() {
 
-            return String.Concat( "( " , columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " )" );
+            //return String.Concat( "( " , columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " )" );
+            return $"( {columnDefinition.Table.ActualName.QuoteTableName()}.{columnDefinition.ColumnName.QuoteColumnName()} {BinaryOperator} {this.QueryParams[0].AsQueryParam( ParamPlaceHolder )} )";
         }
 
 
@@ -49,7 +66,24 @@ namespace prestoMySQL.Query.SQL {
         }
 
         public virtual QueryParam[] getParam() {
-            return new QueryParam[] { ( QueryParam ) this.QueryParams[0] };
+
+            if ( this.QueryParams[0].Value.GetType().IsArray ) {
+
+                var l = ( ( Array ) this.QueryParams[0].Value ).Length;
+                var result = new QueryParam[l];
+                int i = 0;
+                foreach ( var v in ( Array ) this.QueryParams[0].Value ) {
+
+                    //result[i] = new QueryParam( v , string.Format( "{0}_{1]" , this.QueryParams[0].Name , i )  );
+                    result[i] = new MySQLQueryParam( v , String.Concat( this.QueryParams[0].Name , "_" , i.ToString() ) );
+                    i++;
+                }
+
+                return result;
+
+            } else {
+                return new QueryParam[] { ( QueryParam ) this.QueryParams[0] };
+            }
         }
 
         public virtual string[] getParamAsString() {

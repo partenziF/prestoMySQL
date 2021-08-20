@@ -1,4 +1,5 @@
 ﻿using prestoMySQL.Column;
+using prestoMySQL.Extension;
 using prestoMySQL.SQL;
 using System;
 using System.Collections.Generic;
@@ -39,7 +40,7 @@ namespace prestoMySQL.Query.SQL {
         }
 
         public override string ToString() {
-            return String.Concat( "( " , columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " AND " , this.QueryParams[1].AsQueryParam( ParamPlaceHolder ) , "  )" );
+            return String.Concat( "( " , columnDefinition.Table.ActualName.QuoteTableName() , "." , columnDefinition.ColumnName.QuoteColumnName() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " AND " , this.QueryParams[1].AsQueryParam( ParamPlaceHolder ) , "  )" );
         }
 
         public override T[] ColumnValue() {

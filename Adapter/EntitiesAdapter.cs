@@ -28,8 +28,8 @@ namespace prestoMySQL.Adapter {
 
     public class EntitiesAdapter {//: IDictionary<AbstractEntity , List<EntityForeignKey>> 
 
-        private string mSQLQuery = null;
-        public string SQLQueryString { get => this.mSQLQuery; }
+        private string mSQLQueryString = null;
+        public string SQLQueryString { get => this.mSQLQueryString; }
 
 
         private TableGraph mGraph;
@@ -660,7 +660,7 @@ namespace prestoMySQL.Adapter {
 
         public List<EntityForeignKey> GetForeignKeys( AbstractEntity startNode = null ) {
 
-            return Graph.GetForeignKeys(startNode);
+            return Graph.GetForeignKeys( startNode );
 
             //if ( startNode is not null ) throw new NotImplementedException( "GetForeignKeys with start node not implemented" );
 
@@ -781,25 +781,44 @@ namespace prestoMySQL.Adapter {
         }
 
 
+        //public T SelectAdapter<T>(Func<List<TableEntity>,T> selector ) {
+        //    var r = selector( mTableEntityCache[typeof( T )] );
+        //    return r;
+
+        //}
+
+        // use in mapping
         public T Adapter<T>() where T : TableEntity {
-            return mAdapter<T>( null );
+            return mAdapter<T>( null , null );
+        }
+
+        public T Adapter<T>( Func<List<TableEntity> , T> selector = null ) where T : TableEntity {
+            return mAdapter<T>( null , selector );
         }
 
         public T Adapter<T>( string name ) where T : TableEntity {
-            return mAdapter<T>( name );
+            return mAdapter<T>( name , null );
         }
 
-        private T mAdapter<T>( string name ) where T : TableEntity {
+        private T mAdapter<T>( string name , Func<List<TableEntity> , T> selector = null ) where T : TableEntity {
 
 
             if ( mTableEntityCache.ContainsKey( typeof( T ) ) ) {
-                if ( name is null ) {
-                    return ( T ) mTableEntityCache[typeof( T )].FirstOrDefault();
+                if ( selector is null ) {
+                    if ( name is null ) {
+                        return ( T ) mTableEntityCache[typeof( T )].FirstOrDefault();
+                    } else {
+                        return ( T ) mTableEntityCache[typeof( T )].Where( x => ( ( x as dynamic ).Entity as AbstractEntity ).FkNames.Contains( name ) ).FirstOrDefault();
+                    }
                 } else {
-                    return ( T ) mTableEntityCache[typeof( T )].Where( x => ( ( x as dynamic ).Entity as AbstractEntity ).FkNames.Contains( name ) ).FirstOrDefault();
+                    var r = selector( mTableEntityCache[typeof( T )] );
+                    return r;
+
+
                 }
 
             } else {
+
                 if ( ( typeof( T ).IsGenericType ) && ( typeof( T ).GetGenericTypeDefinition() == typeof( EntityAdapter<> ) ) ) {
 
                     Type t = typeof( T ).GetGenericArguments().FirstOrDefault();
@@ -811,8 +830,6 @@ namespace prestoMySQL.Adapter {
                             if ( !e.FkNames.Contains( name ) )
                                 e.FkNames.Add( name );
                         }
-                        //    e.FkNames = ( name is not null ) ? name : null;
-
 
                         if ( e != null ) {
                             T Adapter;
@@ -1228,17 +1245,24 @@ namespace prestoMySQL.Adapter {
             if ( ( KeyValues.Count() == 0 ) || ( PrimaryKeyTables.Sum( x => x.PrimaryKey.KeyLength ) != KeyValues.Count() ) ) throw new ArgumentException( "Invalid key value argument" );
 
             try {
+
                 int i = 0;
                 foreach ( var pk in PrimaryKeyTables ) {
+
                     int l = pk.PrimaryKey.KeyLength;
+
                     var xx = KeyValues.Skip( i ).Take( l ).ToArray();
                     pk.PrimaryKey.setKeyValues( xx );
-                    i += l;
+                    //if ( !( xx[i].GetType().IsArray ) )
+                    //    pk.PrimaryKey.setKeyValues( xx );
+                    //else
+                    ////pk.PrimaryKey.setKeyValues( xx[0]. );
+                    i += pk.PrimaryKey.KeyLength;
                 }
                 //PrimaryKeyTables.FirstOrDefault().PrimaryKey.setKeyValues( KeyValues );
 
                 SQLQueryParams outparam = null;
-                mSQLQuery = SQLBuilder.sqlSelect<T>( this , ref outparam , ParamPlaceholder: "@" , Constraint , PrimaryKeyTables.ToArray() );
+                mSQLQueryString = SQLBuilder.sqlSelect<T>( this , ref outparam , ParamPlaceholder: "@" , Constraint , PrimaryKeyTables.ToArray() );
 
                 var rs = mDatabase.ReadQuery( SQLQueryString , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
@@ -1255,7 +1279,7 @@ namespace prestoMySQL.Adapter {
 
         }
 
-        public OperationResult Read<T, PK>( EntityConditionalExpression Constraint = null , params object[] KeyValues ) where T : AbstractEntity
+        public OperationResult Read<T, PK>( Func<IEnumerable<AbstractEntity> , PK> selector = null , EntityConditionalExpression Constraint = null , params object[] KeyValues ) where T : AbstractEntity
                                                                                                                         where PK : AbstractEntity {
 
             try {
@@ -1264,7 +1288,11 @@ namespace prestoMySQL.Adapter {
                 bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
 
                 T fromTable = ( T ) tables.FirstOrDefault( e => e.GetType() == typeof( T ) );
-                PK pkTable = ( PK ) tables.FirstOrDefault( e => e.GetType() == typeof( PK ) );
+                PK pkTable = null;
+                if ( selector is null )
+                    pkTable = ( PK ) tables.FirstOrDefault( e => e.GetType() == typeof( PK ) );
+                else
+                    pkTable = selector( tables );
 
                 var r = Read<T>( fromTable , new AbstractEntity[] { pkTable } , AlmostIsIdentifying , Constraint , KeyValues );
 
@@ -1368,6 +1396,17 @@ namespace prestoMySQL.Adapter {
         }
 
 
+        public void Read<T>( Func<T , ConstructibleColumn> p ) where T : TableEntity {
+            var x = this.Adapter<T>();
+            var xx = p( x );
+
+            var constratint = FactoryEntityConstraint.MakeEqual( xx , 5 , "@" );
+
+            Console.WriteLine( p );
+            //throw new NotImplementedException();
+        }
+
+
         public OperationResult Read<T>( EntityConditionalExpression Constraint = null , params object[] KeyValues ) where T : AbstractEntity {
 
             try {
@@ -1436,9 +1475,9 @@ namespace prestoMySQL.Adapter {
                 //var r = this.Select( Constraint , Entity.PrimaryKey.getKeyValues() );
 
                 SQLQueryParams outparam = null;
-                mSQLQuery = SQLBuilder.sqlSelect( this , ref outparam , ParamPlaceholder: "@" , Constraint );
+                mSQLQueryString = SQLBuilder.sqlSelect( this , ref outparam , ParamPlaceholder: "@" , Constraint );
 
-                var rs = mDatabase.ReadQuery( mSQLQuery , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+                var rs = mDatabase.ReadQuery( mSQLQueryString , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
                 var r = FetchResultSet( rs , AlmostIsIdentifying );
 
@@ -1464,7 +1503,7 @@ namespace prestoMySQL.Adapter {
 
         }
 
-
+        //Used with UniqueIndex or Index
         public OperationResult Read<T, X>( Func<T , X> delegateMethod , EntityConditionalExpression Constraint = null ) where X : TableIndex where T : AbstractEntity {
 
             try {
@@ -1488,7 +1527,7 @@ namespace prestoMySQL.Adapter {
                 //Constraint: new EntityConstraintExpression( constraints ) 
 
                 SQLQueryParams outparam = null;
-                mSQLQuery = SQLBuilder.sqlSelect<T , X>( delegateMethod , this , ref outparam , Constraint: Constraint );
+                mSQLQueryString = SQLBuilder.sqlSelect<T , X>( delegateMethod , this , ref outparam , Constraint: Constraint );
                 var rs = mDatabase.ReadQuery( SQLQueryString , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
                 var r = FetchResultSet( rs , AlmostIsIdentifying );

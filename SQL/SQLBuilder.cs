@@ -550,7 +550,7 @@ namespace prestoMySQL.SQL {
             //var joinTable = new Dictionary<AbstractEntity , JoinTable>();
 
             //visited = NewMethod( ref visited , fkConstraint , listFK , joinTable );
-            var joinTable = NewMethod( ref visited , fkConstraint , listFK );
+            var joinTable = BuildJoinTable( ref visited , fkConstraint , listFK );
 
             foreach ( var (_, jj) in joinTable ) {
                 joins.Add( jj.ToString() );
@@ -610,11 +610,57 @@ namespace prestoMySQL.SQL {
 
         }
 
-        private static Dictionary<AbstractEntity , JoinTable> NewMethod( ref Stack<AbstractEntity> visited , List<ForeignkeyConstraint> fkConstraint , List<EntityForeignKey> listFK ) {
+        private static Dictionary<AbstractEntity , JoinTable> BuildJoinTable( ref Stack<AbstractEntity> visited , List<ForeignkeyConstraint> fkConstraint , List<EntityForeignKey> listFK ) {
 
             Dictionary<AbstractEntity , JoinTable> joinTable = new Dictionary<AbstractEntity , JoinTable>();
 
-            foreach ( var fks in listFK ) {
+            var OrderArcs = new List<EntityForeignKey>();
+            var OrderVisit = new Stack<AbstractEntity>();
+            //var _listFk = new List<EntityForeignKey>();
+            var l = listFK.Count;
+            while (( listFK.Count > 0 ) && (l>0)) {
+
+                foreach ( var fks in listFK ) {
+                    var connected = false;
+                    foreach ( var info in fks.foreignKeyInfo ) {
+                        if ( visited.Contains( info.ReferenceTable ) ) {
+                            connected = true;
+                            OrderVisit.Push( info.Table );
+                        } else if ( OrderVisit.Contains( info.ReferenceTable ) ) {
+                            connected = true;
+                            OrderVisit.Push( info.Table );
+                        } else if ( visited.Contains( info.Table ) ) {
+                            connected = true;
+                            OrderVisit.Push( info.ReferenceTable );
+                        } else if ( OrderVisit.Contains( info.Table ) ) {
+                            connected = true;
+                            OrderVisit.Push( info.ReferenceTable );
+                        }
+
+                    }
+
+                    if ( connected ) {
+                        OrderArcs.Add( fks );
+                        listFK.Remove( fks );
+                        break;
+                    }
+
+                    l -= 1;
+
+                }
+            }
+
+            //var Arc = new Stack<EntityForeignKey>();
+            //foreach ( var fks in listFK ) {
+            //    Arc.Push( fks );
+            //}
+
+            //Stack<AbstractEntity> _visited = visited;
+
+            //var xx = listFK.OrderBy( x => x.foreignKeyInfo.Where( a => _visited.Contains( a.ReferenceTable ) ) ).ToList();
+
+
+            foreach ( var fks in OrderArcs ) {
 
                 var join = sqlJoinTable( ref visited , fks );
 
@@ -1054,15 +1100,15 @@ namespace prestoMySQL.SQL {
             var listFK = sqlQuery.Graph.GetForeignKeys();
 
             var queryConstraints = sqlQuery.GetQueryJoinConstraint();
-            var joinTable = NewMethod( ref visited , fkConstraint , listFK );
+            var joinTable = BuildJoinTable( ref visited , fkConstraint , listFK );
 
             foreach ( var (table, jt) in joinTable ) {
-                
+
                 List<DefinableConstraint> constraints = new List<DefinableConstraint>();
                 List<DALQueryJoinEntityConstraint> constraint = queryConstraints.Where( x => x.Entity == table.GetType() ).ToList();
-                
+
                 if ( constraint.Count > 0 ) {
-                    
+
                     foreach ( DALQueryJoinEntityConstraint a in constraint ) {
 
                         dynamic instance = SQLTableEntityHelper.getDefinitionColumn( jt.Table , true ).FirstOrDefault( x => x.ColumnName == a.FieldName );

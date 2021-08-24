@@ -528,16 +528,6 @@ namespace prestoMySQL.Adapter {
             createForeignKey();
             CreatePrimaryKey();
 
-            //Entity.GetAllForeignkey().ForEach( fks => {
-            //    if ( fks.ReferenceTable == null ) {
-            //        var f = mEntities.FirstOrDefault().GetAllForeignkey().FirstOrDefault( x => x.ForeignkeyName == fks.ForeignkeyName );
-            //        if ( f != null ) {
-            //            fks.addEntities( new List<AbstractEntity>() { f.ReferenceTables() } );
-            //            fks.ReferenceTable = f.ReferenceTables();
-            //        }
-            //    }
-
-
             Entity.GetAllForeignkey().ForEach( fks => {
 
                 foreach ( var info in fks.foreignKeyInfo ) {
@@ -558,18 +548,6 @@ namespace prestoMySQL.Adapter {
                     }
 
                 }
-
-
-                //var l = Helper.SQLTableEntityHelper.getDefinitionColumn( fk.ReferenceTable , true );
-
-                //ConstructibleColumn xx = l.FirstOrDefault( x => (x as ConstructibleColumn ).ColumnName == fk.ReferenceColumnName );
-
-                //foreach ( var (name, pi) in fk.foreignKeyColumns ) {
-
-                //    var x = pi.GetCustomAttribute<DDForeignKey>()?.Name;
-                //    ReflectionTypeHelper.AssignValue<T>( this , pi , ( T ) entityLeft );
-
-                //}
 
             } );
 
@@ -802,12 +780,12 @@ namespace prestoMySQL.Adapter {
 
             if ( entity.State == prestoMySQL.Entity.Interface.EntityState.Changed ) {
 
-                var s = SQLBuilder.sqlInsert<T>( ( T ) entity , ref outparam , "@" );
+                mSQLQuery = SQLBuilder.sqlInsert<T>( ( T ) entity , ref outparam , "@" );
 
                 int? rowInserted = -1;
                 try {
 
-                    rowInserted = mDatabase.ExecuteQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
+                    rowInserted = mDatabase.ExecuteQuery( SQLQuery , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
 
                     if ( rowInserted is null ) {
 
@@ -868,11 +846,11 @@ namespace prestoMySQL.Adapter {
 
             if ( entity.State == prestoMySQL.Entity.Interface.EntityState.Changed ) {
 
-                var s = SQLBuilder.sqlUpdate<T>( ( T ) entity , ref outparam , "@" );
+                mSQLQuery = SQLBuilder.sqlUpdate<T>( ( T ) entity , ref outparam , "@" );
                 int? rowChanged = -1;
                 try {
 
-                    rowChanged = mDatabase.ExecuteQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
+                    rowChanged = mDatabase.ExecuteQuery( SQLQuery , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
 
                     if ( rowChanged is null ) {
 
@@ -1014,15 +992,14 @@ namespace prestoMySQL.Adapter {
 
         }
 
+        public void CreateNew() {
+            var args = new BindDataToEventArgs<T> { Entity = this.Entity };
+            OnBindDataTo( args );
+            OnInitData( EventArgs.Empty );
+            New();
+        }
+
         public void BindData() {
-
-            //if ( this.Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
-            //CreateNew();
-            //return OperationResult.OK;
-
-            //this.Entity = ( T ) Activator.CreateInstance( typeof( T ) );
-            //CreateEntity();
-            //CreateNew();
 
             var args = new BindDataToEventArgs<T> { Entity = this.Entity };
             OnBindDataTo( args );

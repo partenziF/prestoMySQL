@@ -1,4 +1,5 @@
 ﻿using prestoMySQL.Column.DataType;
+using prestoMySQL.Extension;
 using System;
 
 using System.Collections.Generic;
@@ -366,6 +367,39 @@ namespace prestoMySQL.Column.Attribute {
 
         }
 
+
+    }
+
+
+
+    public sealed class DDColumnEnumAttribute : DDColumnAttribute {
+
+        public string[] values = { "" };
+
+        public DDColumnEnumAttribute( string aName , string[] aValues , NullValue NullValue = NullValue.Null ) : base( aName , MySQLDataType.dbtEnum , NullValue ) {
+            if ( aValues is null ) {
+                throw new ArgumentNullException( nameof( aValues ) );
+            }
+
+            values = aValues;
+        }
+
+        public override string ToString() {
+
+            StringBuilder sb = base.BuildString();
+
+            //sb.Append( BulldTypeString() );
+
+
+            sb.Append( $"( {string.Join( "," , values.Select( x => x.Replace( "'" , "\\'" ).SurroundWith( "'" ) ).ToList() ) } ) " );
+
+            sb.Append( $" {this.NullValue.ToText()} " );
+
+            sb.Append( GetDefaultValueClause() );
+
+            return sb.ToString();
+            //	`Colonna 4` ENUM('Y','N') NOT NULL DEFAULT 'Y',
+        }
 
     }
 

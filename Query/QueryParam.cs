@@ -24,7 +24,7 @@ namespace prestoMySQL.Query {
 
         public string AsQueryParam( string aPlaceholder = "" ) {
             
-            if ( mValue.GetType().IsArray ) {
+            if ( ( mValue!=null) && ( mValue.GetType().IsArray ) ) {
             
                 var l = ( ( Array ) mValue ).Length;
                 string[] result = new string[l];

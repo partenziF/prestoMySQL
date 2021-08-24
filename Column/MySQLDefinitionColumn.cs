@@ -171,8 +171,8 @@ namespace prestoMySQL.Column {
                     value = Convert.ChangeType( a , typeof( string ) );
                     break;
                     case MySQLDataType.dbtEnum:
-                    throw new NotImplementedException();
-                    //break;
+                    value = Convert.ChangeType( a , typeof( string ) );
+                    break;
                     case MySQLDataType.dbtSet:
                     throw new NotImplementedException();
                     //break;//A SET column can have a maximum of 64 distinct members.

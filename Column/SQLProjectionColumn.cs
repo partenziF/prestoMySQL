@@ -23,34 +23,33 @@ namespace prestoMySQL.Column {
 
         public GenericQueryColumn( PropertyInfo aPropertyInfo = null ) {
 
-            Type entity;
+            //Type entity;
 
             this.mPropertyInfo = aPropertyInfo;
 
-            DALQueryEntity dalQueryEntity = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALQueryEntity>();
-            if ( dalQueryEntity == null ) throw new ArgumentNullException();
 
-            DALProjectionColumn dalProjectionColumn = this.mPropertyInfo?.GetCustomAttribute<DALProjectionColumn>();
-            if ( dalProjectionColumn == null ) throw new ArgumentNullException( String.Format( "DALProjectionColumn attribute is required for {0}" , aPropertyInfo.Name ) );
+            //DALQueryEntity dalQueryEntity = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALQueryEntity>();
+            //if ( dalQueryEntity == null ) throw new ArgumentNullException();
 
-            //if (!string.IsNullOrWhiteSpace(dalProjectionColumn.Table)) {
-            //} else 
+            //DALProjectionColumn dalProjectionColumn = this.mPropertyInfo?.GetCustomAttribute<DALProjectionColumn>();
+            //if ( dalProjectionColumn == null ) throw new ArgumentNullException( String.Format( "DALProjectionColumn attribute is required for {0}" , aPropertyInfo.Name ) );
 
-            if ( ( dalProjectionColumn.Entity != null ) && ( dalProjectionColumn.Entity != dalQueryEntity.Entity ) )  {
-                entity = dalProjectionColumn.Entity;
-            } else {
-                entity = dalQueryEntity.Entity;
-            }
 
-            DALTable dalTable = entity?.GetCustomAttribute<DALTable>();
-            
-            if ( dalTable == null ) throw new ArgumentNullException();
-            mTable = new TableReference( dalTable.TableName );
+            //if ( ( dalProjectionColumn.Entity != null ) && ( dalProjectionColumn.Entity != dalQueryEntity.Entity ) )  {
+            //    entity = dalProjectionColumn.Entity;
+            //} else {
+            //    entity = dalQueryEntity.Entity;
+            //}
 
-            mSQLDataType = ( MySQLDataType ) ( dalProjectionColumn as DALProjectionColumn ).DataType;
+            //DALTable dalTable = entity?.GetCustomAttribute<DALTable>();
 
-            mColumnName = dalProjectionColumn.Name;
-            mColumnAlias = dalProjectionColumn.Alias;
+            //if ( dalTable == null ) throw new ArgumentNullException();
+            //mTable = new TableReference( dalTable.TableName );
+
+            //mSQLDataType = ( MySQLDataType ) ( dalProjectionColumn as DALProjectionColumn ).DataType;
+
+            //mColumnName = dalProjectionColumn.Name;
+            //mColumnAlias = dalProjectionColumn.Alias;
 
         }
 
@@ -60,18 +59,20 @@ namespace prestoMySQL.Column {
 
         public abstract Type GenericType { get; }
 
-        private readonly MySQLDataType mSQLDataType;
+        //internal readonly MySQLDataType mSQLDataType;
+        internal MySQLDataType mSQLDataType;
 
-        protected readonly TableReference mTable;
+        //protected readonly TableReference mTable;
 
-        public abstract TableReference Table { get; }
-
-
-        protected readonly string mColumnName;
-        public abstract string ColumnName { get; }
+        //public abstract TableReference Table { get; }
 
 
-        internal readonly string mColumnAlias;
+        //protected readonly string mColumnName;
+        //public abstract string ColumnName { get; }
+
+
+        internal string mColumnAlias;
+        //internal readonly string mColumnAlias;
 
         public abstract string ColumnAlias { get; }
 
@@ -80,7 +81,35 @@ namespace prestoMySQL.Column {
     }
 
     public class QueryColumn<T> : GenericQueryColumn where T : ISQLTypeWrapper {
-        public QueryColumn( string aDeclaredVariableName , PropertyInfo aMethodBase = null ) : base( aMethodBase ) {
+        public QueryColumn( string aDeclaredVariableName , PropertyInfo aPropertyInfo = null ) : base( aPropertyInfo ) {
+
+            Type entity;
+
+            //this.mPropertyInfo = aPropertyInfo;
+
+            DALQueryEntity dalQueryEntity = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALQueryEntity>();
+            if ( dalQueryEntity == null ) throw new ArgumentNullException();
+
+            DALProjectionColumn dalProjectionColumn = this.mPropertyInfo?.GetCustomAttribute<DALProjectionColumn>();
+            if ( dalProjectionColumn == null ) throw new ArgumentNullException( String.Format( "DALProjectionColumn attribute is required for {0}" , aPropertyInfo.Name ) );
+
+
+            if ( ( dalProjectionColumn.Entity != null ) && ( dalProjectionColumn.Entity != dalQueryEntity.Entity ) ) {
+                entity = dalProjectionColumn.Entity;
+            } else {
+                entity = dalQueryEntity.Entity;
+            }
+
+            DALTable dalTable = entity?.GetCustomAttribute<DALTable>();
+
+            if ( dalTable == null ) throw new ArgumentNullException();
+            mTable = new TableReference( dalTable.TableName );
+
+
+            mSQLDataType = ( MySQLDataType ) ( dalProjectionColumn as DALProjectionColumn ).DataType;
+
+            mColumnName = dalProjectionColumn.Name;
+            mColumnAlias = dalProjectionColumn.Alias;
 
             if ( string.IsNullOrEmpty( aDeclaredVariableName ) ) {
                 throw new ArgumentException( $"'{nameof( aDeclaredVariableName )}' non può essere null o vuoto." , nameof( aDeclaredVariableName ) );
@@ -97,10 +126,19 @@ namespace prestoMySQL.Column {
 
         private readonly string mDeclaredVariableName;
 
+        protected readonly TableReference mTable;
 
-        public override TableReference Table => mTable;
+        //public abstract TableReference Table { get; }
 
-        public override string ColumnName => mColumnName;
+
+        protected readonly string mColumnName;
+        //public abstract string ColumnName { get; }
+
+        //public override TableReference Table => mTable;
+        public TableReference Table => mTable;
+
+        public string ColumnName => mColumnName;
+        //public override string ColumnName => mColumnName;
 
         public override Type GenericType => mGenericType;
 
@@ -147,7 +185,7 @@ namespace prestoMySQL.Column {
 
     public class SQLProjectionColumn<T> : QueryColumn<T> where T : ISQLTypeWrapper {
 
-        public SQLProjectionColumn( string aDeclaredVariableName , PropertyInfo aMethodBase , SQLQuery sqlQuery ) : base( aDeclaredVariableName , aMethodBase ) {
+        public SQLProjectionColumn( string aDeclaredVariableName , PropertyInfo aMethodBase ) : base( aDeclaredVariableName , aMethodBase ) {
 
         }
 

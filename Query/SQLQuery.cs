@@ -31,7 +31,6 @@ namespace prestoMySQL.Query {
 
         public List<AbstractEntity> mEntities;
 
-
         public DefinableConstraint MakeUniqueParamName( DefinableConstraint c ) {
             foreach ( QueryParam qp in c.QueryParams ) {
                 var count = ( mParamNames.Count( c => c.StartsWith( qp.Name ) ) );
@@ -62,11 +61,15 @@ namespace prestoMySQL.Query {
 
         public SQLQuery( QueryAdapter queryAdapter ) {
 
-            var InstantiableProperties = this.GetType().GetProperties().Where( x => x.PropertyType.IsGenericType ? x.PropertyType.GetGenericTypeDefinition() == typeof( SQLProjectionColumn<> ) : false ).ToArray();
+            //var InstantiableProperties = this.GetType().GetProperties().Where( x => x.PropertyType.IsGenericType ? x.PropertyType.GetGenericTypeDefinition().IsAssignableFrom ( typeof( GenericQueryColumn ) ): false ).ToArray();
+
+
+            var InstantiableProperties = this.GetType().GetProperties().Where( x => x.PropertyType.IsGenericType ? x.PropertyType.GetGenericTypeDefinition().IsAssignableTo ( typeof( GenericQueryColumn ) ): false ).ToArray();
 
             foreach ( PropertyInfo p in InstantiableProperties ) {
-                var ctors = p.PropertyType.GetConstructor( new Type[] { typeof( string ) , typeof( PropertyInfo ) , typeof( SQLQuery ) } );
-                p.SetValue( this , ctors.Invoke( new object[] { p.Name , p , this } ) , null );
+                var ctors = p.PropertyType.GetConstructor( new Type[] { typeof( string ) , typeof( PropertyInfo ) } );
+                //var ctors = p.PropertyType.GetConstructor( new Type[] { typeof( string ) , typeof( PropertyInfo ) , typeof( SQLQuery ) } );
+                p.SetValue( this , ctors.Invoke( new object[] { p.Name , p  } ) , null );
             }
 
             Graph = new TableGraph();
@@ -566,6 +569,7 @@ namespace prestoMySQL.Query {
             //foreach ( SQLQueryOrderBy e in  aOrderByEntity ) {
             //    this.mOrderBy.add( e );
             //}
+
             return this;
         }
 

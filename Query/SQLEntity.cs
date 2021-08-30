@@ -92,9 +92,13 @@ namespace prestoMySQL.Query {
 
 
         internal override List<string> GetProjectionColumnName<T>( T myQuery ) {
+            //var ccc = SQLTableEntityHelper.getColumnName<U>( true , false );
+            
             //return SQLTableEntityHelper.getColumnName<U>( true , false );
             //return new List<string>();
             List<string> result = new List<string>();
+
+             result = SQLTableEntityHelper.getProjectionColumnName<T>( myQuery );
 
             foreach ( var e in Graph.GetTopologicalOrder() ) {
 

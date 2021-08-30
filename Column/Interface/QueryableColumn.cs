@@ -11,12 +11,14 @@ namespace prestoMySQL.Column.Interface {
 
         Type GenericType { get; }
 
-        public TableReference Table { get; }
+        //public TableReference Table { get; }
 
-        ///////////////////////////////////////////
-        public string ColumnName { get; }
+        /////////////////////////////////////////////
+        //public string ColumnName { get; }
 
         public string ColumnAlias { get; }
+
+        public abstract string ActualName { get; }
 
 
     }

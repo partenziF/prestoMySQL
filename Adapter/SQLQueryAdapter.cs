@@ -199,6 +199,8 @@ namespace prestoMySQL.Adapter {
 
             sqlQuery.Prepare();
 
+
+
             sqlQuery.LIMIT( Offset , RowCount );
 
             var xxx = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );

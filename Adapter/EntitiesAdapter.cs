@@ -1396,11 +1396,11 @@ namespace prestoMySQL.Adapter {
         }
 
 
-        public void Read<T>( Func<T , ConstructibleColumn> p ) where T : TableEntity {
+        public void Read<T>( Func<T , ConstructibleColumn> p, params object[] KeyValues ) where T : TableEntity {
             var x = this.Adapter<T>();
             var xx = p( x );
 
-            var constratint = FactoryEntityConstraint.MakeEqual( xx , 5 , "@" );
+            var constratint = FactoryEntityConstraint.MakeEqual( xx , KeyValues , "@" );
 
             Console.WriteLine( p );
             //throw new NotImplementedException();
@@ -1512,7 +1512,6 @@ namespace prestoMySQL.Adapter {
                 bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
 
                 //AbstractEntity entity = _Graph.FirstOrDefault( kvp => kvp.Key.GetType() == typeof( T ) ).Key;
-
                 //X x = delegateMethod( ( T ) entity );
 
                 //DefinableConstraint[] constraints = new DefinableConstraint[x.ColumnsName.Length];

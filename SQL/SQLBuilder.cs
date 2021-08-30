@@ -468,7 +468,7 @@ namespace prestoMySQL.SQL {
 
                 if ( visited.Contains( info.Table ) ) {
 
-                    if ( !visited.Contains( info.ReferenceTable ) ) {
+                    if ( ( info.ReferenceTable is not null) && ( !visited.Contains( info.ReferenceTable ) ) ) {
                         //t = info.ReferenceTable;
                         //a = SQLTableEntityHelper.getColumnName( info.ReferenceTable , info.ReferenceColumnName , true , true );
                         //b = SQLTableEntityHelper.getColumnName( info.Table , info.ColumnName , true , true );
@@ -479,7 +479,7 @@ namespace prestoMySQL.SQL {
                         //t = null;
                     }
 
-                } else if ( visited.Contains( info.ReferenceTable ) ) {
+                } else if ( ( info.ReferenceTable is not null) && ( visited.Contains( info.ReferenceTable ) ) ) {
 
                     if ( !visited.Contains( info.Table ) ) {
                         //t = info.Table;
@@ -693,8 +693,17 @@ namespace prestoMySQL.SQL {
 
                     }
 
-                    if ( !isFkAdded )
+                    if ( !isFkAdded ) {
+                        var isNotNull = true;
+                        foreach(var info in fks.foreignKeyInfo ) {
+                            if (info.ReferenceTable is null ) {
+                                isNotNull = false;
+                                break;
+                            }
+                        }
+                        if (isNotNull)
                         fkConstraint.Add( new ForeignkeyConstraint( fks ) );
+                    }
                 }
 
 
@@ -834,8 +843,9 @@ namespace prestoMySQL.SQL {
 
             return sqlSelect( startEntity , new AbstractEntity[] { startEntity } , tables , Entities , ref outParams , ParamPlaceholder , Constraint );
 
-
         }
+
+
         public static string sqlSelect( AbstractEntity EntityInstance , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) {
 
             StringBuilder sb = new StringBuilder( "SELECT\r\n" );

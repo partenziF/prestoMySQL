@@ -393,7 +393,7 @@ namespace prestoMySQL.Helper {
 
             foreach ( PropertyInfo propertyInfo in props ) {
 
-                if ( propertyInfo.PropertyType.IsGenericType && ( propertyInfo.PropertyType.GetGenericTypeDefinition() == typeof( SQLProjectionColumn<> ) ) ) {
+                if ( propertyInfo.PropertyType.IsGenericType && ( propertyInfo.PropertyType.GetGenericTypeDefinition().IsAssignableTo( typeof( GenericQueryColumn ) ) ) ) {
 
                     Result.Add( propertyInfo );
 

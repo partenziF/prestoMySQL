@@ -16,6 +16,7 @@ using prestoMySQL.Query;
 using prestoMySQL.Query.Attribute;
 using prestoMySQL.Query.Interface;
 using prestoMySQL.Query.SQL;
+using prestoMySQL.Table;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,7 +38,7 @@ namespace prestoMySQL.SQL {
             List<String> pk = null;
             List<String> result = new List<String>();
 
-            sb.Append( $"CREATE TABLE {( ifNotExists ? "IF NOT EXISTS" : "" )} {prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER}{SQLTableEntityHelper.getTableName<T>()}{prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER} (\n" );
+            sb.Append( $"CREATE TABLE {( ifNotExists ? "IF NOT EXISTS" : "" )} {prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER}{SQLTableEntityHelper.getAttributeTableName<T>()}{prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER} (\n" );
             //sb.Append( $"CREATE TABLE {( ifNotExists ? "IF NOT EXISTS" : "" )} {prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER}{SQLTableEntityHelper.getTableName<T>()}{prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER} (\n" );
             bool autoIncrementKey = false;
             try {
@@ -142,14 +143,14 @@ namespace prestoMySQL.SQL {
             StringBuilder sb = new StringBuilder();
             sb.Append( "DROP TABLE " );
             if ( ifExists ) sb.Append( "IF EXISTS " );
-            sb.Append( SQLTableEntityHelper.getTableName<T>() );
+            sb.Append( SQLTableEntityHelper.getAttributeTableName<T>() );
             return sb.ToString();
         }
 
         public static string sqlTruncate<T>() where T : AbstractEntity {
             StringBuilder sb = new StringBuilder();
             sb.Append( "TRUNCATE TABLE " );
-            sb.Append( SQLTableEntityHelper.getTableName<T>().QuoteTableName() );
+            sb.Append( SQLTableEntityHelper.getAttributeTableName<T>().QuoteTableName() );
             //sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER );
             return sb.ToString();
         }
@@ -157,21 +158,21 @@ namespace prestoMySQL.SQL {
         public static string sqlExistsTable<T>() where T : AbstractEntity {
             StringBuilder sb = new StringBuilder();
             sb.Append( "SHOW TABLES LIKE " );
-            sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_PARAM_STRING_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_PARAM_STRING_QUALIFIER );
+            sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_PARAM_STRING_QUALIFIER + SQLTableEntityHelper.getAttributeTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_PARAM_STRING_QUALIFIER );
             return sb.ToString();
         }
 
         public static string sqlDescribeTable<T>() where T : AbstractEntity {
             StringBuilder sb = new StringBuilder();
             sb.Append( "DESCRIBE " );
-            sb.Append( SQLTableEntityHelper.getTableName<T>().QuoteTableName() );
+            sb.Append( SQLTableEntityHelper.getAttributeTableName<T>().QuoteTableName() );
             //sb.Append( prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER + SQLTableEntityHelper.getTableName<T>() + prestoMySQL.SQL.SQLConstant.TABLE_NAME_QUALIFIER );
             return sb.ToString();
         }
 
 
         public static string sqlDelete<T>() where T : AbstractEntity {
-            StringBuilder sb = new StringBuilder().Append( string.Format( "DELETE FROM {0}" , SQLTableEntityHelper.getTableName<T>() ) );
+            StringBuilder sb = new StringBuilder().Append( string.Format( "DELETE FROM {0}" , SQLTableEntityHelper.getAttributeTableName<T>() ) );
             return sb.ToString();
         }
 
@@ -181,7 +182,7 @@ namespace prestoMySQL.SQL {
 
             outParams ??= new SQLQueryParams( pk.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToArray() );
 
-            return String.Format( "DELETE FROM {0} WHERE {1}" , SQLTableEntityHelper.getTableName( aTableInstance ) ,
+            return String.Format( "DELETE FROM {0} WHERE {1}" , SQLTableEntityHelper.getAttributeTableName( aTableInstance ) ,
                                                                 new EntityConditionalExpression( LogicOperator.AND , pk.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() ).ToString() );
         }
 
@@ -195,7 +196,7 @@ namespace prestoMySQL.SQL {
             outParams ??= new SQLQueryParams( columnDefinition.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToArray() );
 
             sb.Append( "INSERT INTO " );
-            sb.Append( SQLTableEntityHelper.getTableName( aTableInstance ) );
+            sb.Append( SQLTableEntityHelper.getAttributeTableName( aTableInstance ) );
             sb.Append( string.Concat( " ( " , string.Join( "," , columnDefinition.Select( x => String.Concat( '`' , ( string ) x.ColumnName , '`' ) ).ToList() ) , " ) " ) );
             sb.Append( " VALUES " );
             sb.Append( string.Concat( " ( " , string.Join( "," , outParams.asArray().Select( x => x.AsQueryParam( aParamPlaceholder ) ) ) , " ) " ) );
@@ -212,7 +213,7 @@ namespace prestoMySQL.SQL {
             outParams ??= new SQLQueryParams( columnDefinition.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToList().Union( pkColumnDefinition.Select( x => ( QueryParam ) ( MySQLQueryParam ) x ).ToList() ).ToArray() );
 
             return String.Format( "UPDATE {0} SET {1} WHERE {2}" ,
-                SQLTableEntityHelper.getTableName( aTableInstance ) ,
+                SQLTableEntityHelper.getAttributeTableName( aTableInstance ) ,
                 new EntityListExpression( columnDefinition.Select( x => FactoryEntityConstraint.MakeAssignement( x , aParamPlaceholder ) ).ToArray() ).ToString() ,
                 new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() ).ToString() );
         }
@@ -256,7 +257,37 @@ namespace prestoMySQL.SQL {
 
             sb.AppendLine( string.Join( ',' , columnsName ) );
             sb.AppendLine( "FROM" );
-            sb.AppendLine( SQLTableEntityHelper.getTableName<T>() );
+            sb.AppendLine( SQLTableEntityHelper.getAttributeTableName<T>() );
+
+            sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
+
+            if ( Constraint?.Length > 0 ) {
+
+                sb.AppendLine( "WHERE" );
+
+                EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
+                outParams ??= new SQLQueryParams( expr.getParam() );
+
+                sb.AppendLine( expr.ToString() );
+            }
+
+            return sb.ToString();
+        }
+        public static string sqlSelect<T>( T EntityInstance , ref SQLQueryParams outParams , EntityConditionalExpression Constraint = null ) where T : AbstractEntity {
+
+            //List<String> columnsName = SQLTableEntityHelper.getColumnName<T>( true , false );
+            List<string> columnsName = SQLTableEntityHelper.getDefinitionColumn( EntityInstance , true ).Select( x => ( string ) x.ToString() ).ToList();
+
+            List<string> joins = new List<string>();
+
+            StringBuilder sb = new StringBuilder( "SELECT\r\n" );
+
+            sb.AppendLine( string.Join( ',' , columnsName ) );
+            sb.AppendLine( "FROM" );
+            //sb.AppendLine( SQLTableEntityHelper.getTableName<T>() );
+            //sb.AppendLine( SQLTableEntityHelper.getAttributeTableName( EntityInstance.GetType() ) );
+
+            sb.AppendLine( ( ( TableReference ) EntityInstance ).ToString() );
 
             sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
 
@@ -468,7 +499,7 @@ namespace prestoMySQL.SQL {
 
                 if ( visited.Contains( info.Table ) ) {
 
-                    if ( ( info.ReferenceTable is not null) && ( !visited.Contains( info.ReferenceTable ) ) ) {
+                    if ( ( info.ReferenceTable is not null ) && ( !visited.Contains( info.ReferenceTable ) ) ) {
                         //t = info.ReferenceTable;
                         //a = SQLTableEntityHelper.getColumnName( info.ReferenceTable , info.ReferenceColumnName , true , true );
                         //b = SQLTableEntityHelper.getColumnName( info.Table , info.ColumnName , true , true );
@@ -479,7 +510,7 @@ namespace prestoMySQL.SQL {
                         //t = null;
                     }
 
-                } else if ( ( info.ReferenceTable is not null) && ( visited.Contains( info.ReferenceTable ) ) ) {
+                } else if ( ( info.ReferenceTable is not null ) && ( visited.Contains( info.ReferenceTable ) ) ) {
 
                     if ( !visited.Contains( info.Table ) ) {
                         //t = info.Table;
@@ -560,7 +591,7 @@ namespace prestoMySQL.SQL {
             sb.AppendLine( string.Join( "," , columnsName ) );
 
             sb.AppendLine( "FROM" );
-            sb.AppendLine( SQLTableEntityHelper.getTableName( startEntity.GetType() ) );
+            sb.AppendLine( SQLTableEntityHelper.getAttributeTableName( startEntity.GetType() ) );
 
             sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
 
@@ -618,7 +649,7 @@ namespace prestoMySQL.SQL {
             var OrderVisit = new Stack<AbstractEntity>();
             //var _listFk = new List<EntityForeignKey>();
             var l = listFK.Count;
-            while (( listFK.Count > 0 ) && (l>0)) {
+            while ( ( listFK.Count > 0 ) && ( l > 0 ) ) {
 
                 foreach ( var fks in listFK ) {
                     var connected = false;
@@ -695,14 +726,14 @@ namespace prestoMySQL.SQL {
 
                     if ( !isFkAdded ) {
                         var isNotNull = true;
-                        foreach(var info in fks.foreignKeyInfo ) {
-                            if (info.ReferenceTable is null ) {
+                        foreach ( var info in fks.foreignKeyInfo ) {
+                            if ( info.ReferenceTable is null ) {
                                 isNotNull = false;
                                 break;
                             }
                         }
-                        if (isNotNull)
-                        fkConstraint.Add( new ForeignkeyConstraint( fks ) );
+                        if ( isNotNull )
+                            fkConstraint.Add( new ForeignkeyConstraint( fks ) );
                     }
                 }
 
@@ -857,7 +888,7 @@ namespace prestoMySQL.SQL {
             sb.AppendLine( string.Join( "," , columnsName ) );
 
             sb.AppendLine( "FROM" );
-            sb.AppendLine( SQLTableEntityHelper.getTableName( EntityInstance.GetType() ) );
+            sb.AppendLine( SQLTableEntityHelper.getAttributeTableName( EntityInstance.GetType() ) );
 
             sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
 
@@ -1051,7 +1082,10 @@ namespace prestoMySQL.SQL {
                     sb.AppendLine( String.Format( "\t( {0} )" , String.Join( " AND " , where.ToArray() ) ) );
                 }
 
-
+                if ( queryInstance.GroupBy.Count > 0 ) {
+                    sb.AppendLine( "GROUP BY " );
+                    sb.AppendJoin( "," , queryInstance.GroupBy.OrderBy( x => x.order ).ToList() );
+                }
 
                 //    if ( !mGroupBy.isEmpty() ) {
                 //        String[] c = new String[mGroupBy.size()];
@@ -1102,7 +1136,6 @@ namespace prestoMySQL.SQL {
             Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
 
             //var queryConstraints = SQLTableEntityHelper.getQueryJoinConstraint( myQuery.GetType() );
-
             //visited.Push( startEntity );
 
             List<ForeignkeyConstraint> fkConstraint = new List<ForeignkeyConstraint>();
@@ -1138,6 +1171,8 @@ namespace prestoMySQL.SQL {
                 }
                 joins.Add( jt.ToString() );
             }
+
+
 
             return ( T ) sqlQuery;
 

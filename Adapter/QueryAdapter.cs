@@ -38,6 +38,7 @@ namespace prestoMySQL.Adapter {
             mDatabase = database;
         }
 
+
         public abstract MySQResultSet ExecuteQuery( out ILastErrorInfo Message );
 
         protected abstract void BindData( Dictionary<string , Dictionary<string , int>> s , IReadableResultSet resultSet );

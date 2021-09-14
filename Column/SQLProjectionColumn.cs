@@ -19,6 +19,15 @@ using System.Threading.Tasks;
 
 namespace prestoMySQL.Column {
 
+    public interface ValuableQueryColumn<T> {
+
+        //private T mTypeWrapperValue;
+        public T TypeWrapperValue { get; set; }
+
+        public object Value();
+
+    }
+
     public abstract class GenericQueryColumn : QueryableColumn {
 
         public GenericQueryColumn( PropertyInfo aPropertyInfo = null ) {
@@ -27,6 +36,22 @@ namespace prestoMySQL.Column {
 
             this.mPropertyInfo = aPropertyInfo;
 
+            //DALQueryEntity dalQueryEntity = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALQueryEntity>();
+            //if ( dalQueryEntity == null ) throw new ArgumentNullException();
+
+            //DALProjectionColumn dalProjectionColumn = this.mPropertyInfo?.GetCustomAttribute<DALProjectionColumn>();
+            //if ( dalProjectionColumn == null ) throw new ArgumentNullException( String.Format( "DALProjectionColumn attribute is required for {0}" , aPropertyInfo.Name ) );
+
+            //if ( ( dalProjectionColumn.Entity != null ) && ( dalProjectionColumn.Entity != dalQueryEntity.Entity ) ) {
+            //    entity = dalProjectionColumn.Entity;
+            //} else {
+            //    entity = dalQueryEntity.Entity;
+            //}
+
+
+            //DALTable dalTable = entity?.GetCustomAttribute<DALTable>();
+            //if ( dalTable == null ) throw new ArgumentNullException();
+            //mTable = new TableReference( dalTable.TableName );
 
             //DALQueryEntity dalQueryEntity = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALQueryEntity>();
             //if ( dalQueryEntity == null ) throw new ArgumentNullException();
@@ -78,9 +103,16 @@ namespace prestoMySQL.Column {
 
         public abstract string ActualName { get; }
 
+
+        protected  TableReference mTable;
+        public TableReference Table => mTable;
+
+        public abstract void AssignValue( object x );
+
+
     }
 
-    public class QueryColumn<T> : GenericQueryColumn where T : ISQLTypeWrapper {
+    public class QueryColumn<T> : GenericQueryColumn, ValuableQueryColumn<T> where T : ISQLTypeWrapper {
         public QueryColumn( string aDeclaredVariableName , PropertyInfo aPropertyInfo = null ) : base( aPropertyInfo ) {
 
             Type entity;
@@ -126,7 +158,6 @@ namespace prestoMySQL.Column {
 
         private readonly string mDeclaredVariableName;
 
-        protected readonly TableReference mTable;
 
         //public abstract TableReference Table { get; }
 
@@ -135,7 +166,9 @@ namespace prestoMySQL.Column {
         //public abstract string ColumnName { get; }
 
         //public override TableReference Table => mTable;
-        public TableReference Table => mTable;
+
+        //protected readonly TableReference mTable;
+        //public TableReference Table => mTable;
 
         public string ColumnName => mColumnName;
         //public override string ColumnName => mColumnName;
@@ -164,7 +197,7 @@ namespace prestoMySQL.Column {
         }
 
 
-        public void AssignValue( object x ) {
+        public override void AssignValue( object x ) {
 
             var genericType = typeof( T ).GetGenericArguments()[0];
             ConstructorInfo ctor = typeof( T ).GetConstructor( new Type[] { genericType } );
@@ -186,7 +219,7 @@ namespace prestoMySQL.Column {
     public class SQLProjectionColumn<T> : QueryColumn<T> where T : ISQLTypeWrapper {
 
         public SQLProjectionColumn( string aDeclaredVariableName , PropertyInfo aMethodBase ) : base( aDeclaredVariableName , aMethodBase ) {
-
+            
         }
 
 

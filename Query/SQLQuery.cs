@@ -17,6 +17,7 @@ using prestoMySQL.Entity;
 using prestoMySQL.Column.Interface;
 using prestoMySQL.Database.MySQL;
 using prestoMySQL.Adapter;
+using prestoMySQL.SQL;
 
 namespace prestoMySQL.Query {
 
@@ -64,12 +65,12 @@ namespace prestoMySQL.Query {
             //var InstantiableProperties = this.GetType().GetProperties().Where( x => x.PropertyType.IsGenericType ? x.PropertyType.GetGenericTypeDefinition().IsAssignableFrom ( typeof( GenericQueryColumn ) ): false ).ToArray();
 
 
-            var InstantiableProperties = this.GetType().GetProperties().Where( x => x.PropertyType.IsGenericType ? x.PropertyType.GetGenericTypeDefinition().IsAssignableTo ( typeof( GenericQueryColumn ) ): false ).ToArray();
+            var InstantiableProperties = this.GetType().GetProperties().Where( x => x.PropertyType.IsGenericType ? x.PropertyType.GetGenericTypeDefinition().IsAssignableTo( typeof( GenericQueryColumn ) ) : false ).ToArray();
 
             foreach ( PropertyInfo p in InstantiableProperties ) {
                 var ctors = p.PropertyType.GetConstructor( new Type[] { typeof( string ) , typeof( PropertyInfo ) } );
                 //var ctors = p.PropertyType.GetConstructor( new Type[] { typeof( string ) , typeof( PropertyInfo ) , typeof( SQLQuery ) } );
-                p.SetValue( this , ctors.Invoke( new object[] { p.Name , p  } ) , null );
+                p.SetValue( this , ctors.Invoke( new object[] { p.Name , p } ) , null );
             }
 
             Graph = new TableGraph();
@@ -82,10 +83,12 @@ namespace prestoMySQL.Query {
             mWhereCondition = new List<SQLQueryConditionExpression>();
             mJoinTable = new Dictionary<string , SQLQueryJoinTable>( StringComparer.OrdinalIgnoreCase );
             mHashOfSQLQueryTableReference = new Dictionary<string , TableReference>();
-            mOrderBy = new PriorityQueue<SQLQueryOrderBy>();
-            mGroupBy = new PriorityQueue<SQLQueryGroupBy>();
+            mOrderBy = new List<SQLQueryOrderBy>();
+            mGroupBy = new List<SQLQueryGroupBy>();
 
             mDictionary = new Dictionary<string , MySQLQueryParam>();
+
+            //mHashOfSQLQueryTableReference.Clear();
 
             var InstantiableFields = this.GetType().GetFields().Where( x => System.Attribute.IsDefined( x , typeof( DALQueryParamAttribute ) ) );
             InstantiableFields?.ToList().ForEach( x => this[x.Name] = new MySQLQueryParam( x.GetValue( this ) , x.GetCustomAttribute<DALQueryParamAttribute>().Name ) );
@@ -175,7 +178,7 @@ namespace prestoMySQL.Query {
 
 
         protected Dictionary<string , SQLQueryJoinTable> mJoinTable;
-        public virtual Dictionary<string, SQLQueryJoinTable> JoinTable {
+        public virtual Dictionary<string , SQLQueryJoinTable> JoinTable {
             get {
                 return mJoinTable;
             }
@@ -228,6 +231,7 @@ namespace prestoMySQL.Query {
 
         public QueryAdapter mQueryAdapter { get; }
 
+
         internal void UpdateValueToQueryParam() => this.GetType()
                                                        .GetFields()
                                                        .Where( x => System.Attribute.IsDefined( x , typeof( DALQueryParamAttribute ) ) )
@@ -258,12 +262,15 @@ namespace prestoMySQL.Query {
 
         //////////////////////////////////////////////////////////////////////////////////
 
-        protected PriorityQueue<SQLQueryOrderBy> mOrderBy;
+        protected List<SQLQueryOrderBy> mOrderBy;
+        public List<SQLQueryGroupBy> OrderBy { get => this.mGroupBy; }
 
         //////////////////////////////////////////////////////////////////////////////////
 
-        protected PriorityQueue<SQLQueryGroupBy> mGroupBy;
+        private List<SQLQueryGroupBy> mGroupBy;
+        public List<SQLQueryGroupBy> GroupBy { get => this.mGroupBy; }
 
+        //////////////////////////////////////////////////////////////////////////////////
 
         public String getTableReferences() {
             throw new NotImplementedException();
@@ -389,7 +396,9 @@ namespace prestoMySQL.Query {
         }
 
 
-        public virtual List<dynamic> GetProjectionColumns() {
+        public virtual List<dynamic> GetProjectionColumns<T>( T myQuery ) where T : SQLQuery {
+
+            //var ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( myQuery );
             return SQLTableEntityHelper.getProjectionColumn( this );
         }
 
@@ -483,9 +492,9 @@ namespace prestoMySQL.Query {
         internal void JOIN( JoinTable joinTable , SQLQueryConditionExpression constraint = null ) {
 
             if ( constraint != null )
-                mJoinTable.TryAdd( joinTable.Table.ActualName , new SQLQueryJoinTable( this ,joinTable, constraint ) );
+                mJoinTable.TryAdd( joinTable.Table.ActualName , new SQLQueryJoinTable( this , joinTable , constraint ) );
             else
-                mJoinTable.TryAdd( joinTable.Table.ActualName , new SQLQueryJoinTable( this , joinTable  ) );
+                mJoinTable.TryAdd( joinTable.Table.ActualName , new SQLQueryJoinTable( this , joinTable ) );
 
 
 
@@ -555,9 +564,9 @@ namespace prestoMySQL.Query {
         }
 
         public SQLQuery GROUPBY( params SQLQueryGroupBy[] aGroupByEntity ) {
-            //// TODO Auto-generated method stub
-            //for ( SQLQueryGroupBy e : aGroupByEntity ) {
-            //    this.mGroupBy.add( e );
+
+            //foreach ( var e in aGroupByEntity ) {
+            this.mGroupBy.AddRange( aGroupByEntity );
             //}
 
             return this;
@@ -569,6 +578,10 @@ namespace prestoMySQL.Query {
             //foreach ( SQLQueryOrderBy e in  aOrderByEntity ) {
             //    this.mOrderBy.add( e );
             //}
+
+            foreach ( var e in aOrderByEntity ) {
+                this.mOrderBy.Add( e );
+            }
 
             return this;
         }
@@ -754,6 +767,31 @@ namespace prestoMySQL.Query {
         internal virtual IEnumerable<DALQueryJoinEntityConstraint> GetQueryJoinConstraint() {
             return SQLTableEntityHelper.getQueryJoinConstraint( this.GetType() );
         }
+
+        public void Build() {
+            UpdateValueToQueryParam();
+
+            //SQLQueryParams outparam = null;
+            //outparam = null;
+
+            Prepare();
+
+            var orderby = SQLTableEntityHelper.getQueryOrderBy( GetType() );
+            var order = 0;
+            List<SQLQueryGroupBy> listOfQueryGroupBy = new List<SQLQueryGroupBy>();
+            foreach ( var o in orderby ) {
+                if ( Graph.Cache.ContainsKey( o.Table ) ) {
+                    var cn = Helper.SQLTableEntityHelper.getColumnName( Graph.Cache[o.Table].FirstOrDefault() , o.Property , true );
+                    listOfQueryGroupBy.Add( new SQLQueryGroupBy( order++ , cn ) );
+                }
+
+            }
+
+            GROUPBY( listOfQueryGroupBy.ToArray() );
+
+            LIMIT( Offset , RowCount );
+        }
+
 
     }
 

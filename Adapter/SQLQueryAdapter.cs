@@ -18,6 +18,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using prestoMySQL.Column.Interface;
+using prestoMySQL.Query.SQL;
 
 namespace prestoMySQL.Adapter {
 
@@ -37,6 +38,7 @@ namespace prestoMySQL.Adapter {
             //SQLTableEntityHelper.getQueryJoinEntity( typeof( T ) )?.ForEach( e => {
             //    entities.Add( ( AbstractEntity ) Activator.CreateInstance( e ) );
             //} );
+            
 
             mSqlQuery.BuildEntityGraph();
 
@@ -54,9 +56,9 @@ namespace prestoMySQL.Adapter {
                 sqlQuery.Prepare();
                 sqlQuery.SelectExpression.Clear();
                 sqlQuery.SelectExpression.Add( "COUNT(*)" );
-                var xxx = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
-                mSQLQueryString = xxx;
-                return mDatabase.ExecuteScalar<int?>( xxx, outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
+                mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+                 
+                return mDatabase.ExecuteScalar<int?>( mSQLQueryString , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
 
             }
         }
@@ -191,23 +193,34 @@ namespace prestoMySQL.Adapter {
 
         }
 
+
+
         public override MySQResultSet ExecuteQuery( out ILastErrorInfo Message ) {
 
-            sqlQuery.UpdateValueToQueryParam();
+            //sqlQuery.UpdateValueToQueryParam();
+            //SQLQueryParams outparam = null;
+            //sqlQuery.Prepare();
 
-            SQLQueryParams outparam = null;
+            //var orderby = SQLTableEntityHelper.getQueryOrderBy( sqlQuery.GetType() );
+            //var order = 0;
+            //List<SQLQueryGroupBy> listOfQueryGroupBy = new List<SQLQueryGroupBy>();
+            //foreach ( var o in orderby ) {
+            //    if ( sqlQuery.Graph.Cache.ContainsKey( o.Table ) ) {
+            //        var cn = Helper.SQLTableEntityHelper.getColumnName( sqlQuery.Graph.Cache[o.Table].FirstOrDefault() , o.Property , true );
+            //        listOfQueryGroupBy.Add( new SQLQueryGroupBy( order++ , cn ) );
+            //    }
+            //}
+            //sqlQuery.GROUPBY( listOfQueryGroupBy.ToArray() );
+            //sqlQuery.LIMIT( Offset , RowCount );
 
-            sqlQuery.Prepare();
 
+            SQLQueryParams outparam = null ;
 
+            sqlQuery.Build();
 
-            sqlQuery.LIMIT( Offset , RowCount );
+            this.mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
 
-            var xxx = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
-
-            this.mSQLQueryString = xxx;
-
-            var result = mDatabase.ReadQuery( xxx, outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+            var result = mDatabase.ReadQuery( this.mSQLQueryString , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
             Message = mDatabase.LastError;
 
@@ -219,7 +232,7 @@ namespace prestoMySQL.Adapter {
 
             ProjectionColumns?.Clear();
             //ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( sqlQuery );
-            ProjectionColumns = sqlQuery.GetProjectionColumns();
+            ProjectionColumns = sqlQuery.GetProjectionColumns<T>( sqlQuery );
 
             return ( IEnumerator<X> ) this.GetEnumerator();
         }

@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace prestoMySQL.Column.Interface {
-    public interface QueryableColumn  {
+    public interface QueryableColumn {
 
         Type GenericType { get; }
 
@@ -20,6 +20,7 @@ namespace prestoMySQL.Column.Interface {
 
         public abstract string ActualName { get; }
 
+        public void AssignValue( object x );
 
     }
 

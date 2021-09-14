@@ -278,7 +278,7 @@ namespace prestoMySQL.Adapter {
                 r = mDatabase.ExecuteScalar<string>( s ) ?? null;
                 //the function can return a null value even if there, not an error
                 if ( r is null ) return OperationResult.Fail;
-                else if ( !String.IsNullOrWhiteSpace( r ) && ( r.Equals( SQLTableEntityHelper.getTableName<T>() , StringComparison.InvariantCultureIgnoreCase ) ) ) return OperationResult.OK;
+                else if ( !String.IsNullOrWhiteSpace( r ) && ( r.Equals( SQLTableEntityHelper.getAttributeTableName<T>() , StringComparison.InvariantCultureIgnoreCase ) ) ) return OperationResult.OK;
                 else return OperationResult.Fail;
 
             } catch ( MySqlException ex ) {
@@ -655,19 +655,48 @@ namespace prestoMySQL.Adapter {
 
             X x = delegateMethod( Entity );
 
-            DefinableConstraint[] constraints = new DefinableConstraint[x.ColumnsName.Length];
+            List<DefinableConstraint> constraints = new List<DefinableConstraint>();
+            //var cn = SQLTableEntityHelper.getColumnName<T>( true );
 
-            int i = 0;
+            //foreach ( PropertyInfo f in getPropertyIfColumnDefinition( T ) ) {
+
             foreach ( string c in x.ColumnsName ) {
-
                 PropertyInfo p = x[c];
                 var col = p.GetValue( this.Entity );
-                DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( col , "@" );
-                constraints[i++] = o;
+                //DefinableConstraint o2 = FactoryEntityConstraint.MakeConstraintEqual( col , "@" );
+
+                DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( p , new SQLQueryParams( new[] { ( MySQLQueryParam ) ( col as dynamic ) } ) , "@" );
+
+                //var col = p.GetValue( this.Entity );
+                //DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( col , "@" );
+
+                //DefinableConstraint o2 = FactoryEntityConstraint.MakeConstraintEqual( p , "@" );
+                constraints.Add( o );
             }
 
+
+            //var cn = SQLTableEntityHelper.getColumnName<T>( true );
+
+            //var f = cn.Where( s => x.ColumnsName.Contains( s ) );
+
+            //List<dynamic> _definitionColumns = SQLTableEntityHelper.getDefinitionColumn( Entity , true );
+            //int i = 0;
+            //foreach ( string c in x.ColumnsName ) {
+
+            //    var f = _definitionColumns.FirstOrDefault( col => ( col as ConstructibleColumn ).ColumnName.Equals( c ) );
+            //    DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( f , "@" );
+
+            //    //PropertyInfo p = x[c];
+            //    //var col = p.GetValue( this.Entity );
+            //    //DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( col , "@" );
+
+            //    constraints[i++] = o;
+            //}
+
             SQLQueryParams outparam = null;
-            var s = SQLBuilder.sqlSelect<T>( ref outparam , new EntityConstraintExpression( constraints ) );
+            var s = SQLBuilder.sqlSelect<T>( ref outparam , new EntityConstraintExpression( constraints.ToArray() ) );
+            //var s = SQLBuilder.sqlSelect<T>( this.Entity , ref outparam , Constraint: new EntityConstraintExpression( constraints ) );
+
             var rs = mDatabase.ReadQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
             var r = FetchResultSet( rs );

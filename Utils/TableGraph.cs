@@ -29,8 +29,8 @@ namespace prestoMySQL.Utils {
 
         public bool IsReadOnly => ( ( ICollection<KeyValuePair<AbstractEntity , List<EntityForeignKey>>> ) this.Graph ).IsReadOnly;
 
-        public Dictionary<Type , List<AbstractEntity>> Cache { get => this.mCache; set => this.mCache =  value ; }
-        public Dictionary<AbstractEntity , List<EntityForeignKey>> Graph { get => this.mGraph; set => this.mGraph =  value ; }
+        public Dictionary<Type , List<AbstractEntity>> Cache { get => this.mCache; set => this.mCache = value; }
+        public Dictionary<AbstractEntity , List<EntityForeignKey>> Graph { get => this.mGraph; set => this.mGraph = value; }
 
         public void Add( AbstractEntity key , List<EntityForeignKey> value ) {
             ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.Graph ).Add( key , value );
@@ -125,6 +125,7 @@ namespace prestoMySQL.Utils {
                     //&& ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( ForeignkeyName )
 
                     foreach ( var x in xlist ) {
+
                         if ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( ForeignkeyName ) ) ) {
 
                             if ( x != null ) {
@@ -152,8 +153,36 @@ namespace prestoMySQL.Utils {
                             }
 
 
+                        } else {
+
+                            if ( ( x.FkNames != null ) && ( x.FkNames.Count > 0 ) && ( !x.FkNames.Contains( ForeignkeyName ) ) ) {
+
+                                if ( foreignKeyInfo.mReferenceTableAlias is null ) {
+
+                                    if (( x != null )  && (x.AliasName is null)){
+                                        if ( !x.FkNames.Contains( ForeignkeyName ) )
+                                            x.FkNames.Add( ForeignkeyName );
+                                        foreignKeyInfo.ReferenceTable = x;
+                                    }
+
+
+
+                                } else {
+                                    if ( foreignKeyInfo.mReferenceTableAlias.Equals( x.AliasName ?? String.Empty ) ) {
+
+
+                                    } else {
+                                        continue;
+                                    }
+                                }
+
+                            }
+
+
                         }
+
                     }
+
                 } else {
 
 
@@ -493,7 +522,7 @@ namespace prestoMySQL.Utils {
             this.Graph.Clear();
             Stack<EntityForeignKey> foreignKeys = new Stack<EntityForeignKey>();
 
-
+            //Create Node -> Adiacent list of node
             tableEntity.ToList().ForEach( a => {
 
                 Graph.Add( ( AbstractEntity ) a );
@@ -856,7 +885,7 @@ namespace prestoMySQL.Utils {
                         foreach ( var info in foreignKey.foreignKeyInfo ) {
 
                             result &= ( ( info.TypeReferenceTable != null ) && ( e.GetType() == info.TypeReferenceTable ) );
-                                
+
                         }
 
                         return result;

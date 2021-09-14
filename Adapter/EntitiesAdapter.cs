@@ -654,6 +654,112 @@ namespace prestoMySQL.Adapter {
 
         }
 
+        public void Create<A1, E1, A2, E2, A3, E3, A4, E4, A5, E5, A6, E6, A7, E7, A8, E8, A9, E9, A10, E10, A11, E11>( params TableEntity[] adapters )
+                   where A1 : EntityAdapter<E1> where E1 : AbstractEntity
+                    where A2 : EntityAdapter<E2> where E2 : AbstractEntity
+                    where A3 : EntityAdapter<E3> where E3 : AbstractEntity
+                    where A4 : EntityAdapter<E4> where E4 : AbstractEntity
+                    where A5 : EntityAdapter<E5> where E5 : AbstractEntity
+                    where A6 : EntityAdapter<E6> where E6 : AbstractEntity
+                    where A7 : EntityAdapter<E7> where E7 : AbstractEntity
+                    where A8 : EntityAdapter<E8> where E8 : AbstractEntity
+                    where A9 : EntityAdapter<E9> where E9 : AbstractEntity
+                    where A10 : EntityAdapter<E10> where E10 : AbstractEntity
+                    where A11 : EntityAdapter<E11> where E11 : AbstractEntity{
+
+            Graph.Cache.Clear();
+            mTableEntityCache.Clear();
+
+            A1 a1 = null;
+            A2 a2 = null;
+            A3 a3 = null;
+            A4 a4 = null;
+            A5 a5 = null;
+            A6 a6 = null;
+            A7 a7 = null;
+            A8 a8 = null;
+            A9 a9 = null;
+            A10 a10 = null;
+            A11 a11 = null;
+
+
+            foreach ( var adapter in adapters ) {
+
+                if ( ( typeof( A1 ) == adapter.GetType() ) && ( a1 is null ) ) {
+                    a1 = ( A1 ) adapter;
+                } else if ( ( typeof( A2 ) == adapter.GetType() ) && ( a2 is null ) ) {
+                    a2 = ( A2 ) adapter;
+                } else if ( ( typeof( A3 ) == adapter.GetType() ) && ( a3 is null ) ) {
+                    a3 = ( A3 ) adapter;
+                } else if ( ( typeof( A4 ) == adapter.GetType() ) && ( a4 is null ) ) {
+                    a4 = ( A4 ) adapter;
+                } else if ( ( typeof( A5 ) == adapter.GetType() ) && ( a5 is null ) ) {
+                    a5 = ( A5 ) adapter;
+                } else if ( ( typeof( A6 ) == adapter.GetType() ) && ( a6 is null ) ) {
+                    a6 = ( A6 ) adapter;
+                } else if ( ( typeof( A7 ) == adapter.GetType() ) && ( a7 is null ) ) {
+                    a7 = ( A7 ) adapter;
+                } else if ( ( typeof( A8 ) == adapter.GetType() ) && ( a8 is null ) ) {
+                    a8 = ( A8 ) adapter;
+                } else if ( ( typeof( A9 ) == adapter.GetType() ) && ( a9 is null ) ) {
+                    a9 = ( A9 ) adapter;
+                } else if ( ( typeof( A10 ) == adapter.GetType() ) && ( a10 is null ) ) {
+                    a10 = ( A10 ) adapter;
+                } else if ( ( typeof( A11 ) == adapter.GetType() ) && ( a11 is null ) ) {
+                    a11 = ( A11 ) adapter;
+                }
+
+            }
+
+            a1 ??= NewInstanceAdapter<A1>();
+            if ( a1.Entity is null ) a1.Create();
+
+            a2 ??= NewInstanceAdapter<A2>();
+            if ( a2.Entity is null ) a2.Create();
+
+            a3 ??= NewInstanceAdapter<A3>();
+            if ( a3.Entity is null ) a3.Create();
+
+            a4 ??= NewInstanceAdapter<A4>();
+            if ( a4.Entity is null ) a4.Create();
+
+            a5 ??= NewInstanceAdapter<A5>();
+            if ( a5.Entity is null ) a5.Create();
+
+            a6 ??= NewInstanceAdapter<A6>();
+            if ( a6.Entity is null ) a6.Create();
+
+            a7 ??= NewInstanceAdapter<A7>();
+            if ( a7.Entity is null ) a7.Create();
+
+            a8 ??= NewInstanceAdapter<A8>();
+            if ( a8.Entity is null ) a8.Create();
+
+            a9 ??= NewInstanceAdapter<A9>();
+            if ( a9.Entity is null ) a9.Create();
+
+            a10 ??= NewInstanceAdapter<A10>();
+            if ( a10.Entity is null ) a10.Create();
+
+            a11 ??= NewInstanceAdapter<A11>();
+            if ( a11.Entity is null ) a11.Create();
+
+            mTableEntityCache.AddOrCreate( a1 );
+            mTableEntityCache.AddOrCreate( a2 );
+            mTableEntityCache.AddOrCreate( a3 );
+            mTableEntityCache.AddOrCreate( a4 );
+            mTableEntityCache.AddOrCreate( a5 );
+            mTableEntityCache.AddOrCreate( a6 );
+            mTableEntityCache.AddOrCreate( a7 );
+            mTableEntityCache.AddOrCreate( a8 );
+            mTableEntityCache.AddOrCreate( a9 );
+            mTableEntityCache.AddOrCreate( a10 );
+            mTableEntityCache.AddOrCreate( a11 );
+
+            Graph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 , a9 , a10 , a11 );
+
+        }
+
         //public List<EntityForeignKey> this[AbstractEntity key] { get => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph )[key]; set => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph )[key] = value; }
 
 
@@ -1022,7 +1128,7 @@ namespace prestoMySQL.Adapter {
         //}
 
 
-        private A1 NewInstanceAdapter<A1>() {
+        protected A1 NewInstanceAdapter<A1>() {
 
             return ReflectionTypeHelper.NewInstanceAdapter<A1>( this.mDatabase , this.mLogger );
 

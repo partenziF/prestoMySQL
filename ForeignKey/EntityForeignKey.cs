@@ -173,7 +173,7 @@ namespace prestoMySQL.ForeignKey {
 
             foreach ( var info in this.foreignKeyInfo ) {
 
-                var t = SQLTableEntityHelper.getTableName( info.TypeReferenceTable );
+                var t = SQLTableEntityHelper.getAttributeTableName( info.TypeReferenceTable );
 
                 var a = SQLTableEntityHelper.getColumnName( info.TypeReferenceTable , info.ReferenceColumnName , true , true );
                 var b = SQLTableEntityHelper.getColumnName( info.Table.GetType() , info.ColumnName , true , true );

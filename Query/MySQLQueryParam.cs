@@ -4,6 +4,7 @@ using prestoMySQL.SQL.Interface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 //cmd.CommandText = "INSERT INTO blogEntry (entryText) VALUE ('"+MySql.Data.MySqlClient.MySqlHelper.EscapeString(entryText)+"');";

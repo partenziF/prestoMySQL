@@ -22,9 +22,9 @@ namespace prestoMySQL.Helper {
 
         #region Entity
         #region Table Name
-        public static String getTableName( Type T ) => GenericEntityAttributeExtension.GetAttributeDALTable( T )?.TableName ?? T.Name;
-        public static String getTableName<T>() where T : AbstractEntity => GenericEntityAttributeExtension.GetAttributeDALTable<T>()?.TableName ?? typeof( T ).Name;
-        public static String getTableName( AbstractEntity aInstance ) => aInstance.GetAttributeDALTable()?.TableName ?? aInstance.GetType().Name;
+        public static String getAttributeTableName( Type T ) => GenericEntityAttributeExtension.GetAttributeDALTable( T )?.TableName ?? T.Name;
+        public static String getAttributeTableName<T>() where T : AbstractEntity => GenericEntityAttributeExtension.GetAttributeDALTable<T>()?.TableName ?? typeof( T ).Name;
+        public static String getAttributeTableName( AbstractEntity aInstance ) => aInstance.GetAttributeDALTable()?.TableName ?? aInstance.GetType().Name;
 
         public static TableReference getTableReference<T>() where T : AbstractEntity => new TableReference( GenericEntityAttributeExtension.GetAttributeDALTable<T>()?.TableName ?? typeof( T ).Name );
 
@@ -252,7 +252,7 @@ namespace prestoMySQL.Helper {
 
             string result = "";
             //String prefix = ( withTableNameAsPrefix ) ? ( getTableAlias( Table ) ?? getTableName( Table ) ) : String.Empty;
-            string prefix = withTableNameAsPrefix ? ( getTableName( Table ) ) : String.Empty;
+            string prefix = withTableNameAsPrefix ? ( getAttributeTableName( Table ) ) : String.Empty;
             PropertyInfo pi = getPropertyIfColumnDefinition( Table ).FirstOrDefault( x => x.Name.Equals( aColumn , StringComparison.InvariantCultureIgnoreCase ) );
 
             if ( pi != null ) {
@@ -307,13 +307,14 @@ namespace prestoMySQL.Helper {
 
             List<String> result = new List<String>();
 
-            String prefix = ( withTableNameAsPrefix ) ? getTableName( T ) : String.Empty;
+            String prefix = ( withTableNameAsPrefix ) ? getAttributeTableName( T ) : String.Empty;
 
             foreach ( PropertyInfo f in getPropertyIfColumnDefinition( T ) ) {
 
                 String ColumName = "";
 
-                ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + f.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
+                //ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + f.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
+                ColumName = f.ColumnName( null ).QuoteColumnName();
 
                 if ( withTableNameAsPrefix )
                     ColumName = String.Concat( prefix.QuoteTableName() , '.' , ColumName );
@@ -375,10 +376,28 @@ namespace prestoMySQL.Helper {
                 //DALQueryEntity e = c.getAnnotation( typeof( DALQueryEntity ) );
                 //result.Add( new TableReference( getTableName( e.value() ) , e.Alias() ) );
 
-                c.GetCustomAttributes<DALQueryEntity>()?.ToList().ForEach( a => result.Add( new TableReference( getTableName( a.Entity ) , a.Alias ) ) );
+                c.GetCustomAttributes<DALQueryEntity>()?.ToList().ForEach( a => result.Add( new TableReference( getAttributeTableName( a.Entity ) , a.Alias ) ) );
 
             } else {
                 throw new System.Exception( "Table references annotation is missing" );
+            }
+
+            return result;
+
+        }
+
+        public static List<DALGroupBy> getQueryOrderBy( Type c ) {
+
+            //Type c = typeof( T );
+            List<DALGroupBy> result = new List<DALGroupBy>();
+
+            if ( Attribute.IsDefined( c , typeof( DALGroupBy ) ) ) {
+
+                //int order = 0;
+                //c.GetCustomAttributes<DALGroupBy>()?.ToList().ForEach( a => result.Add( new SQLQueryGroupBy( order++,a.) ) );
+
+                result = c.GetCustomAttributes<DALGroupBy>()?.ToList();
+
             }
 
             return result;
@@ -407,7 +426,7 @@ namespace prestoMySQL.Helper {
 
         }
 
-        public static List<PropertyInfo> getProjectionFields( SQLQuery  aInstance){
+        public static List<PropertyInfo> getProjectionFields( SQLQuery aInstance ) {
 
 
             var Result = new List<PropertyInfo>();
@@ -441,28 +460,39 @@ namespace prestoMySQL.Helper {
                         result.Add( o );
                     }
 
+                    //}
+
+                    //if ( f.PropertyType.IsGenericType && ( f.PropertyType.GetGenericTypeDefinition() == typeof( SQLProjectionColumn<> ) ) ) {
+
+                    //    dynamic o = f.GetValue( aQueryInstance );
+                    //    ColumName = ( ( GenericQueryColumn ) o ).ToString();
+
+                } else if ( f.PropertyType.IsGenericType && ( f.PropertyType.GetGenericTypeDefinition() == typeof( SQLProjectionFunction<> ) ) ) {
+
+                    dynamic o = f.GetValue( aQueryInstance );
+                    //ColumName = ( ( GenericQueryColumn ) o ).ToString();
+                    if ( o != null ) {
+                        result.Add( o );
+
+                    }
+
                 }
-
-                //if ( f.PropertyType.IsGenericType && ( f.PropertyType.GetGenericTypeDefinition() == typeof( SQLProjectionColumn<> ) ) ) {
-
-                //    dynamic o = f.GetValue( aQueryInstance );
-                //    ColumName = ( ( GenericQueryColumn ) o ).ToString();
-
-                //} else if ( f.PropertyType.IsGenericType && ( f.PropertyType.GetGenericTypeDefinition() == typeof( SQLProjectionFunction<> ) ) ) {
-
-                //    dynamic o = f.GetValue( aQueryInstance );
-                //    ColumName = ( ( GenericQueryColumn ) o ).ToString();
-
-                //}
-
-
             }
 
             return result;
 
         }
 
-        public static List<dynamic> getProjectionColumn( SQLQuery aQueryInstance )  {
+        public static ProjectionFieldsOption getQueryTableOptions( SQLQuery aQueryInstance ) {
+
+            if ( Attribute.IsDefined( aQueryInstance.GetType() , typeof( DALProjectionFieldsOption ) ) ) {
+                return ( aQueryInstance.GetType().GetCustomAttribute( typeof( DALProjectionFieldsOption ) ) as DALProjectionFieldsOption ).Option;
+            } else {
+                return default;
+            }
+        }
+
+        public static List<dynamic> getProjectionColumn( SQLQuery aQueryInstance ) {
 
             List<dynamic> result = new List<dynamic>();
 

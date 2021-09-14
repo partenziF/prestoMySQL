@@ -1,4 +1,5 @@
-﻿using prestoMySQL.Extension;
+﻿using prestoMySQL.Entity;
+using prestoMySQL.Extension;
 using prestoMySQL.SQL;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,11 @@ namespace prestoMySQL.Table {
         public TableReference( string aTableName , String aTableAlias = null ) {
             TableName = aTableName;
             TableAlias = aTableAlias;
+        }
+
+        public TableReference( AbstractEntity entityInstance ) {
+            TableName = entityInstance.TableName;
+            TableAlias = entityInstance.AliasName;
         }
 
         public String getResultColumn( String aColumnName , String aColumnAlias ) {

@@ -30,7 +30,16 @@ namespace prestoMySQL.Entity {
         public EntityState State { get => mState; set => mState = value; }
 
         private List<string> mFkNames;
-        public List<string> FkNames { get => mFkNames; set => mFkNames = value; }
+        internal List<string> FkNames { get => mFkNames; set => mFkNames = value; }
+
+        public void AddForeignKey( string foreignKey ) {
+            if ( !mFkNames.Contains( foreignKey ) )
+                mFkNames.Add( foreignKey );
+        }
+        public void RemoveForeignKey( string foreignKey ) {
+            if ( mFkNames.Contains( foreignKey ) )
+                mFkNames.Remove( foreignKey );
+        }
 
         //public IDictionary<Type , List<AbstractEntity>> EntityTree = new Dictionary<Type , List<AbstractEntity>>();
 
@@ -38,7 +47,7 @@ namespace prestoMySQL.Entity {
 
         protected AbstractEntity() {
 
-            this.mTableName ??= SQLTableEntityHelper.getTableName( this );
+            this.mTableName ??= SQLTableEntityHelper.getAttributeTableName( this );
             //this.mAliasName ??= SQLTableEntityHelper.getTableAlias( this );
 
             mState = EntityState.Created;
@@ -240,6 +249,13 @@ namespace prestoMySQL.Entity {
 
             copy.State = EntityState.Created;
             return copy;
+
+        }
+
+
+        public static explicit operator TableReference( AbstractEntity e ) {
+
+            return new TableReference( e );
 
         }
 

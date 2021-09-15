@@ -23,14 +23,15 @@ namespace prestoMySQL.Query.SQL {
         public uint id;
         public string label;
         public StatoLicenza Licenza;
-        
+        public string Qualifica;
         public bool expand;
         public List<Node> children;
-        
 
-        public Node( uint id , string label , StatoLicenza licenza, List<Node> children ) {
+
+        public Node( uint id , string label , string qualifica , StatoLicenza licenza , List<Node> children ) {
             this.id = id;
             this.label = label;
+            this.Qualifica = qualifica;
             this.Licenza = licenza;
             this.children = children;
             expand = true;
@@ -116,9 +117,9 @@ namespace prestoMySQL.Query.SQL {
 
 
     public class GenericEntityConstraint : DefinableConstraint {
-        public GenericEntityConstraint( PropertyInfo p, EvaluableBinaryOperator mBinaryOperator , IQueryParams aQueryPararms , string paramPlaceHolder = "" ) {
-            
-            this.mColumnName = SQLTableEntityHelper.getColumnName( p.DeclaringType, p.ColumnName( null ) , true , false );
+        public GenericEntityConstraint( PropertyInfo p , EvaluableBinaryOperator mBinaryOperator , IQueryParams aQueryPararms , string paramPlaceHolder = "" ) {
+
+            this.mColumnName = SQLTableEntityHelper.getColumnName( p.DeclaringType , p.ColumnName( null ) , true , false );
             //this.mTableName = tableName;
             this.mBinaryOperator = mBinaryOperator;
             this.mParamPlaceHolder = paramPlaceHolder;
@@ -214,7 +215,7 @@ namespace prestoMySQL.Query.SQL {
             List<string> c = new List<string>();
 
             foreach ( var info in mForeignKey.foreignKeyInfo ) {
-                
+
                 if ( this.QueryParams is not null ) {
                     if ( this.QueryParams[0].Value is null ) {
                         if ( BinaryOperator.Equals( SQLBinaryOperator.equal() ) ) {

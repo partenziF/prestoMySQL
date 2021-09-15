@@ -334,6 +334,15 @@ namespace prestoMySQL.Helper {
 
         }
 
+
+        public static void SetAliasName( AbstractEntity entity , string AliasName ) {
+            entity.mAliasName = AliasName;
+            foreach ( var pi in SQLTableEntityHelper.getPropertyIfColumnDefinition( entity.GetType() ) ) {
+                var c = pi.GetValue( entity );
+                ( ( TableReference ) ( c as dynamic ).mTable ).TableAlias = entity.AliasName;
+            }
+        }
+
         #endregion
 
         #region Query         

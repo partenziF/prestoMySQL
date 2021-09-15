@@ -119,108 +119,148 @@ namespace prestoMySQL.Utils {
 
                 //var x = mGraph.Keys.FirstOrDefault( x => (x.GetType() == fkey.TypeReferenceTable) && ( (x.FkNames == null) || (x.FkNames == fkey.ForeignkeyName)) );
                 //fkey.TypeReferenceTable ) && ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( fkey.ForeignkeyName ) ) ) ).ToList();
-                var xlist = Graph.Keys.Where( x => ( x.GetType() == foreignKeyInfo.TypeReferenceTable ) ).ToList();
 
-                if ( xlist.Count() > 1 ) {
-                    //&& ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( ForeignkeyName )
+                var listOfTypeReferenceTable = Graph.Keys.Where( x => ( x.GetType() == foreignKeyInfo.TypeReferenceTable ) ).ToList();
+                AbstractEntity referencedTable = null;
+                if ( listOfTypeReferenceTable.Count > 0 ) {
 
-                    foreach ( var x in xlist ) {
+                    var listOfTableForeignKeyName = listOfTypeReferenceTable.Where( x => x.FkNames.Contains( ForeignkeyName ) ).ToList();
+                    if ( listOfTableForeignKeyName.Count() == 0 ) {
+                        referencedTable = listOfTypeReferenceTable.FirstOrDefault( x => ( ( !x.FkNames?.Contains( ForeignkeyName ) ?? false ) && ( x.mAliasName == foreignKeyInfo.mReferenceTableAlias ) ) );
+                        if (referencedTable is null)
+                            referencedTable = listOfTypeReferenceTable.FirstOrDefault( x => ( ( x.FkNames.Count() == 0 ) && ( x.mAliasName is null ) ) );
+                    } else {
+                        referencedTable  = listOfTableForeignKeyName.FirstOrDefault( x => ( x.mAliasName == foreignKeyInfo.mReferenceTableAlias ) );
+                        if ( referencedTable is null )
+                            referencedTable = listOfTypeReferenceTable.FirstOrDefault( x => ( x.mAliasName is null )  );
+                    }
 
-                        if ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( ForeignkeyName ) ) ) {
+                    if ( referencedTable is not null ) {
 
-                            if ( x != null ) {
-                                if ( !x.FkNames.Contains( ForeignkeyName ) )
-                                    x.FkNames.Add( ForeignkeyName );
-                                foreignKeyInfo.ReferenceTable = x;
-                                if ( foreignKeyInfo.mReferenceTableAlias is not null ) {
-                                    x.mAliasName = foreignKeyInfo.mReferenceTableAlias;
-                                    foreach ( var pi in SQLTableEntityHelper.getPropertyIfColumnDefinition( x.GetType() ) ) {
+                        referencedTable.FkNames.Add( ForeignkeyName );
+                        foreignKeyInfo.ReferenceTable = referencedTable;
 
-                                        var c = pi.GetValue( x );
-                                        ( ( TableReference ) ( c as dynamic ).mTable ).TableAlias = x.AliasName;
-                                    }
-
-                                }
-
-                                // Visto che ho trovato un tipo che già esiste non c'è bisogno di 
-                                // analizzare le chiavi esterne perchè si suppone che già siano state aggiunte
-                                return false;
-
-                            } else {
-                                throw new NotImplementedException();
-                                //foreignKeyInfo.InstantiateReferenceTable();
-                                return true;
+                        if ( foreignKeyInfo.mReferenceTableAlias is not null ) {
+                            if ( string.IsNullOrWhiteSpace( referencedTable.mAliasName ) ) {
+                                SQLTableEntityHelper.SetAliasName( referencedTable , foreignKeyInfo.mReferenceTableAlias );
                             }
-
-
-                        } else {
-
-                            if ( ( x.FkNames != null ) && ( x.FkNames.Count > 0 ) && ( !x.FkNames.Contains( ForeignkeyName ) ) ) {
-
-                                if ( foreignKeyInfo.mReferenceTableAlias is null ) {
-
-                                    if (( x != null )  && (x.AliasName is null)){
-                                        if ( !x.FkNames.Contains( ForeignkeyName ) )
-                                            x.FkNames.Add( ForeignkeyName );
-                                        foreignKeyInfo.ReferenceTable = x;
-                                    }
-
-
-
-                                } else {
-                                    if ( foreignKeyInfo.mReferenceTableAlias.Equals( x.AliasName ?? String.Empty ) ) {
-
-
-                                    } else {
-                                        continue;
-                                    }
-                                }
-
-                            }
-
 
                         }
 
-                    }
+                        return true;
 
-                } else {
-
-
-                    var result = false;
-
-                    foreach ( var x in xlist ) {
-
-                        if ( x != null ) {
-                            if ( !x.FkNames.Contains( ForeignkeyName ) )
-                                x.FkNames.Add( ForeignkeyName );
-                            foreignKeyInfo.ReferenceTable = x;
-                            if ( foreignKeyInfo.mReferenceTableAlias is not null ) {
-                                x.mAliasName = foreignKeyInfo.mReferenceTableAlias;
-                                foreach ( var pi in SQLTableEntityHelper.getPropertyIfColumnDefinition( x.GetType() ) ) {
-
-                                    var c = pi.GetValue( x );
-                                    ( ( TableReference ) ( c as dynamic ).mTable ).TableAlias = x.AliasName;
-                                }
-
-                            }
-
-
-                            // Visto che ho trovato un tipo che già esiste non c'è bisogno di 
-                            // analizzare le chiavi esterne perchè si suppone che già siano state aggiunte
-
-                        } else {
-                            result = true;
-                            throw new NotImplementedException();
-                            //foreignKeyInfo.InstantiateReferenceTable();
-
-                        }
 
                     }
-
-                    return result;
-
                 }
 
+
+
+
+                /*                var xlist = Graph.Keys.Where( x => ( x.GetType() == foreignKeyInfo.TypeReferenceTable ) ).ToList();
+
+                                var xxlist = xlist.Where( x => x.FkNames.Contains( ForeignkeyName ) ).ToList();
+                                var referencedTable = xlist.FirstOrDefault( x => ( x.FkNames != null ) && ( !x.FkNames.Contains( ForeignkeyName ) ) );
+
+                                if ( xlist.Count() > 1 ) {
+                                    //&& ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( ForeignkeyName )
+
+                                    foreach ( var x in xlist ) {
+
+                                        if ( ( x.FkNames == null ) || ( x.FkNames.Count == 0 ) || ( x.FkNames.Contains( ForeignkeyName ) ) ) {
+
+                                            if ( x != null ) {
+                                                if ( !x.FkNames.Contains( ForeignkeyName ) )
+                                                    x.FkNames.Add( ForeignkeyName );
+                                                foreignKeyInfo.ReferenceTable = x;
+                                                if ( foreignKeyInfo.mReferenceTableAlias is not null ) {
+                                                    x.mAliasName = foreignKeyInfo.mReferenceTableAlias;
+                                                    foreach ( var pi in SQLTableEntityHelper.getPropertyIfColumnDefinition( x.GetType() ) ) {
+                                                        var c = pi.GetValue( x );
+                                                        ( ( TableReference ) ( c as dynamic ).mTable ).TableAlias = x.AliasName;
+                                                    }
+
+                                                }
+
+                                                // Visto che ho trovato un tipo che già esiste non c'è bisogno di 
+                                                // analizzare le chiavi esterne perchè si suppone che già siano state aggiunte
+                                                return false;
+
+                                            } else {
+                                                throw new NotImplementedException();
+                                                //foreignKeyInfo.InstantiateReferenceTable();
+                                                return true;
+                                            }
+
+
+                                        } else {
+
+                                            if ( ( x.FkNames != null ) && ( x.FkNames.Count > 0 ) && ( !x.FkNames.Contains( ForeignkeyName ) ) ) {
+
+                                                if ( foreignKeyInfo.mReferenceTableAlias is null ) {
+
+                                                    if (( x != null )  && (x.AliasName is null)){
+                                                        if ( !x.FkNames.Contains( ForeignkeyName ) )
+                                                            x.FkNames.Add( ForeignkeyName );
+                                                        foreignKeyInfo.ReferenceTable = x;
+                                                    }
+
+
+
+                                                } else {
+                                                    if ( foreignKeyInfo.mReferenceTableAlias.Equals( x.AliasName ?? String.Empty ) ) {
+
+
+                                                    } else {
+                                                        continue;
+                                                    }
+                                                }
+
+                                            }
+
+
+                                        }
+
+                                    }
+
+                                } else {
+
+
+                                    var result = false;
+
+                                    foreach ( var x in xlist ) {
+
+                                        if ( x != null ) {
+                                            if ( !x.FkNames.Contains( ForeignkeyName ) )
+                                                x.FkNames.Add( ForeignkeyName );
+                                            foreignKeyInfo.ReferenceTable = x;
+                                            if ( foreignKeyInfo.mReferenceTableAlias is not null ) {
+                                                x.mAliasName = foreignKeyInfo.mReferenceTableAlias;
+                                                foreach ( var pi in SQLTableEntityHelper.getPropertyIfColumnDefinition( x.GetType() ) ) {
+
+                                                    var c = pi.GetValue( x );
+                                                    ( ( TableReference ) ( c as dynamic ).mTable ).TableAlias = x.AliasName;
+                                                }
+
+                                            }
+
+
+                                            // Visto che ho trovato un tipo che già esiste non c'è bisogno di 
+                                            // analizzare le chiavi esterne perchè si suppone che già siano state aggiunte
+
+                                        } else {
+                                            result = true;
+                                            throw new NotImplementedException();
+                                            //foreignKeyInfo.InstantiateReferenceTable();
+
+                                        }
+
+                                    }
+
+                                    return result;
+
+                                }
+
+                                */
                 //Questo serev per la chiave ManyToMany
                 //var xlist = mGraph.Keys.Where( x => ( x.GetType() == foreignKeyInfo.TypeReferenceTable ) ).ToList();
 
@@ -521,6 +561,7 @@ namespace prestoMySQL.Utils {
 
             this.Graph.Clear();
             Stack<EntityForeignKey> foreignKeys = new Stack<EntityForeignKey>();
+            Stack<EntityForeignKey> visitedForeignKeys = new Stack<EntityForeignKey>();
 
             //Create Node -> Adiacent list of node
             tableEntity.ToList().ForEach( a => {
@@ -540,6 +581,7 @@ namespace prestoMySQL.Utils {
             EntityForeignKey fkey = null;
             while ( foreignKeys.TryPop( out fkey ) ) {
 
+                visitedForeignKeys.Push( fkey );
                 foreach ( var info in fkey.foreignKeyInfo ) {
 
                     if ( InstantiateReferenceTable( fkey.ForeignkeyName , info ) ) {
@@ -550,13 +592,16 @@ namespace prestoMySQL.Utils {
                         foreach ( var ffk in allfk ) {
 
                             if ( !Graph.IsConnected( ffk ) ) {
-
-                                foreignKeys.Push( ffk );
-                                foreach ( var infoffk in ffk.foreignKeyInfo ) {
-
-                                    InstantiateReferenceTable( ffk );
-                                    Graph.Connect( infoffk.ReferenceTable , ffk );
+                                if (( !foreignKeys.Contains( ffk ) ) && ( !visitedForeignKeys.Contains(ffk))) {
+                                    foreignKeys.Push( ffk );
+                                } else {
+                                    visitedForeignKeys.Push( ffk );
                                 }
+                                //foreach ( var infoffk in ffk.foreignKeyInfo ) {
+
+                                //    InstantiateReferenceTable( ffk );
+                                //    Graph.Connect( infoffk.ReferenceTable , ffk );
+                                //}
 
                             }
 

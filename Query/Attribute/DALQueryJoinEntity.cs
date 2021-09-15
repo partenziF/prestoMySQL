@@ -32,4 +32,19 @@ namespace prestoMySQL.Query.Attribute {
 		public string Alias;
 
 	}
+
+
+	[AttributeUsage( AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
+	public class DALQueryJoinEntityUnConstraint : System.Attribute {
+		internal Type Entity;
+		internal Type JoinTable;
+
+		public DALQueryJoinEntityUnConstraint( Type entity , Type joinTable ) {
+			this.Entity = entity;
+			this.JoinTable = joinTable;
+		}
+	}
+	//[DALJoinUnConstraint( Entity = typeof( ContiEntity ) , JoinTable = typeof( CustomerOrderEntity )]
+
+
 }

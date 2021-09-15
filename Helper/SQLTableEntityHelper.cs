@@ -569,6 +569,19 @@ namespace prestoMySQL.Helper {
             return result;
         }
 
+        public static IEnumerable<DALQueryJoinEntityUnConstraint> getQueryJoinUnConstraint( Type t ) {
+
+            var result = new List<DALQueryJoinEntityUnConstraint>();
+
+            if ( Attribute.IsDefined( t , typeof( DALQueryJoinEntityUnConstraint ) ) ) {
+
+                result = t.GetCustomAttributes<DALQueryJoinEntityUnConstraint>()?.ToList();
+
+            }
+
+            return result;
+        }
+
 
         #endregion
 

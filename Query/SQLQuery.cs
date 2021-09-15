@@ -767,6 +767,11 @@ namespace prestoMySQL.Query {
         internal virtual IEnumerable<DALQueryJoinEntityConstraint> GetQueryJoinConstraint() {
             return SQLTableEntityHelper.getQueryJoinConstraint( this.GetType() );
         }
+        internal virtual IEnumerable<DALQueryJoinEntityUnConstraint> GetQueryJoinUnConstraint() {
+            return SQLTableEntityHelper.getQueryJoinUnConstraint( this.GetType() );
+        }
+
+
 
         public void Build() {
             UpdateValueToQueryParam();

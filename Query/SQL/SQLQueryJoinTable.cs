@@ -33,6 +33,7 @@ namespace prestoMySQL.Query.SQL {
         }
 
         public AbstractEntity Table { get => this.mTable; set => this.mTable = value; }
+        public AbstractEntity ReferenceTable { get => this.mReferenceTable; set => this.mReferenceTable = value; }
 
         public override string ToString() {
 

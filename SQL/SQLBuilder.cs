@@ -1143,12 +1143,21 @@ namespace prestoMySQL.SQL {
             var listFK = sqlQuery.Graph.GetForeignKeys();
 
             var queryConstraints = sqlQuery.GetQueryJoinConstraint();
+            var queryUnConstraints = sqlQuery.GetQueryJoinUnConstraint();
+
             var joinTable = BuildJoinTable( ref visited , fkConstraint , listFK );
 
             foreach ( var (table, jt) in joinTable ) {
 
                 List<DefinableConstraint> constraints = new List<DefinableConstraint>();
                 List<DALQueryJoinEntityConstraint> constraint = queryConstraints.Where( x => x.Entity == table.GetType() ).ToList();
+                List<DALQueryJoinEntityUnConstraint> unconstraint = queryUnConstraints.Where( x => ( x.Entity == table.GetType() ) ).ToList();
+                foreach ( var c in unconstraint ) {
+
+                    var f = jt.JoinForeignKeys.FirstOrDefault( x => x.ReferenceTable.GetType() == c.JoinTable );
+                    jt.JoinForeignKeys.Remove( f );
+
+                }
 
                 if ( constraint.Count > 0 ) {
 

@@ -30,7 +30,7 @@ namespace prestoMySQL.Entity {
         public EntityState State { get => mState; set => mState = value; }
 
         private List<string> mFkNames;
-        internal List<string> FkNames { get => mFkNames; set => mFkNames = value; }
+        public List<string> FkNames { get => mFkNames; set => mFkNames = value; }
 
         public void AddForeignKey( string foreignKey ) {
             if ( !mFkNames.Contains( foreignKey ) )

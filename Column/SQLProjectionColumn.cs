@@ -148,7 +148,9 @@ namespace prestoMySQL.Column {
             }
 
             mDeclaredVariableName = aDeclaredVariableName;
-
+            if ( typeof( T ).GetGenericArguments()[0].IsGenericType)
+                mGenericType = typeof( T ).GetGenericArguments()[0].GetGenericArguments()[0];
+            else
             mGenericType = typeof( T ).GetGenericArguments()[0];
 
         }
@@ -199,7 +201,8 @@ namespace prestoMySQL.Column {
 
         public override void AssignValue( object x ) {
 
-            var genericType = typeof( T ).GetGenericArguments()[0];
+            //var genericType = typeof( T ).GetGenericArguments()[0];
+            var genericType = mGenericType;
             ConstructorInfo ctor = typeof( T ).GetConstructor( new Type[] { genericType } );
             TypeWrapperValue = ( T ) ctor?.Invoke( new object[] { Convert.ChangeType( x , genericType ) } );
 

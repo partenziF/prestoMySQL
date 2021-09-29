@@ -18,7 +18,7 @@ namespace prestoMySQL.Query.Attribute {
 
 
 
-    [AttributeUsage( AttributeTargets.Property , AllowMultiple = false , Inherited = false )]
+    [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = false , Inherited = false )]
     public class DALFunctionParamConstant : DALFunctionParam {
 
         public object Value { get; set; }
@@ -32,8 +32,25 @@ namespace prestoMySQL.Query.Attribute {
         //}
     }
 
+    [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = false , Inherited = false )]
+    public class DALFunctionParamSubQueryConstraint : DALFunctionParam {
 
-    [AttributeUsage( AttributeTargets.Property , AllowMultiple = true , Inherited = false )]
+        public Type Table { get; set; }
+        public string Property { get; set; }
+        public Type SubQuery { get; set; }
+
+
+        public override int CountParam() {
+            return 0;
+        }
+
+        //public DALValueFunctionParamConstant( object Value ) {
+        //    this.Value = Value;
+        //}
+    }
+
+
+    [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
     public class DALFunctionParamConstraint : DALFunctionParam {
         public string Property { get; set; }
         public Type Table { get; set; }
@@ -47,7 +64,7 @@ namespace prestoMySQL.Query.Attribute {
 
 
 
-    [AttributeUsage( AttributeTargets.Property , AllowMultiple = true , Inherited = false )]
+    [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
     public class DALFunctionParamBetween : DALFunctionParam {
         public Type Expression;
         public Type MinValue;
@@ -60,7 +77,7 @@ namespace prestoMySQL.Query.Attribute {
     }
 
 
-    [AttributeUsage( AttributeTargets.Property , AllowMultiple = true , Inherited = false )]
+    [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
     public class DALFunctionParamProperty : DALFunctionParam {
 
         public string Property { get; set; }
@@ -74,7 +91,7 @@ namespace prestoMySQL.Query.Attribute {
 
 
 
-    [AttributeUsage( AttributeTargets.Property , AllowMultiple = true , Inherited = false )]
+    [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]    
     public class DALFunctionParamFunction : DALFunctionParam {
 
         public Type Expression { get; set; }
@@ -87,7 +104,7 @@ namespace prestoMySQL.Query.Attribute {
 
     }
 
-    [AttributeUsage( AttributeTargets.All , AllowMultiple = true , Inherited = false )]
+    [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
     public class DALAlias : DALFunctionParam {
         public override int CountParam() {
             throw new NotImplementedException();

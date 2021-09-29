@@ -27,6 +27,7 @@ namespace prestoMySQL.Helper {
         public static String getAttributeTableName( AbstractEntity aInstance ) => aInstance.GetAttributeDALTable()?.TableName ?? aInstance.GetType().Name;
 
         public static TableReference getTableReference<T>() where T : AbstractEntity => new TableReference( GenericEntityAttributeExtension.GetAttributeDALTable<T>()?.TableName ?? typeof( T ).Name );
+        public static TableReference getTableReference( Type type ) => new TableReference( GenericEntityAttributeExtension.GetAttributeDALTable( type )?.TableName ?? type.Name );
 
 
         //public static String getTableAlias( Type T ) => GenericEntityAttributeExtension.GetAttributeDALTable( T )?.Alias;
@@ -259,7 +260,8 @@ namespace prestoMySQL.Helper {
 
                 String ColumName = "";
 
-                ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + pi.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
+                //ColumName = SQLConstant.COLUMN_NAME_QUALIFIER + pi.ColumnName( null ) + SQLConstant.COLUMN_NAME_QUALIFIER;
+                ColumName = pi.ColumnName( null ).QuoteColumnName();
 
                 if ( withTableNameAsPrefix )
                     ColumName = String.Concat( prefix.QuoteTableName() , '.' , ColumName );
@@ -334,7 +336,28 @@ namespace prestoMySQL.Helper {
 
         }
 
+        public static void SetAliasName( IFunctionParam p , string AliasName , Dictionary<Type , List<DALQueryEntity>> queryEntity , Type entityType ) {
 
+            if ( ( p != null ) && ( p.GetType().IsAssignableTo( typeof( FunctionTableProperty ) ) ) ) {
+
+                if ( queryEntity.ContainsKey( ( p as FunctionTableProperty ).tableType ) ) {
+                    if ( p.GetType().IsAssignableTo( typeof( FunctionParamConstraint ) ) ) {
+                        //Console.WriteLine( p );
+                        ( p as FunctionTableProperty ).mTableReference.TableAlias = ( queryEntity[entityType] as List<DALQueryEntity> ).FirstOrDefault().Alias;
+                    } else if ( p.GetType().IsAssignableTo( typeof( FunctionParamProperty ) ) ) {
+                        ( p as FunctionTableProperty ).mTableReference.TableAlias = ( queryEntity[entityType] as List<DALQueryEntity> ).FirstOrDefault().Alias;
+                        //Console.WriteLine( p );
+                    }
+                }
+
+            } else if ( ( p != null ) && ( p.GetType().IsAssignableTo( typeof( FunctionParamFunction ) ) ) ) {
+                foreach ( IFunctionParam expr in ( p as FunctionParamFunction ).Expression ) {
+                    SQLTableEntityHelper.SetAliasName( expr , ( queryEntity[entityType] as List<DALQueryEntity> ).FirstOrDefault().Alias , queryEntity , entityType );
+                }
+
+            }
+
+        }
         public static void SetAliasName( AbstractEntity entity , string AliasName ) {
             entity.mAliasName = AliasName;
             foreach ( var pi in SQLTableEntityHelper.getPropertyIfColumnDefinition( entity.GetType() ) ) {
@@ -346,6 +369,30 @@ namespace prestoMySQL.Helper {
         #endregion
 
         #region Query         
+
+        public static List<DALQueryEntity> getQueryEntity<U>( Type entity ) {
+            var result = new List<DALQueryEntity>();
+
+            if ( Attribute.IsDefined( typeof( U ) , typeof( DALQueryEntity ) ) ) {
+
+                result = entity.GetCustomAttributes<DALQueryEntity>()?.Where( a => a.Entity == entity ).ToList();
+
+            }
+
+            return result;
+        }
+
+        public static List<DALQueryEntity> getQueryEntity( Type Query , Type entity ) {
+            var result = new List<DALQueryEntity>();
+
+            if ( Attribute.IsDefined( Query , typeof( DALQueryEntity ) ) ) {
+
+                result = Query.GetCustomAttributes<DALQueryEntity>()?.Where( a => a.Entity == entity ).ToList();
+
+            }
+
+            return result;
+        }
 
         public static List<Type> getQueryEntity( Type c ) {
             var result = new List<Type>();
@@ -395,17 +442,27 @@ namespace prestoMySQL.Helper {
 
         }
 
-        public static List<DALGroupBy> getQueryOrderBy( Type c ) {
+        public static List<DALGroupBy> getQueryGroupBy( Type c ) {
 
-            //Type c = typeof( T );
             List<DALGroupBy> result = new List<DALGroupBy>();
 
             if ( Attribute.IsDefined( c , typeof( DALGroupBy ) ) ) {
 
-                //int order = 0;
-                //c.GetCustomAttributes<DALGroupBy>()?.ToList().ForEach( a => result.Add( new SQLQueryGroupBy( order++,a.) ) );
-
                 result = c.GetCustomAttributes<DALGroupBy>()?.ToList();
+
+            }
+
+            return result;
+
+        }
+
+        public static List<DALOrderBy> getQueryOrderBy( Type c ) {
+
+            List<DALOrderBy> result = new List<DALOrderBy>();
+
+            if ( Attribute.IsDefined( c , typeof( DALOrderBy ) ) ) {
+
+                result = c.GetCustomAttributes<DALOrderBy>()?.ToList();
 
             }
 
@@ -556,13 +613,29 @@ namespace prestoMySQL.Helper {
         }
 
 
-        public static IEnumerable<DALQueryJoinEntityConstraint> getQueryJoinConstraint( Type t ) {
+        public static IEnumerable<DALGenericQueryJoinConstraint> getQueryJoinConstraint( Type t ) {
 
-            var result = new List<DALQueryJoinEntityConstraint>();
+            var result = new List<DALGenericQueryJoinConstraint>();
 
             if ( Attribute.IsDefined( t , typeof( DALQueryJoinEntityConstraint ) ) ) {
 
-                result = t.GetCustomAttributes<DALQueryJoinEntityConstraint>()?.ToList();
+                result.AddRange( t.GetCustomAttributes<DALQueryJoinEntityConstraint>()?.ToList() );
+
+            }
+            if ( Attribute.IsDefined( t , typeof( DALQueryJoinSubQueryConstraint ) ) ) {
+
+                result.AddRange( t.GetCustomAttributes<DALQueryJoinSubQueryConstraint>()?.ToList() );
+
+            }
+            if ( Attribute.IsDefined( t , typeof( DALQueryJoinEntityExpression ) ) ) {
+
+                result.AddRange( t.GetCustomAttributes<DALQueryJoinEntityExpression>()?.ToList() );
+
+            }
+
+            if ( Attribute.IsDefined( t , typeof( DALQueryJoinBetween ) ) ) {
+
+                result.AddRange( t.GetCustomAttributes<DALQueryJoinBetween>()?.ToList() );
 
             }
 
@@ -585,6 +658,6 @@ namespace prestoMySQL.Helper {
 
         #endregion
 
-
     }
+
 }

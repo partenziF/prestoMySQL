@@ -496,7 +496,7 @@ namespace prestoMySQL.Adapter {
             //CreateInstace<T>();
             if ( this.Entity is null ) { new ArgumentNullException( "Entity can't be null." ); };
 
-            Entity.PrimaryKey.createKey();
+            Entity.PrimaryKey?.createKey();
             createForeignKey();
             CreatePrimaryKey();
 

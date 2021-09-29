@@ -23,9 +23,17 @@ namespace prestoMySQL.Query.Attribute {
         }
     }
     [AttributeUsage( AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
+    
+    
     public class DALGroupBy : System.Attribute {
         public string Property { get; set; }
         public Type Table { get; set; }
+    }
+
+    public class DALOrderBy : System.Attribute {
+        public string Property { get; set; }
+        public Type Table { get; set; }
+        public OrderType Order { get; set; }
 
 
     }

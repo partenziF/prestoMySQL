@@ -1,10 +1,12 @@
-﻿using prestoMySQL.Column.Attribute;
+﻿using prestoMySQL.Adapter;
+using prestoMySQL.Column.Attribute;
 using prestoMySQL.Column.DataType;
 using prestoMySQL.Column.Interface;
 using prestoMySQL.Entity.Attributes;
 using prestoMySQL.Extension;
 using prestoMySQL.Query;
 using prestoMySQL.Query.Attribute;
+using prestoMySQL.Query.SQL;
 using prestoMySQL.SQL;
 using prestoMySQL.SQL.Interface;
 using prestoMySQL.Table;
@@ -19,10 +21,30 @@ namespace prestoMySQL.Column {
     public interface IFunction {
 
     }
+
     public interface IFunctionParam {
 
     }
 
+    public interface IFunctionTableProperty : IFunctionParam {
+        public TableReference Table { get; }
+
+    }
+
+    public abstract class FunctionTableProperty : IFunctionTableProperty {
+
+        internal Type tableType;
+        protected string property;
+        internal TableReference mTableReference;
+
+        protected FunctionTableProperty( Type table , string property ) {
+            this.tableType = table;
+            this.property = property;
+            this.mTableReference = Helper.SQLTableEntityHelper.getTableReference( table );
+        }
+
+        public TableReference Table => mTableReference;
+    }
 
     public class GenericFunction : IFunction {
         public GenericFunction( string functionName , params IFunctionParam[] functionParams ) {
@@ -37,7 +59,7 @@ namespace prestoMySQL.Column {
             if ( FunctionParams.Length > 0 )
                 return $"{FunctionName}({string.Join( "," , FunctionParams.ToList() )})";
             else
-                return $"{FunctionName}";
+                return $"{FunctionName}()";
         }
     }
 
@@ -59,23 +81,26 @@ namespace prestoMySQL.Column {
     }
 
 
-
-    public class FunctionParamConstraint : IFunctionParam {
-        private Type table;
-        private string property;
+    public class FunctionParamConstraint : FunctionTableProperty {
+        //private Type table;
+        //private string property;
         private object value;
 
-        public FunctionParamConstraint( Type table , string property , object value ) {
-            this.table = table;
-            this.property = property;
+        public FunctionParamConstraint( Type table , string property , object value ) : base( table , property ) {
+            //this.table = table;
+            //this.property = property;
+            //this.mTableReference = Helper.SQLTableEntityHelper.getTableReference( table );
             this.value = value;
         }
 
         public override string ToString() {
+
             if ( this.value is null ) {
-                return $"{Helper.SQLTableEntityHelper.getColumnName( table , property , true )} IS NULL";
+                return $"{this.mTableReference.ActualName.QuoteTableName()}.{property.QuoteColumnName()} IS NULL";
+                //return $"{Helper.SQLTableEntityHelper.getColumnName( table , property , true )} IS NULL";
             } else {
-                return $"{Helper.SQLTableEntityHelper.getColumnName( table , property , true )} = {value.ToString()}";
+                return $"{this.mTableReference.ActualName.QuoteTableName()}.{property.QuoteColumnName()} = {value.ToString()}";
+                //return $"{Helper.SQLTableEntityHelper.getColumnName( table , property , true )} = {value.ToString()}";
             }
 
             //return $"{mColumn.Table.ActualName.QuoteTableName()}.{mColumn.ColumnName.QuoteColumnName()} ";
@@ -83,18 +108,19 @@ namespace prestoMySQL.Column {
 
     }
 
-    public class FunctionParamProperty : IFunctionParam {
-        private Type table;
-        private string property;
+    public class FunctionParamProperty : FunctionTableProperty {
+        //private Type table;
+        //private string property;
 
-        public FunctionParamProperty( Type table , string property ) {
-            this.table = table;
-            this.property = property;
+        public FunctionParamProperty( Type table , string property ) : base( table , property ) {
+            //this.table = table;
+            //this.property = property;
+            //this.mTableReference = Helper.SQLTableEntityHelper.getTableReference( table );
         }
 
         public override string ToString() {
-
-            return Helper.SQLTableEntityHelper.getColumnName( table , property , true );
+            return $"{this.mTableReference.ActualName.QuoteTableName()}.{property.QuoteColumnName()}";
+            //return Helper.SQLTableEntityHelper.getColumnName( table , property , true );
             //return $"{mColumn.Table.ActualName.QuoteTableName()}.{mColumn.ColumnName.QuoteColumnName()} ";
         }
 
@@ -121,7 +147,7 @@ namespace prestoMySQL.Column {
 
     public class FunctionParamFunction : IFunctionParam {
 
-        private IFunctionParam[] Expression;
+        internal IFunctionParam[] Expression;
         private string Function;
 
         public FunctionParamFunction( string function , params IFunctionParam[] expression ) {
@@ -157,8 +183,35 @@ namespace prestoMySQL.Column {
 
     }
 
+    public class FunctionParamSubQuery : IFunctionParam {
+
+        private SQLQuery mSubQuery;
+
+        public FunctionParamSubQuery( SQLQuery subQuery ) {
+            this.mSubQuery = subQuery;
+        }
+
+        public SQLQuery SubQuery { get => this.mSubQuery; }
+
+        public override string ToString() {
+            this.mSubQuery.Build();
+            return this.mSubQuery.ToString();
+        }
+    }
+
+
 
     public static class FunctionFactory {
+
+        public static IFunction Create( DALQueryJoinEntityExpression param , params IFunctionParam[] functionParams ) {
+
+            if ( ( Type ) param.TypeId == typeof( DALQueryJoinEntityExpression ) ) {
+                return new FunctionExpression( ( param as DALQueryJoinEntityExpression ).@operator , functionParams[0] , functionParams[1] );
+            } else {
+                throw new ArgumentException( "Invalid param " );
+            }
+        }
+
 
         public static IFunction Create( DALProjectionFunction param , params IFunctionParam[] functionParams ) {
             if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_IF ) ) {
@@ -169,6 +222,8 @@ namespace prestoMySQL.Column {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_SUM ) ) {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
+            } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_DATE_FORMAT ) ) {
+                return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunctionExpression ) ) {
                 return new FunctionExpression( ( param as DALProjectionFunctionExpression ).@operator , functionParams[0] , functionParams[1] );
             } else {
@@ -177,6 +232,8 @@ namespace prestoMySQL.Column {
         }
 
     }
+
+
 
     public static class FunctionParamFactory {
         public static IFunctionParam Create( DALFunctionParam param , ref int baseIndex , DALFunctionParam[] functionParams ) {
@@ -241,11 +298,21 @@ namespace prestoMySQL.Column {
                 }
 
 
-
                 return new FunctionParamBetween( ppp[0] , ppp[1] , ppp[2] );
+
+
             }
 
             return null;
+        }
+
+        public static IFunctionParam Create( DALFunctionParamSubQueryConstraint param , ref int baseIndex , DALFunctionParam[] functionParams , QueryAdapter queryAdapter ) {
+
+            Type subQuery = ( param as DALFunctionParamSubQueryConstraint ).SubQuery;
+            var ctor = subQuery.GetConstructor( new Type[] { typeof( QueryAdapter ) } );
+            var instanceSubQuery = ctor?.Invoke( new object[] { queryAdapter } );
+            return new FunctionParamSubQuery( ( SQLQuery ) instanceSubQuery );
+
         }
     }
 

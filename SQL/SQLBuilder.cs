@@ -276,7 +276,7 @@ namespace prestoMySQL.SQL {
         public static string sqlSelect<T>( T EntityInstance , ref SQLQueryParams outParams , EntityConditionalExpression Constraint = null ) where T : AbstractEntity {
 
             //List<String> columnsName = SQLTableEntityHelper.getColumnName<T>( true , false );
-            List<string> columnsName = SQLTableEntityHelper.getDefinitionColumn( EntityInstance , true ).Select( x => ( string ) x.ToString() ).ToList();
+            List<string> columnsName = SQLTableEntityHelper.getDefinitionColumn( EntityInstance , true ).Select( x => ( string ) x.ToString() + "\r\n" ).ToList();
 
             List<string> joins = new List<string>();
 
@@ -505,6 +505,7 @@ namespace prestoMySQL.SQL {
                         //b = SQLTableEntityHelper.getColumnName( info.Table , info.ColumnName , true , true );
 
                         j = new JoinForeignKey( info.ReferenceTable , info.ReferenceColumnName , info.Table , info.ColumnName );
+                        //visited.Push( info.ReferenceTable );
                     } else {
                         j = null;
                         //t = null;
@@ -518,6 +519,7 @@ namespace prestoMySQL.SQL {
                         //a = SQLTableEntityHelper.getColumnName( info.Table , info.ColumnName , true , true );
 
                         j = new JoinForeignKey( info.Table , info.ColumnName , info.ReferenceTable , info.ReferenceColumnName );
+                        visited.Push( info.Table );
                     } else {
                         j = null;
                         //t = null;
@@ -570,8 +572,8 @@ namespace prestoMySQL.SQL {
 
             foreach ( var e in tables ) {
 
-                columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
-                columnsName[columnsName.Count - 1] += "\r\n";
+                columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() + "\r\n" ).ToList() );
+                //columnsName[columnsName.Count - 1] += "\r\n";
 
             }
 
@@ -926,77 +928,77 @@ namespace prestoMySQL.SQL {
 
 
 
-        public static X sqlQuery<T, X>( T Entities , X myQuery ) where T : EntitiesAdapter where X : SQLQuery { //ref SQLQueryParams outParams , EntityConditionalExpression Constraint = null 
+        //public static X sqlQuery<T, X>( T Entities , X myQuery ) where T : EntitiesAdapter where X : SQLQuery { //ref SQLQueryParams outParams , EntityConditionalExpression Constraint = null 
 
-            //myQuery.Initialize();
-            //myQuery.SelectExpression = SQLTableEntityHelper.getProjectionColumnName<X>( myQuery );
+        //    //myQuery.Initialize();
+        //    //myQuery.SelectExpression = SQLTableEntityHelper.getProjectionColumnName<X>( myQuery );
 
-            ////var tables = Entities._Graph.GetTopologicalOrder();
+        //    ////var tables = Entities._Graph.GetTopologicalOrder();
 
-            ////List<string> columnsName = new List<string>();
-            ////List<string> joins = new List<string>();
+        //    ////List<string> columnsName = new List<string>();
+        //    ////List<string> joins = new List<string>();
 
-            ////StringBuilder sb = new StringBuilder( "SELECT" );
+        //    ////StringBuilder sb = new StringBuilder( "SELECT" );
 
-            ////foreach ( var e in tables ) {
-            ////    columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
-            ////}
+        //    ////foreach ( var e in tables ) {
+        //    ////    columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
+        //    ////}
 
-            //List<DefinableConstraint> constraints = new List<DefinableConstraint>();
-            //var queryConstraints = SQLTableEntityHelper.getQueryJoinConstraint( myQuery.GetType() );
-            //foreach ( fk in myQuery.Graph.GetForeignKeys() ) {
-            //    var constraint = queryConstraints.Where( x => x.Entity == e.GetType() );
+        //    //List<DefinableConstraint> constraints = new List<DefinableConstraint>();
+        //    //var queryConstraints = SQLTableEntityHelper.getQueryJoinConstraint( myQuery.GetType() );
+        //    //foreach ( fk in myQuery.Graph.GetForeignKeys() ) {
+        //    //    var constraint = queryConstraints.Where( x => x.Entity == e.GetType() );
 
-            //    //.Where( x => ( ( ( DALQueryJoinEntityConstraint ) x ).Entity == e.GetType())   ).ToList()
-            //    foreach ( DALQueryJoinEntityConstraint a in constraint ) {
+        //    //    //.Where( x => ( ( ( DALQueryJoinEntityConstraint ) x ).Entity == e.GetType())   ).ToList()
+        //    //    foreach ( DALQueryJoinEntityConstraint a in constraint ) {
 
-            //        var fieldName = SQLTableEntityHelper.getPropertyIfColumnDefinition( e.GetType() ).FirstOrDefault( x => x.Name == a.FieldName );
-            //        //MySQLDefinitionColumn( string aDeclaredVariableName , PropertyInfo aMethodBase , AbstractEntity abstractEntity )
-            //        var ctor = fieldName.PropertyType.GetConstructor( new Type[] { typeof( string ) , typeof( PropertyInfo ) , typeof( AbstractEntity ) } );
-
-
-            //        var instance = ctor?.Invoke( new object[] { fieldName.Name , fieldName , e } );
-
-            //        if ( a.ParamName != null ) {
-            //            constraints.Add( FactorySQLWhereCondition.MakeColumnEqual( fieldName , myQuery[a.ParamName] , a.Placeholder ) );
-            //        } else {
-            //            //constraints.Add( FactorySQLWhereCondition.MakeColumnEqual( instance , a.ParamValue , a.Placeholder ) );
-            //            constraints.Add( FactoryEntityConstraint.MakeEqual( instance , a.ParamValue , "@" ) );
-            //            //FactorySQLWhereCondition.MakeColumnEqual( fieldName , a.ParamValue , a.Placeholder );
-            //        }
-            //        //a.FieldName
-            //        //FactorySQLWhereCondition.MakeColumnEqual( Delete , this[nameof( pDelete )] , "@" ) ,
-            //    }
-
-            //    //new SQLQueryConditionExpression(
-            //    //                    LogicOperator.AND ,
-            //    //                    FactorySQLWhereCondition.MakeColumnEqual( Delete , this[nameof( pDelete )] , "@" ) ,
-            //    //                    FactorySQLWhereCondition.MakeColumnEqual( FkProvincia , this[nameof( pFkProvincia )] , "@" )
-            //    //                    )
-
-            //    if ( constraints.Count > 0 ) {
-            //        myQuery.JOIN( e , fk , new SQLQueryConditionExpression( LogicOperator.AND , constraints.ToArray() ) );
-            //    } else {
-            //        myQuery.JOIN( e , fk );
-            //    }
-
-            //}
+        //    //        var fieldName = SQLTableEntityHelper.getPropertyIfColumnDefinition( e.GetType() ).FirstOrDefault( x => x.Name == a.FieldName );
+        //    //        //MySQLDefinitionColumn( string aDeclaredVariableName , PropertyInfo aMethodBase , AbstractEntity abstractEntity )
+        //    //        var ctor = fieldName.PropertyType.GetConstructor( new Type[] { typeof( string ) , typeof( PropertyInfo ) , typeof( AbstractEntity ) } );
 
 
+        //    //        var instance = ctor?.Invoke( new object[] { fieldName.Name , fieldName , e } );
 
-            ////if ( Constraint?.Length > 0 ) {
+        //    //        if ( a.ParamName != null ) {
+        //    //            constraints.Add( FactorySQLWhereCondition.MakeColumnEqual( fieldName , myQuery[a.ParamName] , a.Placeholder ) );
+        //    //        } else {
+        //    //            //constraints.Add( FactorySQLWhereCondition.MakeColumnEqual( instance , a.ParamValue , a.Placeholder ) );
+        //    //            constraints.Add( FactoryEntityConstraint.MakeEqual( instance , a.ParamValue , "@" ) );
+        //    //            //FactorySQLWhereCondition.MakeColumnEqual( fieldName , a.ParamValue , a.Placeholder );
+        //    //        }
+        //    //        //a.FieldName
+        //    //        //FactorySQLWhereCondition.MakeColumnEqual( Delete , this[nameof( pDelete )] , "@" ) ,
+        //    //    }
 
-            ////    sb.AppendLine( "WHERE" );
+        //    //    //new SQLQueryConditionExpression(
+        //    //    //                    LogicOperator.AND ,
+        //    //    //                    FactorySQLWhereCondition.MakeColumnEqual( Delete , this[nameof( pDelete )] , "@" ) ,
+        //    //    //                    FactorySQLWhereCondition.MakeColumnEqual( FkProvincia , this[nameof( pFkProvincia )] , "@" )
+        //    //    //                    )
 
-            ////    EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
-            ////    outParams ??= new SQLQueryParams( expr.getParam() );
+        //    //    if ( constraints.Count > 0 ) {
+        //    //        myQuery.JOIN( e , fk , new SQLQueryConditionExpression( LogicOperator.AND , constraints.ToArray() ) );
+        //    //    } else {
+        //    //        myQuery.JOIN( e , fk );
+        //    //    }
 
-            ////    sb.AppendLine( expr.ToString() );
-            ////}
-            ////
-            return myQuery;
+        //    //}
 
-        }
+
+
+        //    ////if ( Constraint?.Length > 0 ) {
+
+        //    ////    sb.AppendLine( "WHERE" );
+
+        //    ////    EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
+        //    ////    outParams ??= new SQLQueryParams( expr.getParam() );
+
+        //    ////    sb.AppendLine( expr.ToString() );
+        //    ////}
+        //    ////
+        //    return myQuery;
+
+        //}
 
         public static String sqlQuery<X>( X queryInstance , ref SQLQueryParams outParams , string paramPlaceholder = "" ) where X : SQLQuery {
 
@@ -1005,13 +1007,13 @@ namespace prestoMySQL.SQL {
 
             //    return aQueryInstance.ToString();ù
 
-            StringBuilder sb = new StringBuilder( "SELECT " );
+            StringBuilder sb = new StringBuilder( "SELECT\r\n" );
 
             try {
 
-                sb.AppendLine( String.Join( ',' , queryInstance.SelectExpression ) );
+                sb.AppendLine( String.Join( "," , queryInstance.SelectExpression.Select( x => x + "\r\n" ).ToList() ) );
                 sb.AppendLine( "FROM" );
-                sb.AppendLine( String.Join( ',' , queryInstance.TablesReferences ) );
+                sb.AppendLine( String.Join( "," , queryInstance.TablesReferences ) );
 
                 foreach ( var jt in queryInstance.JoinTable.Values ) {
 
@@ -1019,94 +1021,25 @@ namespace prestoMySQL.SQL {
 
                 }
 
-
-                //    if ( !mJoinTable.isEmpty() ) {
-                //        String[] j = new String[mJoinTable.size()];
-                //        int i = 0;
-                //        for ( SQLQueryJoinTable jt : mJoinTable ) {
-                //            j[i++] = jt.toString();
-                //        }
-                //        sb.append( String.format( "\r\n %s " , String.join( "\r\n\t" , j ) ) );
-
-                //    }
-
-
-                //SQLQueryConditionExpression
-
-                /*            
-                 *          EntityConditionalExpression constraintExpression = null;
-                            if ( Constraint?.Length > 0 ) {
-
-                                constraintExpression = new EntityConditionalExpression( LogicOperator.AND ,
-
-                                new EntityConditionalExpression( LogicOperator.AND ,
-                                     new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() ) ,
-                                     new EntityConditionalExpression( LogicOperator.AND , Constraint )
-                                    ) );
-
-                            } else {
-                                constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , aParamPlaceholder ) ).ToArray() );
-                            }
-
-                            outParams ??= new SQLQueryParams( constraintExpression.getParam() );
-                */
-
                 List<string> where = new List<string>();
 
                 if ( queryInstance.WhereCondition.Count > 0 ) {
 
                     queryInstance.WhereCondition.ForEach( x => where.Add( x.ToString() ) );
-
-                    //int i = 0;
-                    //foreach( SQLQueryConditionExpression sc in aQueryInstance.WhereCondition) {
-                    //    i += sc.countParam();
-                    //    var p = sc.getParam();
-                    //    var c = sc.ToString();
-                    //}
-
-                    //EntityConditionalExpression expr = new EntityConditionalExpression( LogicOperator.AND , Constraint );
-
-                    //outParams ??= new SQLQueryParams( expr.getParam() );
-
-
-                    //String[] c = new string[aQueryInstance.WhereCondition.Count];
-                    //int i = 0;
-                    //foreach ( SQLQueryConditionExpression sc in aQueryInstance.WhereCondition ) {
-                    //    c[i++] = sc.ToString();
-                    //}
-
-                    //sb.Append( String.Format( "\r\nWHERE\r\n\t( {0} )" , String.Join( " AND " , c ) ) );
-
-
                     sb.AppendLine( "WHERE" );
                     sb.AppendLine( String.Format( "\t( {0} )" , String.Join( " AND " , where.ToArray() ) ) );
                 }
 
                 if ( queryInstance.GroupBy.Count > 0 ) {
                     sb.AppendLine( "GROUP BY " );
-                    sb.AppendJoin( "," , queryInstance.GroupBy.OrderBy( x => x.order ).ToList() );
+                    sb.AppendLine( String.Join( "," , queryInstance.GroupBy.OrderBy( x => x.order ).ToList() ) );
                 }
 
-                //    if ( !mGroupBy.isEmpty() ) {
-                //        String[] c = new String[mGroupBy.size()];
-                //        int i = 0;
-                //        for ( SQLQueryGroupBy sc : mGroupBy ) {
-                //            c[i++] = sc.toString();
-                //        }
+                if ( queryInstance.OrderBy.Count > 0 ) {
+                    sb.AppendLine( "ORDER BY " );
+                    sb.AppendLine( String.Join( "," , queryInstance.OrderBy.OrderBy( x => x.order ).ToList() ) );
+                }
 
-                //        sb.append( String.format( "\r\nGROUP BY\r\n\t%s " , String.join( "," , c ) ) );
-
-                //    }
-
-                //    if ( !mOrderBy.isEmpty() ) {
-                //        String[] c = new String[mOrderBy.size()];
-                //        int i = 0;
-                //        for ( SQLQueryOrderBy sc : mOrderBy ) {
-                //            c[i++] = sc.toString();
-                //        }
-
-                //        sb.append( String.format( "\r\nORDER BY\r\n\t%s " , String.join( "," , c ) ) );
-                //    }
 
                 if ( ( queryInstance.Offset is not null ) && ( queryInstance.RowCount is not null ) ) {
                     sb.AppendLine( String.Format( $"LIMIT {queryInstance.RowCount} OFFSET {queryInstance.Offset}" ) );
@@ -1150,7 +1083,7 @@ namespace prestoMySQL.SQL {
             foreach ( var (table, jt) in joinTable ) {
 
                 List<DefinableConstraint> constraints = new List<DefinableConstraint>();
-                List<DALQueryJoinEntityConstraint> constraint = queryConstraints.Where( x => x.Entity == table.GetType() ).ToList();
+                List<DALGenericQueryJoinConstraint> constraint = queryConstraints.Where( x => x.Entity == table.GetType() ).ToList();
                 List<DALQueryJoinEntityUnConstraint> unconstraint = queryUnConstraints.Where( x => ( x.Entity == table.GetType() ) ).ToList();
                 foreach ( var c in unconstraint ) {
 
@@ -1161,23 +1094,13 @@ namespace prestoMySQL.SQL {
 
                 if ( constraint.Count > 0 ) {
 
-                    foreach ( DALQueryJoinEntityConstraint a in constraint ) {
-
-                        dynamic instance = SQLTableEntityHelper.getDefinitionColumn( jt.Table , true ).FirstOrDefault( x => x.ColumnName == a.FieldName );
-                        if ( instance is null ) throw new ArgumentNullException( "invalid fieldname " + a.FieldName );
-                        dynamic c = a.ParamName != null
-                            ? FactoryEntityConstraint.MakeEqual( instance , ( MySQLQueryParam ) sqlQuery[a.ParamName] , a.Placeholder )
-                            : FactoryEntityConstraint.MakeEqual( instance , a.ParamValue , a.Placeholder );
-
-                        constraints.Add( sqlQuery.MakeUniqueParamName( c ) );
-
-                    }
-
+                    constraints = CreateJoinConstraint<T>( sqlQuery , jt , constraint );
                     sqlQuery.JOIN( jt , new SQLQueryConditionExpression( LogicOperator.AND , constraints.ToArray() ) );
 
                 } else {
                     sqlQuery.JOIN( jt );
                 }
+
                 joins.Add( jt.ToString() );
             }
 
@@ -1187,6 +1110,102 @@ namespace prestoMySQL.SQL {
 
         }
 
+        private static List<DefinableConstraint> CreateJoinConstraint<T>( T sqlQuery , JoinTable jt , List<DALGenericQueryJoinConstraint> constraint ) where T : SQLQuery {
+
+            List<DefinableConstraint> result = new List<DefinableConstraint>();
+
+            foreach ( DALGenericQueryJoinConstraint a in constraint ) {
+
+                if ( ( Type ) a.TypeId == typeof( DALQueryJoinEntityConstraint ) ) {
+
+                    dynamic instance = SQLTableEntityHelper.getDefinitionColumn( jt.Table , true ).FirstOrDefault( x => x.ColumnName == a.FieldName ) ?? throw new ArgumentNullException( "invalid fieldname " + a.FieldName );
+
+                    dynamic c = ( a as DALQueryJoinEntityConstraint ).ParamName != null
+                        ? FactoryEntityConstraint.MakeEqual( instance , ( MySQLQueryParam ) sqlQuery[( a as DALQueryJoinEntityConstraint ).ParamName] , ( a as DALQueryJoinEntityConstraint ).Placeholder )
+                        : FactoryEntityConstraint.MakeEqual( instance , ( a as DALQueryJoinEntityConstraint ).ParamValue , ( a as DALQueryJoinEntityConstraint ).Placeholder );
+
+                    result.Add( sqlQuery.MakeUniqueParamName( c ) );
+
+
+                } else if ( ( Type ) a.TypeId == typeof( DALQueryJoinSubQueryConstraint ) ) {
+
+                    dynamic instance = SQLTableEntityHelper.getDefinitionColumn( jt.Table , true ).FirstOrDefault( x => x.ColumnName == a.FieldName ) ?? throw new ArgumentNullException( "invalid fieldname " + a.FieldName );
+
+                    Type subQuery = ( a as DALQueryJoinSubQueryConstraint ).SubQuery;
+                    var ctor = subQuery.GetConstructor( new Type[] { typeof( QueryAdapter ) } );
+                    var instanceSubQuery = ctor?.Invoke( new object[] { sqlQuery.mQueryAdapter } );
+                    //FactoryEntityConstraint.MakeEqual<SQLSubQuery( instance , new StrutturaVenditaDataSubQuery( this.mQueryAdapter ) )
+                    dynamic c = FactoryEntityConstraint.MakeEqual( instance , ( SQLQuery ) instanceSubQuery );
+                    //FactoryEntityConstraint.MakeEqual<SQLSubQuery<StrutturaVenditaQueryAdapter.Query>>( EntitiesAdapter.Adapter<StruttureVenditeEntityAdapter>().Entity.PkData , new StrutturaVenditaDataSubQuery( this.mQueryAdapter ) )
+                    result.Add( sqlQuery.MakeUniqueParamName( c ) );
+                    //var xxx = c.ToString();    
+
+                } else if ( ( Type ) a.TypeId == typeof( DALQueryJoinBetween ) ) {
+                    
+                } else if ( ( Type ) a.TypeId == typeof( DALQueryJoinEntityExpression ) ) {
+
+                    int baseIndex = 0;
+
+                    var mFunctionParams = new List<IFunctionParam>();
+                    
+                    DALFunctionParam[] dalFunctionParam = ( ( DALFunctionParam[] ) ( typeof( T ).GetCustomAttributes<DALFunctionParam>() ) );
+
+                    var totalParam = dalFunctionParam.Sum( x => x.CountParam() ) + a.CountParam();
+
+                    if ( totalParam != dalFunctionParam.Length ) throw new ArgumentException( $"Invalid numer of param for function {( ( DALQueryJoinEntityExpression ) a ).Function}" );
+
+                    var functionParams = dalFunctionParam.Skip( baseIndex ).Take( a.CountParam() ).ToArray();
+
+                    baseIndex = 0;
+
+                    var subFunctionParams = dalFunctionParam.Skip( a.CountParam() ).ToArray();
+
+                    foreach ( var param in functionParams ) {
+
+                        if ( ( Type ) param.TypeId == typeof( DALFunctionParamSubQueryConstraint ) ) {
+
+                            IFunctionParam fp = FunctionParamFactory.Create( ( DALFunctionParamSubQueryConstraint ) param , ref baseIndex , subFunctionParams , sqlQuery.mQueryAdapter );
+                            if ( fp is not null ) mFunctionParams.Add( fp );
+
+                        } else {
+
+                            IFunctionParam fp = FunctionParamFactory.Create( param , ref baseIndex , subFunctionParams );
+                            if ( fp is not null ) mFunctionParams.Add( fp );
+                        }
+
+                    }
+
+                    FunctionExpression mFunction = ( FunctionExpression ) FunctionFactory.Create( ( ( DALQueryJoinEntityExpression ) a ) , mFunctionParams.ToArray() );
+
+
+
+                    if ( mFunction.Right.GetType() == typeof( FunctionParamSubQuery ) ) {
+
+                        IQueryParams outparam = null;
+
+                        ( mFunction.Right as FunctionParamSubQuery ).SubQuery.Build();
+
+                        outparam = ( mFunction.Right as FunctionParamSubQuery ).SubQuery.getQueryParams();
+                        sqlQuery.MakeUniqueParamName( ( SQLQueryParams ) outparam );
+
+                        var sqlSubQuery = ( mFunction.Right as FunctionParamSubQuery ).SubQuery.ToString();
+
+                        if ( outparam != null )
+                            result.Add( new EntityRawSqlQuery( mFunction.ToString() , outparam ) );
+                        else
+                            result.Add( new EntityRawSqlQuery( mFunction.ToString() ) );
+
+                    } else
+                        result.Add( new EntityRawSqlQuery( mFunction.ToString() ) );
+
+
+                }
+
+
+            }
+
+            return result;
+        }
     }
 
 }

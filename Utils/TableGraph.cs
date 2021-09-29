@@ -127,12 +127,12 @@ namespace prestoMySQL.Utils {
                     var listOfTableForeignKeyName = listOfTypeReferenceTable.Where( x => x.FkNames.Contains( ForeignkeyName ) ).ToList();
                     if ( listOfTableForeignKeyName.Count() == 0 ) {
                         referencedTable = listOfTypeReferenceTable.FirstOrDefault( x => ( ( !x.FkNames?.Contains( ForeignkeyName ) ?? false ) && ( x.mAliasName == foreignKeyInfo.mReferenceTableAlias ) ) );
-                        if (referencedTable is null)
+                        if ( referencedTable is null )
                             referencedTable = listOfTypeReferenceTable.FirstOrDefault( x => ( ( x.FkNames.Count() == 0 ) && ( x.mAliasName is null ) ) );
                     } else {
-                        referencedTable  = listOfTableForeignKeyName.FirstOrDefault( x => ( x.mAliasName == foreignKeyInfo.mReferenceTableAlias ) );
+                        referencedTable = listOfTableForeignKeyName.FirstOrDefault( x => ( x.mAliasName == foreignKeyInfo.mReferenceTableAlias ) );
                         if ( referencedTable is null )
-                            referencedTable = listOfTypeReferenceTable.FirstOrDefault( x => ( x.mAliasName is null )  );
+                            referencedTable = listOfTypeReferenceTable.FirstOrDefault( x => ( x.mAliasName is null ) );
                     }
 
                     if ( referencedTable is not null ) {
@@ -592,7 +592,7 @@ namespace prestoMySQL.Utils {
                         foreach ( var ffk in allfk ) {
 
                             if ( !Graph.IsConnected( ffk ) ) {
-                                if (( !foreignKeys.Contains( ffk ) ) && ( !visitedForeignKeys.Contains(ffk))) {
+                                if ( ( !foreignKeys.Contains( ffk ) ) && ( !visitedForeignKeys.Contains( ffk ) ) ) {
                                     foreignKeys.Push( ffk );
                                 } else {
                                     visitedForeignKeys.Push( ffk );
@@ -1025,6 +1025,20 @@ namespace prestoMySQL.Utils {
 
         //}
 
+        public bool ContainsArc( Stack<Tuple<AbstractEntity , AbstractEntity>> visitedArc , Tuple<AbstractEntity , AbstractEntity> arc ) {
+            var result = visitedArc.Contains( arc );
+            if ( !result ) {
+
+                foreach ( var a in visitedArc ) {
+                    if ( ( a.Item1 == arc.Item1 ) && ( a.Item2 == arc.Item2 ) ) {
+                        return true;
+                    }
+                }
+
+            }
+            return result;
+        }
+
         public List<EntityForeignKey> GetForeignKeys( AbstractEntity startNode = null ) {
 
             if ( startNode is not null ) throw new NotImplementedException( "GetForeignKeys with start node not implemented" );
@@ -1039,20 +1053,38 @@ namespace prestoMySQL.Utils {
 
                     visited?.Push( e );
                 }
+                //var xxx = listFK.SelectMany( fk => fk.foreignKeyInfo ).Where( fkInfo => fkInfo.ReferenceTable != null ).ToList();
+                if ( listFK.SelectMany( fk => fk.foreignKeyInfo ).Where( fkInfo => fkInfo.ReferenceTable != null ).ToList().Count > 0 ) {
+                    foreach ( EntityForeignKey entityfk in listFK ) {
 
-                foreach ( EntityForeignKey efk in listFK ) {
+                        //var addToResult = false;
 
-                    foreach ( var fk in efk.foreignKeyInfo ) {
+                        foreach ( var fkInfo in entityfk.foreignKeyInfo.Where( fk => fk.ReferenceTable != null ).ToList() ) {
 
-                        if ( ( fk.ReferenceTable != null ) && ( CacheContainsEntityType( fk ) ) ) {
+                            //if ( ( fkInfo.ReferenceTable != null ) && ( CacheContainsEntityType( fkInfo ) ) ) {
+                            if ( ( CacheContainsEntityType( fkInfo ) ) ) {
 
-                            var arc = new Tuple<AbstractEntity , AbstractEntity>( fk.Table , fk.ReferenceTable );
-                            if ( visitedArc.Contains( arc ) ) continue;
-                            visitedArc?.Push( arc );
-                            visited?.Push( fk.ReferenceTable );
-                            result.Add( efk );
+                                var arc = new Tuple<AbstractEntity , AbstractEntity>( fkInfo.Table , fkInfo.ReferenceTable );
+
+                                if ( visitedArc.Contains( arc ) ) continue;
+                                //if ( ContainsArc(visitedArc, arc ) ) continue;
+                                visitedArc?.Push( arc );
+                                visited?.Push( fkInfo.ReferenceTable );
+
+                                //addToResult |= true;
+                                if ( !result.Contains( entityfk ) )
+                                    result.Add( entityfk );
+
+                                //} else {
+                                //    addToResult &= false;
+                            }
 
                         }
+
+                        //if ( addToResult ) {
+                        //    if ( !result.Contains( entityfk ) )
+                        //        result.Add( entityfk );
+                        //}
 
                     }
                 }

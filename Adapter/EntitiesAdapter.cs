@@ -39,6 +39,8 @@ namespace prestoMySQL.Adapter {
         public readonly MySQLDatabase mDatabase;
         private readonly ILogger mLogger;
         private Dictionary<Type , List<TableEntity>> mTableEntityCache;
+        protected List<string> mParamNames;
+
 
         public TableGraph Graph { get => this.mGraph; set => this.mGraph = value; }
 
@@ -49,7 +51,10 @@ namespace prestoMySQL.Adapter {
             this.mDatabase = aMySQLDatabase;
             this.mLogger = logger;
             Graph = new TableGraph();
+
+            mParamNames = new List<string>();
             mTableEntityCache = new Dictionary<Type , List<TableEntity>>();
+
             //mEntitiesCache = new Dictionary<Type , Dictionary<string,TableEntity>>();
             //_Graph.mCache = new Dictionary<Type , List<TableEntity>>();
         }
@@ -665,7 +670,7 @@ namespace prestoMySQL.Adapter {
                     where A8 : EntityAdapter<E8> where E8 : AbstractEntity
                     where A9 : EntityAdapter<E9> where E9 : AbstractEntity
                     where A10 : EntityAdapter<E10> where E10 : AbstractEntity
-                    where A11 : EntityAdapter<E11> where E11 : AbstractEntity{
+                    where A11 : EntityAdapter<E11> where E11 : AbstractEntity {
 
             Graph.Cache.Clear();
             mTableEntityCache.Clear();
@@ -1368,6 +1373,10 @@ namespace prestoMySQL.Adapter {
                 //PrimaryKeyTables.FirstOrDefault().PrimaryKey.setKeyValues( KeyValues );
 
                 SQLQueryParams outparam = null;
+
+                mParamNames.Clear();
+                MakeUniqueParamName( Constraint );
+
                 mSQLQueryString = SQLBuilder.sqlSelect<T>( this , ref outparam , ParamPlaceholder: "@" , Constraint , PrimaryKeyTables.ToArray() );
 
                 var rs = mDatabase.ReadQuery( SQLQueryString , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
@@ -1501,8 +1510,49 @@ namespace prestoMySQL.Adapter {
 
         }
 
+        public OperationResult Read<T, PK1, PK2, PK3, PK4>( EntityConditionalExpression Constraint = null , params object[] KeyValues ) where T : AbstractEntity
+                                                                                                                             where PK1 : AbstractEntity
+                                                                                                                             where PK2 : AbstractEntity
+                                                                                                                             where PK3 : AbstractEntity
+                                                                                                                             where PK4 : AbstractEntity {
 
-        public void Read<T>( Func<T , ConstructibleColumn> p, params object[] KeyValues ) where T : TableEntity {
+            try {
+
+                var tables = Graph.GetTopologicalOrder();
+                bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
+
+                T fromTable = ( T ) tables.FirstOrDefault( e => e.GetType() == typeof( T ) );
+                PK1 pkTable1 = ( PK1 ) tables.FirstOrDefault( e => e.GetType() == typeof( PK1 ) );
+                PK2 pkTable2 = ( PK2 ) tables.FirstOrDefault( e => e.GetType() == typeof( PK2 ) );
+                PK3 pkTable3 = ( PK3 ) tables.FirstOrDefault( e => e.GetType() == typeof( PK3 ) );
+                PK4 pkTable4 = ( PK4 ) tables.FirstOrDefault( e => e.GetType() == typeof( PK4 ) );
+
+                var r = Read<T>( fromTable , new AbstractEntity[] { pkTable1 , pkTable2 , pkTable3 , pkTable4 } , AlmostIsIdentifying , Constraint , KeyValues );
+
+                if ( r == OperationResult.OK ) {
+                    foreach ( var e in tables ) {
+                        e.State = prestoMySQL.Entity.Interface.EntityState.Set;
+                        e.PrimaryKey.KeyState = KeyState.SetKey;
+                    }
+                } else {
+                    foreach ( var e in tables ) {
+                        e.State = prestoMySQL.Entity.Interface.EntityState.Undefined;
+                        e.PrimaryKey.KeyState = KeyState.UnsetKey;
+                    }
+                }
+
+                return r;
+
+            } catch ( ArgumentOutOfRangeException e1 ) {
+                throw new ArgumentOutOfRangeException( "Invalid key valus length for primary key" );
+            } catch ( System.Exception e ) {
+                throw new System.Exception( e.Message );
+            }
+
+        }
+
+
+        public void Read<T>( Func<T , ConstructibleColumn> p , params object[] KeyValues ) where T : TableEntity {
             var x = this.Adapter<T>();
             var xx = p( x );
 
@@ -1568,11 +1618,28 @@ namespace prestoMySQL.Adapter {
 
         }
 
+
+
+        public void MakeUniqueParamName( EntityConditionalExpression c ) {
+            if ( ( c != null ) && ( c.countParam() > 0 ) ) {
+                foreach ( QueryParam qp in c.getParam() ) {
+                    var count = ( mParamNames.Count( c => c.StartsWith( qp.Name ) ) );
+                    if ( count > 0 ) {
+                        qp.rename( string.Format( "{0}_{1}" , qp.Name , count ) );
+                    }
+                    mParamNames.Add( qp.Name );
+                }
+            }
+
+        }
+
         public OperationResult Read( EntityConditionalExpression Constraint = null , params object[] KeyValues ) {
 
             if ( KeyValues.Count() == 0 ) throw new ArgumentException( "Invalid key value argument" );
 
             try {
+
+
 
                 var tables = Graph.GetTopologicalOrder();
 
@@ -1581,6 +1648,11 @@ namespace prestoMySQL.Adapter {
                 //var r = this.Select( Constraint , Entity.PrimaryKey.getKeyValues() );
 
                 SQLQueryParams outparam = null;
+
+                mParamNames.Clear();
+                MakeUniqueParamName( Constraint );
+
+
                 mSQLQueryString = SQLBuilder.sqlSelect( this , ref outparam , ParamPlaceholder: "@" , Constraint );
 
                 var rs = mDatabase.ReadQuery( mSQLQueryString , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
@@ -1631,7 +1703,12 @@ namespace prestoMySQL.Adapter {
                 //}
                 //Constraint: new EntityConstraintExpression( constraints ) 
 
+
                 SQLQueryParams outparam = null;
+
+                mParamNames.Clear();
+                MakeUniqueParamName( Constraint );
+
                 mSQLQueryString = SQLBuilder.sqlSelect<T , X>( delegateMethod , this , ref outparam , Constraint: Constraint );
                 var rs = mDatabase.ReadQuery( SQLQueryString , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 

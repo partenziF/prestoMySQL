@@ -12,30 +12,36 @@ namespace prestoMySQL.Query.Attribute {
         ASC, DESC
     }
 
-    [AttributeUsage( AttributeTargets.Property , AllowMultiple = false , Inherited = false )]
-    public abstract class DALProjectionFunction : System.Attribute {
+    public interface IDALFunction {
 
+
+
+        public abstract int CountParam();
+
+    }
+
+
+    [AttributeUsage( AttributeTargets.Property , AllowMultiple = false , Inherited = false )]
+    public abstract class DALProjectionFunction : System.Attribute, IDALFunction {
         public string Function { get; set; }
-        //public DALFunctionParam[] Params;       
         public MySQLDataType DataType { get; set; }
         public OrderType Sort { get; set; }
         public int OrderBy { get; set; }
 
-
-        public DALProjectionFunction( String Function , MySQLDataType Type ) {
-            this.Function = Function;
+        public DALProjectionFunction( String function , MySQLDataType Type ) {
+            this.Function = function;
             //this.Params = Params;
             this.DataType = Type;
         }
-        public DALProjectionFunction( String Function ) {
-            this.Function = Function;
+        public DALProjectionFunction( String function ) {
+            this.Function = function;
         }
 
         public abstract int CountParam();
     }
 
     public class DALProjectionFunction_CURDATE : DALProjectionFunction {
-        public DALProjectionFunction_CURDATE( string Alias = null ) : base( "CURDATE"  , MySQLDataType.dbtDate ) {
+        public DALProjectionFunction_CURDATE( string Alias = null ) : base( "CURDATE" , MySQLDataType.dbtDate ) {
         }
 
         public override int CountParam() {
@@ -63,7 +69,7 @@ namespace prestoMySQL.Query.Attribute {
     }
 
     public class DALProjectionFunction_SUM : DALProjectionFunction {
-        public DALProjectionFunction_SUM( Type expression, MySQLDataType mySQLDataType ) : base( "SUM" , mySQLDataType ) {
+        public DALProjectionFunction_SUM( Type expression , MySQLDataType mySQLDataType ) : base( "SUM" , mySQLDataType ) {
             Expression = expression;
         }
 
@@ -78,7 +84,7 @@ namespace prestoMySQL.Query.Attribute {
     }
 
     public class DALProjectionFunction_MAX : DALProjectionFunction {
-        public DALProjectionFunction_MAX( Type expression,MySQLDataType mySQLDataType ) : base( "MAX" , mySQLDataType ) {
+        public DALProjectionFunction_MAX( Type expression , MySQLDataType mySQLDataType ) : base( "MAX" , mySQLDataType ) {
             Expression = expression;
         }
 
@@ -92,6 +98,22 @@ namespace prestoMySQL.Query.Attribute {
 
     }
 
+    public class DALProjectionFunction_DATE_FORMAT : DALProjectionFunction {
+        public DALProjectionFunction_DATE_FORMAT( Type expression , Type format ) : base( "DATE_FORMAT" , MySQLDataType.dbtVarChar ) {
+            Expression = expression;
+            Format = format;
+        }
+
+        public Type Expression { get; set; }
+        public Type Format { get; set; }
+
+
+
+        public override int CountParam() {
+            return 2;
+        }
+
+    }
 
     public class DALProjectionFunctionExpression : DALProjectionFunction {
         public DALProjectionFunctionExpression( Type leftexpression , Type rightExpression , string @operator ) : base( "" , MySQLDataType.dbtTinyInt ) {
@@ -109,6 +131,7 @@ namespace prestoMySQL.Query.Attribute {
         }
 
     }
+
 
 
 

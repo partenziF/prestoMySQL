@@ -236,7 +236,7 @@ namespace prestoMySQL.Adapter {
 
             return ( IEnumerator<X> ) this.GetEnumerator();
         }
-    }
+    }   
 
 
 

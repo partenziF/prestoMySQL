@@ -188,6 +188,10 @@ namespace prestoMySQL.Extension {
                 .ToArray() );
         }
 
+        public static string EncloseWith( this string text , string begin ,string ends ) {
+            return begin + text + ends;
+        }
+
         public static string SurroundWith( this string text , string ends ) {
             return ends + text + ends;
         }

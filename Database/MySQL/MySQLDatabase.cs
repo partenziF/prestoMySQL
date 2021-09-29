@@ -386,6 +386,8 @@ namespace prestoMySQL.Database.MySQL {
                 try {
                     this.LastError = null;
                     this.mTransaction.Commit();
+                    //this.mCommand = null;
+                    //this.mTransaction = null;
                     return true;
                 } catch ( System.Exception e ) {
                     if ( this.mLogger != null ) Logger.LogWarning( $"{nameof( Commit )} {{0}}" , e.Message );
@@ -402,6 +404,8 @@ namespace prestoMySQL.Database.MySQL {
             if ( ( isConnected ) && ( this.mTransaction != null ) ) {
                 try {
                     this.mTransaction.Rollback();
+                    //this.mCommand = this.Connection.CreateCommand();
+                    //this.mTransaction = null;
                     return true;
                 } catch ( System.Exception e ) {
                     if ( this.mLogger != null ) Logger.LogWarning( $"{nameof( Rollback )} {{0}}" , e.Message );

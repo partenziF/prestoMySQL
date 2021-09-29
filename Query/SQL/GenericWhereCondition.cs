@@ -28,8 +28,6 @@ namespace prestoMySQL.Query.SQL {
 
 
         protected EvaluableBinaryOperator mBinaryOperator = SQLBinaryOperator.equal();
-
-
         public EvaluableBinaryOperator BinaryOperator { get => mBinaryOperator; set => mBinaryOperator = value; }
 
 

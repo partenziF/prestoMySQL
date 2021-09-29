@@ -33,26 +33,30 @@ namespace prestoMySQL.Query {
         public List<AbstractEntity> mEntities;
 
         public DefinableConstraint MakeUniqueParamName( DefinableConstraint c ) {
-            foreach ( QueryParam qp in c.QueryParams ) {
-                var count = ( mParamNames.Count( c => c.StartsWith( qp.Name ) ) );
-                if ( count > 0 ) {
-                    qp.rename( string.Format( "{0}_{1}" , qp.Name , count ) );
+            if ( c.QueryParams != null ) {
+                foreach ( QueryParam qp in c.QueryParams ) {
+                    var count = ( mParamNames.Count( c => c.StartsWith( qp.Name ) ) );
+                    if ( count > 0 ) {
+                        qp.rename( string.Format( "{0}_{1}" , qp.Name , count ) );
+                    }
+                    mParamNames.Add( qp.Name );
                 }
-                mParamNames.Add( qp.Name );
             }
             return c;
         }
         public void MakeUniqueParamName( SQLQueryParams queryParams ) {
 
-            foreach ( QueryParam qp in queryParams ) {
-                var count = ( mParamNames.Count( c => c.StartsWith( qp.Name ) ) );
-                if ( count > 0 ) {
-                    qp.rename( string.Format( "{0}_{1}" , qp.Name , count ) );
+            if ( queryParams != null ) {
+
+                foreach ( QueryParam qp in queryParams ) {
+                    var count = ( mParamNames.Count( c => c.StartsWith( qp.Name ) ) );
+                    if ( count > 0 ) {
+                        qp.rename( string.Format( "{0}_{1}" , qp.Name , count ) );
+                    }
+                    mParamNames.Add( qp.Name );
                 }
-                mParamNames.Add( qp.Name );
+
             }
-
-
         }
 
         public virtual void BuildEntityGraph() {
@@ -196,27 +200,81 @@ namespace prestoMySQL.Query {
             }
 
         }
+        public IQueryParams getQueryParams() {
 
+            QueryParam[] p = getParam;
+            var result = new SQLQueryParams( p );
+            return result;
+
+        }
 
         public QueryParam[] getParam {
             get {
-                List<QueryParam> l = new List<QueryParam>();
+
+
+                List<QueryParam> result = new List<QueryParam>();
+
                 foreach ( SQLQueryJoinTable i in this.mJoinTable.Values ) {
                     if ( i.SqlQueryConditions != null ) {
                         foreach ( var j in i.SqlQueryConditions ) {
                             foreach ( var x in j.getParam() ) {
-                                l.Add( x );
+                                result.Add( x );
                             }
                         }
-
                     }
                 }
+
                 foreach ( var i in this.mWhereCondition ) {
                     foreach ( var j in i.getParam() ) {
-                        l.Add( j );
+                        result.Add( j );
                     }
                 }
-                return l.ToArray();
+
+
+                ////                Console.WriteLine( "{0}.{1}" , this.GetType().Name , nameof( this.getParam ) );
+                ////Console.WriteLine( "=============================" );
+                ////Console.WriteLine( "SQLQuery.getParam mJoinTable {0}" , this.mJoinTable.Count );
+
+                //for ( int i = 0; i < this.mJoinTable.Count; i++ ) {
+
+                //    var jt = this.mJoinTable.ElementAt( i );
+                //    if ( jt.Value.SqlQueryConditions != null ) {
+                //        for ( int k = 0; k < jt.Value.SqlQueryConditions.Length; k++ ) {
+                //            var j = jt.Value.SqlQueryConditions[k];
+                //            for ( int z = 0; z < j.getParam().Length; z++ ) {
+                //                //Console.WriteLine( "\tSQLQuery.getParam {0} = {1}" , j.getParam()[z].Name , j.getParam()[z].Value );
+                //                result.Add( j.getParam()[z] );
+
+
+                //            }
+
+                //        }
+                //    }
+                //}
+
+                ////Console.WriteLine( "SQLQuery.getParam {0}" , this.mWhereCondition.Count );
+                ////for ( int x = 0; x < this.mWhereCondition.Count; x++ ) {
+                ////    Console.WriteLine( "SQLQuery.getParam {0}" , this.mWhereCondition[x] );
+                ////}
+                ////Console.WriteLine( "SQLQuery.getParam mWhereCondition {0}" , this.mWhereCondition.Count );
+
+                //for ( int x = 0; x < this.mWhereCondition.Count; x++ ) {
+
+                //    for ( int z = 0; z < this.mWhereCondition[x].getParam().Length; z++ ) {
+                //        var j = this.mWhereCondition[x].getParam()[z];
+                //        result.Add( j );
+                //        //Console.WriteLine( "\tSQLQuery.getParam {0} = {1}" , j.Name , j.Value );
+
+                //    }
+                //    //foreach ( var j in this.mWhereCondition[x].getParam() ) {
+                //    //    result.Add( j );
+                //    //}
+                //}
+
+                //Console.WriteLine( "SQLQuery.getParam return" );
+                //Console.WriteLine( "-------------------------------------" );
+
+                return result.ToArray();
             }
 
         }
@@ -263,7 +321,7 @@ namespace prestoMySQL.Query {
         //////////////////////////////////////////////////////////////////////////////////
 
         protected List<SQLQueryOrderBy> mOrderBy;
-        public List<SQLQueryGroupBy> OrderBy { get => this.mGroupBy; }
+        public List<SQLQueryOrderBy> OrderBy { get => this.mOrderBy; }
 
         //////////////////////////////////////////////////////////////////////////////////
 
@@ -574,14 +632,12 @@ namespace prestoMySQL.Query {
         }
 
         public SQLQuery ORDERBY( params SQLQueryOrderBy[] aOrderByEntity ) {
-            // TODO Auto-generated method stub
-            //foreach ( SQLQueryOrderBy e in  aOrderByEntity ) {
-            //    this.mOrderBy.add( e );
-            //}
 
-            foreach ( var e in aOrderByEntity ) {
-                this.mOrderBy.Add( e );
-            }
+            this.mOrderBy.AddRange( aOrderByEntity );
+
+            //foreach ( var e in aOrderByEntity ) {
+            //    this.mOrderBy.Add( e );
+            //}
 
             return this;
         }
@@ -764,7 +820,7 @@ namespace prestoMySQL.Query {
             return SQLTableEntityHelper.getProjectionColumnName<T>( sqlQuery );
         }
 
-        internal virtual IEnumerable<DALQueryJoinEntityConstraint> GetQueryJoinConstraint() {
+        internal virtual IEnumerable<DALGenericQueryJoinConstraint> GetQueryJoinConstraint() {
             return SQLTableEntityHelper.getQueryJoinConstraint( this.GetType() );
         }
         internal virtual IEnumerable<DALQueryJoinEntityUnConstraint> GetQueryJoinUnConstraint() {
@@ -774,6 +830,9 @@ namespace prestoMySQL.Query {
 
 
         public void Build() {
+
+            //Console.WriteLine( "{0}.{1}" , this.GetType().Name , nameof( this.Build ) );
+
             UpdateValueToQueryParam();
 
             //SQLQueryParams outparam = null;
@@ -781,18 +840,37 @@ namespace prestoMySQL.Query {
 
             Prepare();
 
-            var orderby = SQLTableEntityHelper.getQueryOrderBy( GetType() );
-            var order = 0;
-            List<SQLQueryGroupBy> listOfQueryGroupBy = new List<SQLQueryGroupBy>();
-            foreach ( var o in orderby ) {
-                if ( Graph.Cache.ContainsKey( o.Table ) ) {
-                    var cn = Helper.SQLTableEntityHelper.getColumnName( Graph.Cache[o.Table].FirstOrDefault() , o.Property , true );
-                    listOfQueryGroupBy.Add( new SQLQueryGroupBy( order++ , cn ) );
+            var groupby = SQLTableEntityHelper.getQueryGroupBy( this.GetType() );
+            if ( groupby.Count > 0 ) {
+                List<SQLQueryGroupBy> listOfQueryGroupBy = new List<SQLQueryGroupBy>();
+                var order = 0;
+
+                foreach ( var o in groupby ) {
+                    if ( Graph.Cache.ContainsKey( o.Table ) ) {
+                        var cn = Helper.SQLTableEntityHelper.getColumnName( Graph.Cache[o.Table].FirstOrDefault() , o.Property , true );
+                        listOfQueryGroupBy.Add( new SQLQueryGroupBy( order++ , cn ) );
+                    }
+
                 }
 
+                GROUPBY( listOfQueryGroupBy.ToArray() );
             }
 
-            GROUPBY( listOfQueryGroupBy.ToArray() );
+            var orderby = SQLTableEntityHelper.getQueryOrderBy( this.GetType() );
+            if ( orderby.Count > 0 ) {
+                List<SQLQueryOrderBy> listOfQueryOrderBy = new List<SQLQueryOrderBy>();
+                var order = 0;
+
+                foreach ( var o in orderby ) {
+                    if ( Graph.Cache.ContainsKey( o.Table ) ) {
+                        var cn = Helper.SQLTableEntityHelper.getColumnName( Graph.Cache[o.Table].FirstOrDefault() , o.Property , true );
+                        listOfQueryOrderBy.Add( new SQLQueryOrderBy( order++ , cn , Column.Attribute.OrderType.ASC ) );
+                    }
+
+                }
+
+                ORDERBY( listOfQueryOrderBy.ToArray() );
+            }
 
             LIMIT( Offset , RowCount );
         }

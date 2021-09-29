@@ -1,4 +1,5 @@
-﻿using prestoMySQL.Query.Interface;
+﻿using prestoMySQL.Extension;
+using prestoMySQL.Query.Interface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,16 +44,19 @@ namespace prestoMySQL.Query.SQL {
                 //foreach ( dynamic c in mConditions ) {
                 //    s[i++] = c.ToString();
                 //}
-
-                var s = mConditions.Select( x => x.ToString() ).ToArray();
+                //string s = "";
+                //s.SurroundWith( "( " , " )" );
+                var s = mConditions.Select( x => ( ( string ) x.ToString() ).EncloseWith( ( mConditions.Length > 1 ) ? "( " : String.Empty , ( mConditions.Length > 1 ) ? ") " : String.Empty ) ).ToArray();
 
                 switch ( mLogicOperator ) {
                     case LogicOperator.AND:
-                    return ( mConditions.Length == 1 ) ? string.Join( " AND " , s ) : string.Format( "( {0} )" , string.Join( " AND " , s ) );
+                    return string.Format( "( {0} )\r\n" , string.Join( " \t\r\nAND " , s ) );
+                    //return ( mConditions.Length == 1 ) ? string.Join( " AND " , s ) : string.Format( "( {0} )" , string.Join( " AND " , s ) );
                     case LogicOperator.OR:
-                    return ( mConditions.Length == 1 ) ? string.Join( " OR " , s ) : string.Format( "( {0} )" , string.Join( " OR " , s ) );
+                    return string.Format( "( {0} )\r\n" , string.Join( " \t\r\nOR " , s ) );
+                    //return ( mConditions.Length == 1 ) ? string.Join( " OR " , s ) : string.Format( "( {0} )" , string.Join( " OR " , s ) );
                     case LogicOperator.NOT:
-                    return ( mConditions.Length == 1 ) ? string.Format( " NOT {0} " , s ) : throw new InvalidOperationException();
+                    return ( mConditions.Length == 1 ) ? string.Format( " \t\r\nNOT ( {0} )\r\n " , s ) : throw new InvalidOperationException();
                     //return string.Format( "( {0} )" , string.Join( " OR " , s ) );
                     //throw new NotImplementedException();
                     case LogicOperator.SEPARATOR:
@@ -64,14 +68,17 @@ namespace prestoMySQL.Query.SQL {
                 }
 
             } else if ( ( mConditionExpressions != null ) && ( mConditionExpressions.Length > 0 ) ) {
+
                 var exprLeft = this.mConditionExpressions[0].ToString();
-                if ( this.mConditionExpressions[0].mConditions.Length > 1 ) exprLeft = String.Concat( "( " , exprLeft , " )" );
+                if ( this.mConditionExpressions[0].mConditions.Length > 1 ) exprLeft = exprLeft.EncloseWith( "(" , ")" );
 
                 var exprRigth = this.mConditionExpressions[1].ToString();
-                if ( this.mConditionExpressions[1].mConditions.Length > 1 ) exprRigth = String.Concat( " " , exprRigth , " " );
+                if ( this.mConditionExpressions[1].mConditions.Length > 1 ) exprRigth = exprRigth.EncloseWith( " " , " " );
 
                 //var s1 = this.mConditionExpressions[0].mConditions.Length == 1 ?  string.Concat( "( " , this.mConditionExpressions[0].ToString() );
-                return string.Format( "( {0}  {1}  {2} )" , exprLeft , this.mLogicOperator , exprRigth );
+
+                return string.Format( "( {0}  {1}  {2} )\r\n" , exprLeft , this.mLogicOperator , exprRigth );
+
             } else {
                 return "";
             }

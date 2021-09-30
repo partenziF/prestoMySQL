@@ -868,8 +868,11 @@ namespace prestoMySQL.Query {
                     }
 
                 }
+                if ( this.GroupBy.Count > 0 )
+                    ORDERBY( listOfQueryOrderBy.ToArray() );
+                else
+                    ORDERBY( listOfQueryOrderBy.ToArray() );
 
-                ORDERBY( listOfQueryOrderBy.ToArray() );
             }
 
             LIMIT( Offset , RowCount );

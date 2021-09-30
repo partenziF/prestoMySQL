@@ -55,9 +55,15 @@ namespace prestoMySQL.Adapter {
                 SQLQueryParams outparam = null;
                 sqlQuery.Prepare();
                 sqlQuery.SelectExpression.Clear();
+                
+                var RowCount = sqlQuery.RowCount;
+                var Offset = sqlQuery.Offset;
+                sqlQuery.LIMIT( null , null );
                 sqlQuery.SelectExpression.Add( "COUNT(*)" );
                 mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
-                 
+
+                sqlQuery.LIMIT( Offset , RowCount );
+
                 return mDatabase.ExecuteScalar<int?>( mSQLQueryString , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
 
             }

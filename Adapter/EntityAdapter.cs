@@ -648,7 +648,6 @@ namespace prestoMySQL.Adapter {
 
             //CreateInstace<T>();
             if ( this.Entity is null ) {
-                //new ArgumentNullException( "Entity can't be null, use Create() method." ); 
                 Create();
             };
             //InitEntity();
@@ -656,9 +655,6 @@ namespace prestoMySQL.Adapter {
             X x = delegateMethod( Entity );
 
             List<DefinableConstraint> constraints = new List<DefinableConstraint>();
-            //var cn = SQLTableEntityHelper.getColumnName<T>( true );
-
-            //foreach ( PropertyInfo f in getPropertyIfColumnDefinition( T ) ) {
 
             foreach ( string c in x.ColumnsName ) {
                 PropertyInfo p = x[c];
@@ -676,13 +672,10 @@ namespace prestoMySQL.Adapter {
 
 
             //var cn = SQLTableEntityHelper.getColumnName<T>( true );
-
             //var f = cn.Where( s => x.ColumnsName.Contains( s ) );
-
             //List<dynamic> _definitionColumns = SQLTableEntityHelper.getDefinitionColumn( Entity , true );
             //int i = 0;
             //foreach ( string c in x.ColumnsName ) {
-
             //    var f = _definitionColumns.FirstOrDefault( col => ( col as ConstructibleColumn ).ColumnName.Equals( c ) );
             //    DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( f , "@" );
 

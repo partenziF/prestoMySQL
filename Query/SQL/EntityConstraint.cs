@@ -125,16 +125,19 @@ namespace prestoMySQL.Query.SQL {
 
             Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
 
-            Type[] types = new Type[3];
+            Type[] types = new Type[4];
             types[0] = ( aColumnDefinition.GetType() );
-            //types[1] = typeof( EvaluableBinaryOperator );
-            types[1] = typeof( IQueryParams );
-            types[2] = typeof( string );
-            Type myParameterizedSomeClass = typeof( EntityAssignement<> ).MakeGenericType( generic );
+            types[1] = typeof( EvaluableBinaryOperator );
+            types[2] = typeof( IQueryParams );
+            types[3] = typeof( string );
+            
+            //Type myParameterizedSomeClass = typeof( EntityAssignement<> ).MakeGenericType( generic );
+            Type myParameterizedSomeClass = typeof( EntityConstraint<> ).MakeGenericType( generic );
             ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
 
             DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] {
                 aColumnDefinition ,
+                SQLBinaryOperator.equal(),
                 new SQLQueryParams( new[] { new MySQLQueryParam( value , aColumnDefinition.ActualName ) } ) ,
                 aParamPlaceHolder }
             ) ) ?? throw new ArgumentNullException();
@@ -228,15 +231,17 @@ namespace prestoMySQL.Query.SQL {
 
             Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
 
-            Type[] types = new Type[3];
+            Type[] types = new Type[4];
             types[0] = ( aColumnDefinition.GetType() );
-            //types[1] = typeof( EvaluableBinaryOperator );
-            types[1] = typeof( IQueryParams );
-            types[2] = typeof( string );
-            Type myParameterizedSomeClass = typeof( EntityAssignement<> ).MakeGenericType( generic );
+            types[1] = typeof( EvaluableBinaryOperator );
+            types[2] = typeof( IQueryParams );
+            types[3] = typeof( string );
+            Type myParameterizedSomeClass = typeof( EntityConstraint<> ).MakeGenericType( generic );
             ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
 
-            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition , new SQLQueryParams( new[] { new MySQLQueryParam( value , paramName ) } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
+            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition ,
+                SQLBinaryOperator.equal(),
+                new SQLQueryParams( new[] { new MySQLQueryParam( value , paramName ) } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
 
             return o;
         }
@@ -295,6 +300,8 @@ namespace prestoMySQL.Query.SQL {
     }
 
 
+
+
     public class EntityAssignement<T> : GenericEntityConstraint<T> where T : notnull {
 
         public EntityAssignement( MySQLDefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition , IQueryParams aQueryPararm , string aParamPlaceHolder = "" ) :
@@ -306,13 +313,13 @@ namespace prestoMySQL.Query.SQL {
             //                ? string.Format( "{0}.{1}" , this.TableName.QuoteTableName() , aColumnName.QuoteColumnName() )
             //                : string.Format( "{0}.{1} AS {2}" , this.TableAlias.QuoteTableName() , aColumnName.QuoteColumnName() , String.Concat( "{" , this.ActualName , "}" , aColumnName ).QuoteColumnName() );
 
-            if ( this.QueryParams[0].Value is null ) {
-                if ( BinaryOperator.Equals( SQLBinaryOperator.equal() ) ) {
-                    BinaryOperator = SQLBinaryOperator.@is();
-                } else if ( BinaryOperator.Equals( SQLBinaryOperator.notEqual() ) ) {
-                    BinaryOperator = SQLBinaryOperator.isNot();
-                }
-            }
+            //if ( this.QueryParams[0].Value is null ) {
+            //    if ( BinaryOperator.Equals( SQLBinaryOperator.equal() ) ) {
+            //        BinaryOperator = SQLBinaryOperator.@is();
+            //    } else if ( BinaryOperator.Equals( SQLBinaryOperator.notEqual() ) ) {
+            //        BinaryOperator = SQLBinaryOperator.isNot();
+            //    }
+            //}
 
             return $"{columnDefinition.Table.ActualName.QuoteTableName()}.{columnDefinition.ColumnName.QuoteColumnName()} {BinaryOperator} {this.QueryParams[0].AsQueryParam( ParamPlaceHolder )}";
             //                $" columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) );

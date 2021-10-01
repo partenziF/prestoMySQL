@@ -246,6 +246,25 @@ namespace prestoMySQL.Query.SQL {
             return o;
         }
 
+        public static DefinableConstraint MakeLike( dynamic aColumnDefinition , string paramName , object value , string aParamPlaceHolder = "" ) {
+
+            Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
+
+            Type[] types = new Type[4];
+            types[0] = ( aColumnDefinition.GetType() );
+            types[1] = typeof( EvaluableBinaryOperator );
+            types[2] = typeof( IQueryParams );
+            types[3] = typeof( string );
+            Type myParameterizedSomeClass = typeof( EntityConstraint<> ).MakeGenericType( generic );
+            ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
+
+            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition ,
+                SQLBinaryOperator.like(),
+                new SQLQueryParams( new[] { new MySQLQueryParam( value , paramName ) } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
+
+            return o;
+        }
+
 
         public static DefinableConstraint MakeAllEqual( dynamic aColumnDefinition , string paramName , object value , string aParamPlaceHolder = "" ) {
 

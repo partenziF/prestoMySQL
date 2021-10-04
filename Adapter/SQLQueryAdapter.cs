@@ -111,7 +111,7 @@ namespace prestoMySQL.Adapter {
                     }
 
                 } catch ( System.Exception e ) {
-                    throw new ArgumentNullException( e.Message );
+                    throw;
                 }
 
             }

@@ -571,7 +571,15 @@ namespace prestoMySQL.Helper {
                         result.Add( o );
                     }
 
+                } else if ( Attribute.IsDefined( f , typeof( DALProjectionFunction ) ) ) {
+
+                    dynamic o = f.GetValue( aQueryInstance );
+                    if ( o != null ) {
+                        result.Add( o );
+                    }
+
                 }
+
             }
 
             return result;

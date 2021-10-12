@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 namespace prestoMySQL.Utils {
     public static class MySQLUtils {
 
+        public static DateTime DateMinValue = new DateTime( 1000 , 1 , 1 );
         //Todo deprecated
         public static object convertFromMySQLDataTypeToObject<T>( object value , MySQLDataType aSQLDataType )  {
 

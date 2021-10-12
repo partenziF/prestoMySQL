@@ -246,6 +246,26 @@ namespace prestoMySQL.Query.SQL {
             return o;
         }
 
+        public static DefinableConstraint MakeBetween( dynamic aColumnDefinition , string paramName , object minValue,object maxValue , string aParamPlaceHolder = "" ) {
+            //var cIntervalloOrdine = new BetweenEntityConstraint<DateTime>( EntitiesAdapter.Adapter<CustomerOrderEntityAdapter>().Entity.OrderCreated , new SQLQueryParams( new[] { new MySQLQueryParam( 1 , nameof( a.ArtistId ) + "1" ) , new MySQLQueryParam( 5 , nameof( a.ArtistId ) + "2" ) } ) , "@" )
+            
+            //(MySQLDefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition, SQLQueryParams columnValues, string aParamPlaceholder = "" )
+
+            Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
+
+            Type[] types = new Type[3];
+            types[0] = ( aColumnDefinition.GetType() );
+            types[1] = typeof( SQLQueryParams );
+            types[2] = typeof( string );
+            Type myParameterizedSomeClass = typeof( BetweenEntityConstraint<> ).MakeGenericType( generic );
+            ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
+
+            DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition ,                
+                new SQLQueryParams( new[] { new MySQLQueryParam( minValue , paramName ), new MySQLQueryParam( maxValue , paramName ) } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
+
+            return o;
+        }
+
         public static DefinableConstraint MakeLike( dynamic aColumnDefinition , string paramName , object value , string aParamPlaceHolder = "" ) {
 
             Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
@@ -282,6 +302,8 @@ namespace prestoMySQL.Query.SQL {
 
             return o;
         }
+
+
 
 
 

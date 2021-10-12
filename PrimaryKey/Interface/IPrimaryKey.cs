@@ -12,6 +12,7 @@ namespace prestoMySQL {
 	public enum KeyState {
 		CreatedKey, // New key for insert
 		SetKey,	// Key is set for update
+		DeleteKey,//Key is set for delete
 		UnsetKey
 	}
 

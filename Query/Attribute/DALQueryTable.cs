@@ -22,9 +22,7 @@ namespace prestoMySQL.Query.Attribute {
             this.Alias = Alias;
         }
     }
-    [AttributeUsage( AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
-    
-    
+    [AttributeUsage( AttributeTargets.Class , AllowMultiple = true , Inherited = false )]       
     public class DALGroupBy : System.Attribute {
         public string Property { get; set; }
         public Type Table { get; set; }

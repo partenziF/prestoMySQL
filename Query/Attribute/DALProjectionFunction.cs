@@ -27,11 +27,14 @@ namespace prestoMySQL.Query.Attribute {
         public MySQLDataType DataType { get; set; }
         public OrderType Sort { get; set; }
         public int OrderBy { get; set; }
+        public int GroupBy { get; set; }
 
         public DALProjectionFunction( String function , MySQLDataType Type ) {
             this.Function = function;
             //this.Params = Params;
             this.DataType = Type;
+            this.OrderBy = -1;
+            this.GroupBy = -1;
         }
         public DALProjectionFunction( String function ) {
             this.Function = function;
@@ -75,8 +78,45 @@ namespace prestoMySQL.Query.Attribute {
 
         public Type Expression { get; set; }
 
+        public override int CountParam() {
+            return 1;
+        }
 
+    }
 
+    public class DALProjectionFunction_EXTRACT : DALProjectionFunction {
+        public DALProjectionFunction_EXTRACT( Type expression ,string unit, MySQLDataType mySQLDataType ) : base( "EXTRACT" , mySQLDataType ) {
+            Expression = expression;
+            this.Unit = unit;
+        }
+
+        public Type Expression { get; set; }
+        public string Unit { get; set; }
+
+        public override int CountParam() {
+            return 1;
+        }
+
+    }
+
+    public class DALProjectionFunction_MIN : DALProjectionFunction {
+        public DALProjectionFunction_MIN( Type expression , MySQLDataType mySQLDataType ) : base( "MIN" , mySQLDataType ) {
+            Expression = expression;
+        }
+
+        public Type Expression { get; set; }
+        public override int CountParam() {
+            return 1;
+        }
+
+    }
+
+    public class DALProjectionFunction_DATE : DALProjectionFunction {
+        public DALProjectionFunction_DATE( Type expression , MySQLDataType mySQLDataType ) : base( "MIN" , mySQLDataType ) {
+            Expression = expression;
+        }
+
+        public Type Expression { get; set; }
         public override int CountParam() {
             return 1;
         }
@@ -89,9 +129,6 @@ namespace prestoMySQL.Query.Attribute {
         }
 
         public Type Expression { get; set; }
-
-
-
         public override int CountParam() {
             return 1;
         }

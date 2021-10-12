@@ -13,7 +13,8 @@ namespace prestoMySQL.Entity.Interface {
         Undefined,
         Created,
         Set,
-        Changed
+        Changed,
+        Deleted
     }
 
     public interface AvailableEntity {

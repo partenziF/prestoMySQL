@@ -603,6 +603,45 @@ namespace prestoMySQL.Adapter {
 
         //}
 
+        public OperationResult Refersh() {
+
+            if ( Entity is null ) {
+                throw new ArgumentNullException( "Entity can't be null." );
+            };
+
+            try {
+                if ( Entity.PrimaryKey.KeyState == KeyState.SetKey ) {
+
+                    SQLQueryParams outparam = null;
+                    mSQLQuery = SQLBuilder.sqlSelect( Entity , ref outparam , ParamPlaceholder: "@" , null );
+                    var rs = mDatabase.ReadQuery( SQLQuery , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
+
+                    var r = FetchResultSet( rs );
+
+                    if ( r == OperationResult.OK ) {
+
+                        foreach ( var e in this )
+                            e.PrimaryKey.KeyState = KeyState.SetKey;
+
+                    } else {
+                        foreach ( var e in this )
+                            e.PrimaryKey.KeyState = KeyState.UnsetKey;
+                    }
+
+                    return r;
+
+                } else {
+                    throw new KeyNotFoundException( "Invalid keystate, key is not set" );
+                }
+
+            } catch ( ArgumentOutOfRangeException e1 ) {
+                throw new ArgumentOutOfRangeException( "Invalid key valu length for primary key" );
+            } catch ( System.Exception e ) {
+                throw new System.Exception( e.Message );
+            }
+
+        }
+
         public override OperationResult Read( EntityConditionalExpression Constraint = null , params object[] KeyValues ) {
 
             //CreateInstace<T>();
@@ -644,7 +683,7 @@ namespace prestoMySQL.Adapter {
 
         }
 
-        public OperationResult Read<X>( Func<T , X> delegateMethod ) where X : TableIndex {
+        public OperationResult Read<X>( Func<T , X> delegateMethod , EntityConditionalExpression Constraint = null ) where X : TableIndex {
 
             //CreateInstace<T>();
             if ( this.Entity is null ) {
@@ -670,25 +709,15 @@ namespace prestoMySQL.Adapter {
                 constraints.Add( o );
             }
 
-
-            //var cn = SQLTableEntityHelper.getColumnName<T>( true );
-            //var f = cn.Where( s => x.ColumnsName.Contains( s ) );
-            //List<dynamic> _definitionColumns = SQLTableEntityHelper.getDefinitionColumn( Entity , true );
-            //int i = 0;
-            //foreach ( string c in x.ColumnsName ) {
-            //    var f = _definitionColumns.FirstOrDefault( col => ( col as ConstructibleColumn ).ColumnName.Equals( c ) );
-            //    DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( f , "@" );
-
-            //    //PropertyInfo p = x[c];
-            //    //var col = p.GetValue( this.Entity );
-            //    //DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( col , "@" );
-
-            //    constraints[i++] = o;
-            //}
-
             SQLQueryParams outparam = null;
-            var s = SQLBuilder.sqlSelect<T>( ref outparam , new EntityConstraintExpression( constraints.ToArray() ) );
-            //var s = SQLBuilder.sqlSelect<T>( this.Entity , ref outparam , Constraint: new EntityConstraintExpression( constraints ) );
+            EntityConditionalExpression constraintExpression;
+            if ( Constraint is null ) {
+                constraintExpression = new EntityConstraintExpression( constraints.ToArray() );
+            } else {
+                constraintExpression = new EntityConditionalExpression( LogicOperator.AND , new EntityConstraintExpression( constraints.ToArray() ) , Constraint );
+            }
+            
+            var s = SQLBuilder.sqlSelect<T>( this.Entity , ref outparam , Constraint: constraintExpression );
 
             var rs = mDatabase.ReadQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
@@ -904,6 +933,48 @@ namespace prestoMySQL.Adapter {
 
         }
 
+        protected override OperationResult Delete( AbstractEntity entity ) {
+
+            if ( entity == null ) throw new System.Exception( "entity is null, call create method." );
+            SQLQueryParams outparam = null;
+
+            var args = new BindDataToEventArgs<T> { Entity = ( T ) entity };
+            OnBindDataTo( args );
+
+
+            mSQLQuery = SQLBuilder.sqlDelete<T>( ( T ) entity , ref outparam , "@" );
+            int? rowChanged = -1;
+            try {
+
+                rowChanged = mDatabase.ExecuteQuery( SQLQuery , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
+
+                if ( rowChanged is null ) {
+
+                    return OperationResult.Error;
+
+                } else if ( rowChanged != -1 ) {
+
+                    entity.State = prestoMySQL.Entity.Interface.EntityState.Deleted; ;
+                    return OperationResult.OK;
+
+                } else {
+                    return OperationResult.Fail;
+                }
+
+
+            } catch ( MySqlException ex ) {
+
+                mLogger?.LogError( "Exception " + ex.Message + " in " + nameof( Update ) );
+                return OperationResult.Exception;
+
+            } catch ( System.Exception e ) {
+                mLogger?.LogError( "Last error : " + mDatabase.LastError?.ToString() ?? "" + " Exception " + e.Message + " in " + nameof( DropTable ) );
+                throw new System.Exception( ERROR_EXECUTE_QUERY + ( ( mDatabase.LastError is null ) ? mDatabase.LastError?.ToString() ?? e.Message : e.Message ) );
+            }
+
+
+        }
+
         public override bool Save() {
 
             if ( this.Entity == null ) {
@@ -947,6 +1018,32 @@ namespace prestoMySQL.Adapter {
                     //result = Update() == OperationResult.OK;
                     if ( result ) {
                         switch ( Update( aEntity ) ) {
+                            case OperationResult.OK:
+                            result &= true;
+                            break;
+                            case OperationResult.Fail:
+                            result &= false;
+                            break;
+
+                            case OperationResult.Error:
+                            result &= false;
+                            break;
+
+                            case OperationResult.Exception:
+                            result &= false;
+                            break;
+                            case OperationResult.Unchange:
+                            result &= true;
+                            break;
+
+                        }
+                    }
+
+                    break;
+
+                    case KeyState.DeleteKey:
+                    if ( result ) {
+                        switch ( Delete( aEntity ) ) {
                             case OperationResult.OK:
                             result &= true;
                             break;
@@ -1119,6 +1216,16 @@ namespace prestoMySQL.Adapter {
 
                 Entity.State = EntityState.Created;
             }
+        }
+
+        public void CopyFrom( AbstractEntity entity ) {
+            if ( Entity is null ) {
+                Create();
+            }
+            MapFromAdapter( entity );
+            MapToEntity();
+            Entity.PrimaryKey.KeyState = entity.PrimaryKey.KeyState;
+
         }
 
         public IEnumerator<T> GetEnumerator() {

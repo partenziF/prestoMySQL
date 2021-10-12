@@ -30,7 +30,7 @@ namespace prestoMySQL.Adapter {
         public abstract int SQLCount { get; }
 
         protected CursorWrapper<MySQResultSet , MySqlDataReader> mCursor;
-        protected abstract CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get; set; }
+        public abstract CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get; set; }
 
         public List<dynamic> ProjectionColumns = null; //QueryableColumn<object>
 

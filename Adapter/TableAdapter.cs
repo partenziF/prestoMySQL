@@ -39,6 +39,7 @@ namespace prestoMySQL.Adapter {
         //protected abstract OperationResult Select( EntityConditionalExpression Constraint = null , params Object[] values );
         protected abstract OperationResult Insert( AbstractEntity aEntity );
         protected abstract OperationResult Update( AbstractEntity aEntity );
+        protected abstract OperationResult Delete( AbstractEntity aEntity );
 
         public abstract bool Save();
 

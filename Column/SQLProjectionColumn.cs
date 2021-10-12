@@ -109,7 +109,8 @@ namespace prestoMySQL.Column {
 
         public abstract void AssignValue( object x );
 
-
+        public int GroupBy { get; init; }
+        public int OrderBy { get; init; }
     }
 
     public class QueryColumn<T> : GenericQueryColumn, ValuableQueryColumn<T> where T : ISQLTypeWrapper {
@@ -120,17 +121,29 @@ namespace prestoMySQL.Column {
             //this.mPropertyInfo = aPropertyInfo;
 
             DALQueryEntity dalQueryEntity = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALQueryEntity>();
-            if ( dalQueryEntity == null ) throw new ArgumentNullException();
 
             DALProjectionColumn dalProjectionColumn = this.mPropertyInfo?.GetCustomAttribute<DALProjectionColumn>();
             if ( dalProjectionColumn == null ) throw new ArgumentNullException( String.Format( "DALProjectionColumn attribute is required for {0}" , aPropertyInfo.Name ) );
 
+            if ( dalProjectionColumn.Entity is null ) {
+                if ( dalQueryEntity == null ) throw new ArgumentNullException();
+                
+                if ( ( dalProjectionColumn.Entity != null ) && ( dalProjectionColumn.Entity != dalQueryEntity.Entity ) ) {
+                    entity = dalProjectionColumn.Entity;
+                } else {
+                    entity = dalQueryEntity.Entity;
+                }
 
-            if ( ( dalProjectionColumn.Entity != null ) && ( dalProjectionColumn.Entity != dalQueryEntity.Entity ) ) {
-                entity = dalProjectionColumn.Entity;
             } else {
-                entity = dalQueryEntity.Entity;
+                
+                if ( ( dalProjectionColumn.Entity != dalQueryEntity?.Entity ) ) {
+                    entity = dalProjectionColumn.Entity;
+                } else {
+                    entity = dalQueryEntity.Entity;
+                }
+
             }
+
 
             DALTable dalTable = entity?.GetCustomAttribute<DALTable>();
 

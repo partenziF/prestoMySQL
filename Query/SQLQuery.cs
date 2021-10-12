@@ -840,7 +840,7 @@ namespace prestoMySQL.Query {
 
             Prepare();
 
-            var groupby = SQLTableEntityHelper.getQueryGroupBy( this.GetType() );
+            List<DALGroupBy> groupby = SQLTableEntityHelper.getQueryGroupBy( this.GetType() );
             if ( groupby.Count > 0 ) {
                 List<SQLQueryGroupBy> listOfQueryGroupBy = new List<SQLQueryGroupBy>();
                 var order = 0;
@@ -855,6 +855,13 @@ namespace prestoMySQL.Query {
 
                 GROUPBY( listOfQueryGroupBy.ToArray() );
             }
+
+
+            //var xxx = GetProjectionColumns( this );
+            //foreach (var c in xxx ) {
+            //    Console.WriteLine( c );
+            //}
+            
 
             var orderby = SQLTableEntityHelper.getQueryOrderBy( this.GetType() );
             if ( orderby.Count > 0 ) {

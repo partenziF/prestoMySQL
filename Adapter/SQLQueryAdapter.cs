@@ -44,7 +44,7 @@ namespace prestoMySQL.Adapter {
 
         }
 
-        protected override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
+        public  override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
 
         public T mSqlQuery;
         public T sqlQuery { get => mSqlQuery; }
@@ -97,12 +97,12 @@ namespace prestoMySQL.Adapter {
                 try {
 
                     if ( mAdapter.Cursor.MoveNext() ) {
-
+                        
                         var rs = mAdapter.Cursor.Current;
                         Dictionary<string , Dictionary<string , int>> s = rs.ResultSetSchemaTable();
                         this.mAdapter.BindData( s , rs );
                         Type t = typeof( T );
-
+                       
                         var ctor = typeof( X ).GetConstructor( new Type[] { t } );
                         mCurrent = ( X ) ctor?.Invoke( new object[] { this.mAdapter.sqlQuery } );
                         return true;

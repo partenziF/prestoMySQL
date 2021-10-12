@@ -62,8 +62,6 @@ namespace prestoMySQL.Query.Attribute {
 
     }
 
-
-
     [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
     public class DALFunctionParamBetween : DALFunctionParam {
         public Type Expression;
@@ -72,6 +70,18 @@ namespace prestoMySQL.Query.Attribute {
 
         public override int CountParam() {
             return 3;
+        }
+
+    }
+
+    [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
+    public class DALFunctionParamExpression : DALFunctionParam {
+        public Type leftExpression;
+        public Type rightExpression;
+        public string @operator;
+
+        public override int CountParam() {
+            return 2;
         }
 
     }
@@ -88,7 +98,6 @@ namespace prestoMySQL.Query.Attribute {
         }
 
     }
-
 
 
     [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]    

@@ -32,7 +32,7 @@ namespace prestoMySQL.Query.SQL {
         private LogicOperator mLogicOperator;
 
         public LogicOperator LogicOperator { get => this.mLogicOperator; set => this.mLogicOperator = value; }
-        public int Length { get => mConditions.Length; }
+        public int Length { get => ( ( ( mConditions is not null ) ? mConditions.Length : 0 ) + ( ( mConditionExpressions is not null ) ? mConditionExpressions.Length : 0 ) ); }
 
         public bool isEmpty {
             get {

@@ -17,7 +17,8 @@ namespace prestoMySQL.Query.SQL {
 
             mColumnValues = columnValues ?? throw new ArgumentNullException( nameof( columnValues ) );
             if ( mColumnValues.asArray().Length != 2 ) throw new ArgumentOutOfRangeException( "Invalid number of argument." );
-
+            mColumnValues[0].mName = mColumnValues[0].Name + "Min";
+            mColumnValues[1].mName = mColumnValues[1].Name + "Max";
         }
 
         public override int countParam() {
@@ -36,12 +37,18 @@ namespace prestoMySQL.Query.SQL {
         }
 
         public override string[] getParamAsString() {
-            return new string[] { this.QueryParams[0].AsQueryParam() , this.QueryParams[1].AsQueryParam() };
+            if ( this.columnDefinition.SQLDataType == Column.DataType.MySQLDataType.dbtDateTime ) {
+                return new string[] { this.QueryParams[0].AsQueryParam() , this.QueryParams[1].AsQueryParam() };
+            } else if ( this.columnDefinition.SQLDataType == Column.DataType.MySQLDataType.dbtDateTime ) {
+                return new string[] { this.QueryParams[0].AsQueryParam() , this.QueryParams[1].AsQueryParam() };
+            } else {
+                return new string[] { this.QueryParams[0].AsQueryParam() , this.QueryParams[1].AsQueryParam() };
+            }
         }
 
         public override string ToString() {
             //return String.Concat( "( " , columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " AND " , this.QueryParams[1].AsQueryParam( ParamPlaceHolder ) , "  )" );
-            return String.Concat( "( " , columnDefinition.Table.ActualName.QuoteTableName() , "." , columnDefinition.ColumnName.QuoteColumnName() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " AND " , this.QueryParams[1].AsQueryParam( ParamPlaceHolder ) , "  )" );
+            return String.Concat( "( " , columnDefinition.Table.ActualName.QuoteTableName() , "." , columnDefinition.ColumnName.QuoteColumnName() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ), " AND " , this.QueryParams[1].AsQueryParam( ParamPlaceHolder ) , "  )" );
         }
 
         public override T[] ColumnValue() {

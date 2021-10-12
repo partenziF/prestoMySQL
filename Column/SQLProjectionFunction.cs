@@ -80,6 +80,27 @@ namespace prestoMySQL.Column {
 
     }
 
+    public class FunctionExtract : IFunction {
+        public FunctionExtract( string functionName , string unit , params IFunctionParam[] functionParams ) {
+
+            FunctionName = functionName;
+            FunctionParams = functionParams;
+            Unit = unit;
+        }
+        public string Unit { get; }
+        public string FunctionName { get; }
+        public IFunctionParam[] FunctionParams { get; }
+
+        public override string ToString() {
+            if ( FunctionParams.Length > 0 )
+                return $"{FunctionName}({Unit} FROM {string.Join( "," , FunctionParams.ToList() )})";
+            else
+                return $"{FunctionName}()";
+        }
+
+    }
+
+
 
     public class FunctionParamConstraint : FunctionTableProperty {
         //private Type table;
@@ -183,6 +204,23 @@ namespace prestoMySQL.Column {
 
     }
 
+    public class FunctionParamExpression : IFunctionParam {
+        private string @operator;
+        private IFunctionParam left;
+        private IFunctionParam right;
+
+        public FunctionParamExpression( IFunctionParam left , IFunctionParam right , string @operator ) {
+            this.@operator = @operator;
+            this.left = left;
+            this.right = right;
+        }
+
+        public override string ToString() {
+            return $"( {this.left} {this.@operator} {this.right} )";
+        }
+
+    }
+
     public class FunctionParamSubQuery : IFunctionParam {
 
         private SQLQuery mSubQuery;
@@ -218,7 +256,13 @@ namespace prestoMySQL.Column {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_CURDATE ) ) {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
+            } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_EXTRACT ) ) {
+                return new FunctionExtract( ( param as DALProjectionFunction ).Function , ( param as DALProjectionFunction_EXTRACT ).Unit , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_MAX ) ) {
+                return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
+            } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_MIN ) ) {
+                return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
+            } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_DATE ) ) {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_SUM ) ) {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
@@ -249,6 +293,30 @@ namespace prestoMySQL.Column {
             } else if ( ( Type ) param.TypeId == typeof( DALFunctionParamConstant ) ) {
 
                 return new FunctionParamConstant( ( param as DALFunctionParamConstant ).Value );
+
+            } else if ( ( Type ) param.TypeId == typeof( DALFunctionParamExpression ) ) {
+
+                var fp = functionParams.Skip( baseIndex ).Take( param.CountParam() ).ToArray();
+                baseIndex += param.CountParam();
+
+                var pp = new List<DALFunctionParam>();
+
+                var leftExpression = fp.FirstOrDefault( x => ( ( Type ) x.TypeId == ( param as DALFunctionParamExpression ).leftExpression ) && ( !pp.Contains( x ) ) );
+                if ( leftExpression is not null ) pp.Add( leftExpression );
+
+                var rightExpression = fp.FirstOrDefault( x => ( ( Type ) x.TypeId == ( param as DALFunctionParamExpression ).rightExpression ) && ( !pp.Contains( x ) ) );
+                if ( rightExpression is not null ) pp.Add( rightExpression );
+
+                //var sOperator = fp.FirstOrDefault( x => ( ( Type ) x.TypeId == ( param as DALFunctionParamExpression ). ) && ( !pp.Contains( x ) ) );
+
+                var ppp = new List<IFunctionParam>();
+
+                foreach ( var x in pp ) {
+                    ppp.Add( FunctionParamFactory.Create( x , ref baseIndex , functionParams ) );
+                }
+
+                return new FunctionParamExpression( ppp[0] , ppp[1] , ( param as DALFunctionParamExpression ).@operator );
+
 
             } else if ( ( Type ) param.TypeId == typeof( DALFunctionParamFunction ) ) {
 
@@ -333,6 +401,7 @@ namespace prestoMySQL.Column {
             if ( totalParam != dalFunctionParam.Length ) throw new ArgumentException( $"Invalid numer of param for function {dalProjectionFunction.Function}" );
 
             var functionParams = dalFunctionParam.Skip( baseIndex ).Take( dalProjectionFunction.CountParam() ).ToArray();
+            //var functionParams = dalFunctionParam.Skip( baseIndex ).Take( totalParam ).ToArray();
 
             baseIndex = 0;
 
@@ -360,6 +429,16 @@ namespace prestoMySQL.Column {
             mDeclaredVariableName = aDeclaredVariableName;
 
             mGenericType = typeof( T ).GetGenericArguments()[0];
+
+            if ( dalProjectionFunction.GroupBy != -1 ) {
+                GroupBy = dalProjectionFunction.GroupBy;
+            }
+
+            if (dalProjectionFunction.OrderBy != -1 ) {
+                OrderBy = dalProjectionFunction.OrderBy;
+            }
+
+
         }
 
         private readonly string mDeclaredVariableName;

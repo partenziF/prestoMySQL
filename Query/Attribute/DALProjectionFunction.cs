@@ -112,7 +112,19 @@ namespace prestoMySQL.Query.Attribute {
     }
 
     public class DALProjectionFunction_DATE : DALProjectionFunction {
-        public DALProjectionFunction_DATE( Type expression , MySQLDataType mySQLDataType ) : base( "MIN" , mySQLDataType ) {
+        public DALProjectionFunction_DATE( Type expression , MySQLDataType mySQLDataType ) : base( "DATE" , mySQLDataType ) {
+            Expression = expression;
+        }
+
+        public Type Expression { get; set; }
+        public override int CountParam() {
+            return 1;
+        }
+
+    }
+
+    public class DALProjectionFunction_COUNT : DALProjectionFunction {
+        public DALProjectionFunction_COUNT( Type expression , MySQLDataType mySQLDataType ) : base( "COUNT" , mySQLDataType ) {
             Expression = expression;
         }
 

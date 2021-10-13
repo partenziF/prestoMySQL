@@ -264,6 +264,8 @@ namespace prestoMySQL.Column {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_DATE ) ) {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
+            } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_COUNT ) ) {
+                return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_SUM ) ) {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_DATE_FORMAT ) ) {

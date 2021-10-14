@@ -100,13 +100,18 @@ namespace prestoMySQL.Query.SQL {
     public class GenericEntityConstraint : DefinableConstraint {
         public GenericEntityConstraint( PropertyInfo p , EvaluableBinaryOperator mBinaryOperator , IQueryParams aQueryPararms , string paramPlaceHolder = "" ) {
 
+            var sss = p.GetMethod;
+            sss.Invoke( null , new object[] { } );
             this.mColumnName = SQLTableEntityHelper.getColumnName( p.DeclaringType , p.ColumnName( null ) , true , false );
+            //this.columnDefinition = p.GetVale(this);
             //this.mTableName = tableName;
             this.mBinaryOperator = mBinaryOperator;
             this.mParamPlaceHolder = paramPlaceHolder;
             this.mQueryParams = ( SQLQueryParams ) ( aQueryPararms ?? throw new ArgumentNullException( nameof( aQueryPararms ) ) );
         }
 
+
+        //protected MySQLDefinitionColumn<SQLTypeWrapper<T>> columnDefinition;
         private string mColumnName;
         public string ColumnName { get => mColumnName; }
 
@@ -138,6 +143,7 @@ namespace prestoMySQL.Query.SQL {
 
             //return String.Concat( "( " , columnDefinition.ToString() , " " , BinaryOperator.ToString() , " " , this.QueryParams[0].AsQueryParam( ParamPlaceHolder ) , " )" );
             return $"( {ColumnName} {BinaryOperator} {this.QueryParams[0].AsQueryParam( ParamPlaceHolder )} )";
+            //return "";
         }
 
 
@@ -180,8 +186,6 @@ namespace prestoMySQL.Query.SQL {
 
 
     }
-
-
 
 
 

@@ -169,11 +169,72 @@ namespace prestoMySQL.Adapter {
             //}
 
             List<dynamic> _definitionColumns = SQLTableEntityHelper.getDefinitionColumn( Entity , true );
+            Dictionary<string , Dictionary<Type , List<object>>> primaryKeysValues = new Dictionary<string , Dictionary<Type , List<object>>>();
+            primaryKeysValues.Add( Entity.ActualName , new Dictionary<Type , List<object>>() );
 
-            //var s = rs.ResultSetSchemaTable();
-            //int? index = null;
+            var s = rs.ResultSetSchemaTable();
+            int? index = null;
 
             foreach ( ConstructibleColumn column in _definitionColumns ) {
+
+                if ( s.ContainsKey( column.Table.ActualName ) ) {
+                    if ( s[column.Table.ActualName].ContainsKey( column.ActualName ) ) {
+                        index = s[column.Table.ActualName][column.ActualName];
+                    }
+                }
+
+                if ( index == null ) throw new System.Exception( "Invalid index column. (" + column.ActualName + ")" );
+
+
+                var v = ReflectionTypeHelper.InvokeGenericFunction( column.GenericType ,
+                                                           typeof( MySQResultSet ) ,
+                                                           rs ,
+                                                           nameof( MySQResultSet.getValueAs ) ,
+                                                           new Type[] { typeof( int ) } ,
+                                                           new object[] { ( int ) index } );
+
+
+
+                if ( column.isPrimaryKey ) {
+                    if ( primaryKeysValues.ContainsKey( column.Table.ActualName ) ) {
+
+                        if ( primaryKeysValues[column.Table.ActualName].ContainsKey( ( column as dynamic ).TypeTable ) ) {
+                            ( primaryKeysValues[column.Table.ActualName][( column as dynamic ).TypeTable] as List<object> ).Add( v );
+                        } else {
+                            primaryKeysValues[column.Table.ActualName][( column as dynamic ).TypeTable] = new List<object>() { v };
+
+                        }
+                    } else {
+                        throw new System.Exception( $"Can't find table name {column.Table.ActualName} in primarykeysvalues" );
+                    }
+
+                } else {
+
+                    if ( v.IsDBNull() ) {
+                        ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                    } else if ( v is null ) {
+                        ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                    } else {
+                        column.AssignValue( v );
+                    }
+
+                }
+
+
+                //foreach ( var (tablename, tablenames) in primaryKeysValues ) {
+                //    foreach ( var (typetable, values) in tablenames ) {
+                //        if ( (Entity.ActualName == tablename) && ( Entity.GetType().Equals( typetable ) ) ) {
+                //            Entity?.PrimaryKey.setKeyValues( values.ToArray() );
+                //        }
+                //        //tables.FirstOrDefault( x => ( ( x.ActualName == tablename ) && ( x.GetType().Equals( typetable ) ) ) )?.PrimaryKey.setKeyValues( values.ToArray() );
+                //    }
+                //}
+
+
+                if ( primaryKeysValues.ContainsKey( Entity.ActualName ) )
+                    Entity.PrimaryKey.setKeyValues( primaryKeysValues[Entity.ActualName].Values.FirstOrDefault().ToArray() );
+
+
 
                 //index = null;
 
@@ -185,37 +246,39 @@ namespace prestoMySQL.Adapter {
 
                 //if ( index == null ) throw new System.Exception( "Invalid index column." );
 
-                //need explicit conversion to work
-                if ( rs[( string ) column.ColumnName].IsDBNull() ) {
+                //string columnName = ( column.Table.TableAlias is null ) ? ( string ) column.ColumnName : "{" + column.Table.TableAlias + "}." + column.ColumnName;
 
-                    var o = typeof( SQLTypeWrapper<> ).MakeGenericType( column.GenericType );
-                    var p = o.GetField( nameof( SQLTypeWrapper<object>.NULL ) , BindingFlags.Static | BindingFlags.Public );
-                    //dynamic xx = p.GetValue( null );
-                    //var xxx = Convert.ChangeType( xx , o );
+                ////need explicit conversion to work
+                //if ( rs[columnName].IsDBNull() ) {
 
-                    ( column as dynamic ).TypeWrapperValue = ( dynamic ) p.GetValue( null ); ;// ( SQLTypeWrapper <uint?> )p.GetValue( null );
+                //    var o = typeof( SQLTypeWrapper<> ).MakeGenericType( column.GenericType );
+                //    var p = o.GetField( nameof( SQLTypeWrapper<object>.NULL ) , BindingFlags.Static | BindingFlags.Public );
+                //    //dynamic xx = p.GetValue( null );
+                //    //var xxx = Convert.ChangeType( xx , o );
 
-                } else {
+                //    ( column as dynamic ).TypeWrapperValue = ( dynamic ) p.GetValue( null ); ;// ( SQLTypeWrapper <uint?> )p.GetValue( null );
 
-                    //var v = ReflectionTypeHelper.InvokeGenericFunction( column.GenericType ,
-                    //                                       typeof( MySQResultSet ) ,
-                    //                                       rs ,
-                    //                                       nameof( MySQResultSet.getValueAs ) ,
-                    //                                       new Type[] { typeof( int ) } ,
-                    //                                       new object[] { ( int ) index } );
+                //} else {
 
-                    //if ( v.IsDBNull() ) {
-                    //    ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
-                    //} else {
-                    //    column.AssignValue( v );
-                    //}
+                //    //var v = ReflectionTypeHelper.InvokeGenericFunction( column.GenericType ,
+                //    //                                       typeof( MySQResultSet ) ,
+                //    //                                       rs ,
+                //    //                                       nameof( MySQResultSet.getValueAs ) ,
+                //    //                                       new Type[] { typeof( int ) } ,
+                //    //                                       new object[] { ( int ) index } );
 
-                    MethodInfo method = typeof( MySQResultSet ).GetMethod( nameof( MySQResultSet.getValueAs ) , new Type[] { typeof( string ) } );
-                    MethodInfo generic = method.MakeGenericMethod( column.GenericType );
-                    var o = generic.Invoke( rs , new object[] { ( string ) column.ColumnName } );
-                    column.AssignValue( o );
+                //    //if ( v.IsDBNull() ) {
+                //    //    ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                //    //} else {
+                //    //    column.AssignValue( v );
+                //    //}
 
-                }
+                //    MethodInfo method = typeof( MySQResultSet ).GetMethod( nameof( MySQResultSet.getValueAs ) , new Type[] { typeof( string ) } );
+                //    MethodInfo generic = method.MakeGenericMethod( column.GenericType );
+                //    var o = generic.Invoke( rs , new object[] { ( string ) column.ColumnName } );
+                //    column.AssignValue( o );
+
+                //}
 
             }
 
@@ -697,10 +760,12 @@ namespace prestoMySQL.Adapter {
 
             foreach ( string c in x.ColumnsName ) {
                 PropertyInfo p = x[c];
-                var col = p.GetValue( this.Entity );
+                dynamic col = p.GetValue( this.Entity );
                 //DefinableConstraint o2 = FactoryEntityConstraint.MakeConstraintEqual( col , "@" );
+                //FactoryEntityConstraint.MakeEqual( a.Entity<QualificheEntity>().Delete , "QDelete" , false , "@" ) ,
 
-                DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( p , new SQLQueryParams( new[] { ( MySQLQueryParam ) ( col as dynamic ) } ) , "@" );
+                //DefinableConstraint o2 = FactoryEntityConstraint.MakeConstraintEqual( p, new SQLQueryParams( new[] { ( MySQLQueryParam ) ( col as dynamic ) } ) , "@" );
+                DefinableConstraint o = FactoryEntityConstraint.MakeEqual( col , col.GetValue() , "@" );
 
                 //var col = p.GetValue( this.Entity );
                 //DefinableConstraint o = FactoryEntityConstraint.MakeConstraintEqual( col , "@" );
@@ -716,7 +781,7 @@ namespace prestoMySQL.Adapter {
             } else {
                 constraintExpression = new EntityConditionalExpression( LogicOperator.AND , new EntityConstraintExpression( constraints.ToArray() ) , Constraint );
             }
-            
+
             var s = SQLBuilder.sqlSelect<T>( this.Entity , ref outparam , Constraint: constraintExpression );
 
             var rs = mDatabase.ReadQuery( s , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );

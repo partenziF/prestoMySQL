@@ -60,7 +60,7 @@ namespace prestoMySQL.Query.SQL {
             return o;
 
         }
-
+        /*
         
         public static DefinableConstraint MakeConstraintEqual( PropertyInfo aColumnDefinition , SQLQueryParams mysqlParams , string aParamPlaceHolder = "" ) {
 
@@ -85,7 +85,7 @@ namespace prestoMySQL.Query.SQL {
 
             return o;
         }
-
+*/
         public static DefinableConstraint MakeConstraintEqual( dynamic aColumnDefinition , string aParamPlaceHolder = "" ) {
 
             Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];
@@ -310,11 +310,11 @@ namespace prestoMySQL.Query.SQL {
     }
 
 
-    public class EntityConstraint : GenericEntityConstraint {
-        public EntityConstraint( PropertyInfo p , EvaluableBinaryOperator mBinaryOperator , IQueryParams aQueryPararms , string paramPlaceHolder = "" ) : base( p , mBinaryOperator , aQueryPararms , paramPlaceHolder ) {
+    //public class EntityConstraint : GenericEntityConstraint {
+    //    public EntityConstraint( PropertyInfo p , EvaluableBinaryOperator mBinaryOperator , IQueryParams aQueryPararms , string paramPlaceHolder = "" ) : base( p , mBinaryOperator , aQueryPararms , paramPlaceHolder ) {
 
-        }
-    }
+    //    }
+    //}
 
     public class EntityConstraint<T> : GenericEntityConstraint<T> where T : notnull {
 

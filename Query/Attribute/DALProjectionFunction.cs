@@ -26,8 +26,11 @@ namespace prestoMySQL.Query.Attribute {
         public string Function { get; set; }
         public MySQLDataType DataType { get; set; }
         public OrderType Sort { get; set; }
+        
         public int OrderBy { get; set; }
         public int GroupBy { get; set; }
+
+        public string ID { get; set; }
 
         public DALProjectionFunction( String function , MySQLDataType Type ) {
             this.Function = function;

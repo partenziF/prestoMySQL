@@ -52,7 +52,7 @@ namespace prestoMySQL.Column {
             //    mGenericType = typeof( T ).GetGenericArguments()[0].GetGenericArguments()[0];
             //} else {
 
-                mGenericType = typeof( T ).GetGenericArguments()[0];
+            mGenericType = typeof( T ).GetGenericArguments()[0];
             //}
 
             this.mPropertyInfo = aPropertyInfo;
@@ -139,9 +139,9 @@ namespace prestoMySQL.Column {
         public T GetValue<T>() {
             if ( mTypeWrapperValue is null )
                 throw new NullReferenceException( nameof( mTypeWrapperValue ) + " is null" );
-            if ( mTypeWrapperValue.IsNull )
+            if ( mTypeWrapperValue.IsNull ) {
                 return default( T );
-            else
+            } else
                 return ( ( T ) ( ( dynamic ) mTypeWrapperValue ).Value );
         }
 
@@ -190,7 +190,7 @@ namespace prestoMySQL.Column {
 
             if ( !( mObserverColumns.Contains( observer ) ) ) {
                 //if ( !IsCircularReference( ( EntityForeignKey ) observer ) ) {
-                    mObserverColumns.Add( observer );
+                mObserverColumns.Add( observer );
                 //}
             }
         }

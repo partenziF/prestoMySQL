@@ -1,4 +1,5 @@
-﻿using prestoMySQL.Query.Interface;
+﻿using prestoMySQL.Extension;
+using prestoMySQL.Query.Interface;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -87,6 +88,10 @@ namespace prestoMySQL.Query {
 
 
         //}
+
+        public override string ToString() {
+            return String.Join( "," , values.Select( x =>  $"{x?.Name} = {x.Value?.ToString().SurroundWith("'")}" ).ToArray() );
+        }
 
     }
 

@@ -26,6 +26,7 @@ namespace prestoMySQL.Query.Attribute {
     public class DALGroupBy : System.Attribute {
         public string Property { get; set; }
         public Type Table { get; set; }
+        public string ID { get; set; }
     }
 
     public class DALOrderBy : System.Attribute {
@@ -33,7 +34,7 @@ namespace prestoMySQL.Query.Attribute {
         public Type Table { get; set; }
         public OrderType Order { get; set; }
 
-
+        public string ID { get; set; }
     }
 
     [AttributeUsage( AttributeTargets.Class , AllowMultiple = false , Inherited = false )]

@@ -63,7 +63,7 @@ namespace prestoMySQL.Query {
         public static explicit operator MySqlParameter( QueryParam v ) {
             return new MySqlParameter( v.Name , v.Value );
         }
-
+       
     }
 
 }

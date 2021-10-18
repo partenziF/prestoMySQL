@@ -31,6 +31,27 @@ namespace prestoMySQL.Query.SQL {
 
         }
 
+        //public static DefinableConstraint MakeBetween( GenericQueryColumn aColumnDefinition , object valueMin , object valueMax , string aParamPlaceHolder = "" ) {
+        //    Type generic = aColumnDefinition.GenericType;
+        //    //SQLProjectionColumn<SQLTypeWrapper<T>> aColumnDefinition , SQLQueryParams columnValues , string aParamPlaceholder = "" 
+
+        //    Type[] types = new Type[3];
+        //    types[0] = ( aColumnDefinition.GetType() );
+        //    types[1] = typeof( IQueryParams );
+        //    types[2] = typeof( string );
+
+        //    Type myParameterizedSomeClass = typeof( BetweenWhereCondition<> ).MakeGenericType( generic );
+        //    ConstructorInfo ctor = myParameterizedSomeClass.GetConstructor( types );
+        //    if ( ctor is null ) throw new NullReferenceException( "Costructor not found for type " + aColumnDefinition.GetType() );
+        //    var pMin = new MySQLQueryParam( valueMin , aColumnDefinition.ActualName );
+        //    var pMax = new MySQLQueryParam( valueMax , aColumnDefinition.ActualName );
+
+
+        //    DefinableConstraint o = ( DefinableConstraint ) ( ctor?.Invoke( new object[] { aColumnDefinition , new SQLQueryParams( new[] { pMin,pMax } ) , aParamPlaceHolder } ) ) ?? throw new ArgumentNullException();
+
+        //    return o;
+
+        //}
         public static DefinableConstraint MakeEqual( dynamic aColumnDefinition , object value , string aParamPlaceHolder = "" ) {
 
             //Type generic = aColumnDefinition.GetType().GetGenericArguments()[0].GetGenericArguments()[0];

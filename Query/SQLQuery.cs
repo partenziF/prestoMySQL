@@ -547,7 +547,7 @@ namespace prestoMySQL.Query {
         }
 
 
-        internal void JOIN( JoinTable joinTable , SQLQueryConditionExpression constraint = null ) {
+        public void JOIN( JoinTable joinTable , SQLQueryConditionExpression constraint = null ) {
 
             if ( constraint != null )
                 mJoinTable.TryAdd( joinTable.Table.ActualName , new SQLQueryJoinTable( this , joinTable , constraint ) );

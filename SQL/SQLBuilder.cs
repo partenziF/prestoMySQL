@@ -643,7 +643,7 @@ namespace prestoMySQL.SQL {
 
         }
 
-        private static Dictionary<AbstractEntity , JoinTable> BuildJoinTable( ref Stack<AbstractEntity> visited , List<ForeignkeyConstraint> fkConstraint , List<EntityForeignKey> listFK ) {
+        public static Dictionary<AbstractEntity , JoinTable> BuildJoinTable( ref Stack<AbstractEntity> visited , List<ForeignkeyConstraint> fkConstraint , List<EntityForeignKey> listFK ) {
 
             Dictionary<AbstractEntity , JoinTable> joinTable = new Dictionary<AbstractEntity , JoinTable>();
 

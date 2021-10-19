@@ -557,6 +557,20 @@ namespace prestoMySQL.Utils {
 
         }
 
+        public  void AddEntityGraph( AbstractEntity a ) {
+            Graph.Add( ( AbstractEntity ) a );
+            Cache.AddOrCreate( ( AbstractEntity ) a );
+
+            ( ( AbstractEntity ) a ).GetAllForeignkey().ForEach( x => {
+                
+                foreach ( var info in x.foreignKeyInfo ) {
+                    Graph.Connect( info.Table , x );
+                }
+            } );
+
+        }
+
+
         public void BuildEntityGraph( params AbstractEntity[] tableEntity ) {
 
             this.Graph.Clear();

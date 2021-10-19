@@ -118,7 +118,7 @@ namespace prestoMySQL.Query {
 
         internal override List<AbstractEntity> GetListOfEntities() {
             var result = new List<AbstractEntity>();
-            result.AddRange( mEntitiesAdapter.Graph.GetTopologicalOrder() );
+            result.AddRange( mEntitiesAdapter.TableGraph.GetTopologicalOrder() );
             return result;
         }
 
@@ -151,30 +151,12 @@ namespace prestoMySQL.Query {
             }
             return result;
 
-
-
-            //var rrr = SQLTableEntityHelper.getDefinitionColumn( mEntitiesAdapter , true ).ToList();
-            //var xresult = SQLTableEntityHelper.getProjectionColumnName<T>( t );
-
-
-            //var result = new List<dynamic>();
-
-            //var ProjectionColumns = SQLTableEntityHelper.getProjectionColumn<T>( myQuery );
-            //result.AddRange( ProjectionColumns );
-
-            //foreach ( var e in Graph.GetTopologicalOrder() ) {
-            //    result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() );
-            //    //primaryKeysValues.Add( e.ActualName , new Dictionary<Type , List<object>>() );
-            //}
-
-            //return result;
         }
 
 
         protected override List<TableReference> GetListOfTableReference() {
 
-            /*Graph.GetTopologicalOrder().Select( x => x.tableReference )*/
-            
+            /*Graph.GetTopologicalOrder().Select( x => x.tableReference )*/            
             //return new List<TableReference> { SQLTableEntityHelper.getTableReference<U>() };
             //mHashOfSQLQueryTableReference.Add( e.TableName , e );
             //return Graph.GetTopologicalOrder().Select( x => x.tableReference ).ToList();

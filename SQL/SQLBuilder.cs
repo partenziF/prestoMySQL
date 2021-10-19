@@ -308,7 +308,7 @@ namespace prestoMySQL.SQL {
 
         public static string sqlSelect<T, X>( Func<T , X> delegateMethod , EntitiesAdapter Entities , ref SQLQueryParams outParams , string ParamPlaceholder = "@" , EntityConditionalExpression Constraint = null ) where X : TableIndex
                                                                                                                                                                                                                    where T : AbstractEntity {
-            var tables = Entities.Graph.GetTopologicalOrder();
+            var tables = Entities.TableGraph.GetTopologicalOrder();
 
             AbstractEntity UniqueKeyEntity = tables.FirstOrDefault( x => x.GetType() == typeof( T ) );
 
@@ -758,7 +758,7 @@ namespace prestoMySQL.SQL {
 
         public static string sqlSelect<T>( EntitiesAdapter Entities , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null , params AbstractEntity[] pkTables ) {
 
-            var tables = Entities.Graph.GetTopologicalOrder();
+            var tables = Entities.TableGraph.GetTopologicalOrder();
 
             var startEntity = tables.First( e => e.GetType() == typeof( T ) );
             if ( startEntity is null ) throw new ArgumentException( "Invalid entity " + typeof( T ).Name );
@@ -869,7 +869,7 @@ namespace prestoMySQL.SQL {
         }
         public static string sqlSelect( EntitiesAdapter Entities , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) {
 
-            var tables = Entities.Graph.GetTopologicalOrder();
+            var tables = Entities.TableGraph.GetTopologicalOrder();
 
             var startEntity = tables.First();
             if ( startEntity is null ) throw new ArgumentException( "Invalid entity " + startEntity.GetType().Name );

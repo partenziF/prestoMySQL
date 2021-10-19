@@ -42,7 +42,8 @@ namespace prestoMySQL.Adapter {
         protected List<string> mParamNames;
 
 
-        public TableGraph Graph { get => this.mGraph; set => this.mGraph = value; }
+        public  TableGraph TableGraph { get => this.mGraph; set => this.mGraph = value; }
+        //internal Dictionary<Type , List<TableEntity>> TableEntityCache { get => this.mTableEntityCache; set => this.mTableEntityCache = value; }
 
         //private Dictionary<Type , Dictionary<string,TableEntity>> mEntitiesCache;
 
@@ -50,7 +51,7 @@ namespace prestoMySQL.Adapter {
         public EntitiesAdapter( MySQLDatabase aMySQLDatabase , ILogger logger = null ) {
             this.mDatabase = aMySQLDatabase;
             this.mLogger = logger;
-            Graph = new TableGraph();
+            TableGraph = new TableGraph();
 
             mParamNames = new List<string>();
             mTableEntityCache = new Dictionary<Type , List<TableEntity>>();
@@ -58,6 +59,24 @@ namespace prestoMySQL.Adapter {
             //mEntitiesCache = new Dictionary<Type , Dictionary<string,TableEntity>>();
             //_Graph.mCache = new Dictionary<Type , List<TableEntity>>();
         }
+
+        public void Add<A1 , E1>( TableEntity adapter = null) where A1 : EntityAdapter<E1> where E1 : AbstractEntity{
+
+            A1 a1 = null;
+
+            if ( ( typeof( A1 ) == adapter?.GetType() ) && ( a1 is null ) ) {
+                a1 = ( A1 ) adapter;
+            }
+
+            a1 ??= NewInstanceAdapter<A1>();
+            if ( a1.Entity is null ) a1.Create();
+
+            mTableEntityCache.AddOrCreate( a1 );
+
+            TableGraph.AddEntityGraph( a1 );
+
+        }
+
 
 
         //public ICollection<AbstractEntity> Keys => ( ( IDictionary<AbstractEntity , List<EntityForeignKey>> ) this.mGraph ).Keys;
@@ -68,7 +87,7 @@ namespace prestoMySQL.Adapter {
         public void Create<A1, E1, A2, E2>( params TableEntity[] adapters ) where A1 : EntityAdapter<E1> where E1 : AbstractEntity
                                              where A2 : EntityAdapter<E2> where E2 : AbstractEntity {
 
-            Graph.Cache.Clear();
+            TableGraph.Cache.Clear();
             mTableEntityCache.Clear();
 
             A1 a1 = null;
@@ -85,16 +104,16 @@ namespace prestoMySQL.Adapter {
             }
 
 
-            a1 = NewInstanceAdapter<A1>();
-            a1.Create();
+            a1 ??= NewInstanceAdapter<A1>();
+            if ( a1.Entity is null ) a1.Create();
 
-            a2 = NewInstanceAdapter<A2>();
-            a2.Create();
+            a2 ??= NewInstanceAdapter<A2>();
+            if ( a2.Entity is null ) a2.Create();
 
             mTableEntityCache.AddOrCreate( a1 );
             mTableEntityCache.AddOrCreate( a2 );
 
-            Graph.BuildEntityGraph( a1 , a2 );
+            TableGraph.BuildEntityGraph( a1 , a2 );
 
         }
 
@@ -102,7 +121,7 @@ namespace prestoMySQL.Adapter {
                                                    where A2 : EntityAdapter<E2> where E2 : AbstractEntity
                                                    where A3 : EntityAdapter<E3> where E3 : AbstractEntity {
 
-            Graph.Cache.Clear();
+            TableGraph.Cache.Clear();
             mTableEntityCache.Clear();
 
             A1 a1 = null;
@@ -134,7 +153,7 @@ namespace prestoMySQL.Adapter {
             mTableEntityCache.AddOrCreate( a2 );
             mTableEntityCache.AddOrCreate( a3 );
 
-            Graph.BuildEntityGraph( a1 , a2 , a3 );
+            TableGraph.BuildEntityGraph( a1 , a2 , a3 );
 
         }
 
@@ -144,7 +163,7 @@ namespace prestoMySQL.Adapter {
                                                     where A4 : EntityAdapter<E4> where E4 : AbstractEntity {
 
 
-            Graph.Cache.Clear();
+            TableGraph.Cache.Clear();
             mTableEntityCache.Clear();
 
             A1 a1 = null;
@@ -184,7 +203,7 @@ namespace prestoMySQL.Adapter {
             mTableEntityCache.AddOrCreate( a3 );
             mTableEntityCache.AddOrCreate( a4 );
 
-            Graph.BuildEntityGraph( a1 , a2 , a3 , a4 );
+            TableGraph.BuildEntityGraph( a1 , a2 , a3 , a4 );
 
         }
 
@@ -194,7 +213,7 @@ namespace prestoMySQL.Adapter {
                                                                    where A4 : EntityAdapter<E4> where E4 : AbstractEntity
                                                                    where A5 : EntityAdapter<E5> where E5 : AbstractEntity {
 
-            Graph.Cache.Clear();
+            TableGraph.Cache.Clear();
             mTableEntityCache.Clear();
 
             A1 a1 = null;
@@ -241,7 +260,7 @@ namespace prestoMySQL.Adapter {
             mTableEntityCache.AddOrCreate( a4 );
             mTableEntityCache.AddOrCreate( a5 );
 
-            Graph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 );
+            TableGraph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 );
 
         }
 
@@ -253,7 +272,7 @@ namespace prestoMySQL.Adapter {
                                                                    where A5 : EntityAdapter<E5> where E5 : AbstractEntity
                                                                    where A6 : EntityAdapter<E6> where E6 : AbstractEntity {
 
-            Graph.Cache.Clear();
+            TableGraph.Cache.Clear();
             mTableEntityCache.Clear();
 
             A1 a1 = null;
@@ -307,7 +326,7 @@ namespace prestoMySQL.Adapter {
             mTableEntityCache.AddOrCreate( a5 );
             mTableEntityCache.AddOrCreate( a6 );
 
-            Graph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 );
+            TableGraph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 );
 
         }
 
@@ -320,7 +339,7 @@ namespace prestoMySQL.Adapter {
                                                                                       where A6 : EntityAdapter<E6> where E6 : AbstractEntity
                                                                                       where A7 : EntityAdapter<E7> where E7 : AbstractEntity {
 
-            Graph.Cache.Clear();
+            TableGraph.Cache.Clear();
             mTableEntityCache.Clear();
 
             A1 a1 = null;
@@ -381,7 +400,7 @@ namespace prestoMySQL.Adapter {
             mTableEntityCache.AddOrCreate( a6 );
             mTableEntityCache.AddOrCreate( a7 );
 
-            Graph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 );
+            TableGraph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 );
 
         }
 
@@ -396,7 +415,7 @@ namespace prestoMySQL.Adapter {
                                                                         where A7 : EntityAdapter<E7> where E7 : AbstractEntity
                                                                         where A8 : EntityAdapter<E8> where E8 : AbstractEntity {
 
-            Graph.Cache.Clear();
+            TableGraph.Cache.Clear();
             mTableEntityCache.Clear();
 
             A1 a1 = null;
@@ -464,7 +483,7 @@ namespace prestoMySQL.Adapter {
             mTableEntityCache.AddOrCreate( a7 );
             mTableEntityCache.AddOrCreate( a8 );
 
-            Graph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 );
+            TableGraph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 );
 
 
         }
@@ -481,7 +500,7 @@ namespace prestoMySQL.Adapter {
                     where A8 : EntityAdapter<E8> where E8 : AbstractEntity
                     where A9 : EntityAdapter<E9> where E9 : AbstractEntity {
 
-            Graph.Cache.Clear();
+            TableGraph.Cache.Clear();
             mTableEntityCache.Clear();
 
             A1 a1 = null;
@@ -556,7 +575,7 @@ namespace prestoMySQL.Adapter {
             mTableEntityCache.AddOrCreate( a8 );
             mTableEntityCache.AddOrCreate( a9 );
 
-            Graph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 , a9 );
+            TableGraph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 , a9 );
 
         }
 
@@ -573,7 +592,7 @@ namespace prestoMySQL.Adapter {
                     where A9 : EntityAdapter<E9> where E9 : AbstractEntity
                     where A10 : EntityAdapter<E10> where E10 : AbstractEntity {
 
-            Graph.Cache.Clear();
+            TableGraph.Cache.Clear();
             mTableEntityCache.Clear();
 
             A1 a1 = null;
@@ -655,7 +674,7 @@ namespace prestoMySQL.Adapter {
             mTableEntityCache.AddOrCreate( a9 );
             mTableEntityCache.AddOrCreate( a10 );
 
-            Graph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 , a9 , a10 );
+            TableGraph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 , a9 , a10 );
 
         }
 
@@ -672,7 +691,7 @@ namespace prestoMySQL.Adapter {
                     where A10 : EntityAdapter<E10> where E10 : AbstractEntity
                     where A11 : EntityAdapter<E11> where E11 : AbstractEntity {
 
-            Graph.Cache.Clear();
+            TableGraph.Cache.Clear();
             mTableEntityCache.Clear();
 
             A1 a1 = null;
@@ -761,7 +780,7 @@ namespace prestoMySQL.Adapter {
             mTableEntityCache.AddOrCreate( a10 );
             mTableEntityCache.AddOrCreate( a11 );
 
-            Graph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 , a9 , a10 , a11 );
+            TableGraph.BuildEntityGraph( a1 , a2 , a3 , a4 , a5 , a6 , a7 , a8 , a9 , a10 , a11 );
 
         }
 
@@ -771,7 +790,7 @@ namespace prestoMySQL.Adapter {
 
         public List<EntityForeignKey> GetForeignKeys( AbstractEntity startNode = null ) {
 
-            return Graph.GetForeignKeys( startNode );
+            return TableGraph.GetForeignKeys( startNode );
 
             //if ( startNode is not null ) throw new NotImplementedException( "GetForeignKeys with start node not implemented" );
 
@@ -852,13 +871,13 @@ namespace prestoMySQL.Adapter {
 
         public T Entity<T>() where T : AbstractEntity {
 
-            return ( T ) Graph.Keys.FirstOrDefault( x => x.GetType().IsAssignableFrom( typeof( T ) ) );
+            return ( T ) TableGraph.Keys.FirstOrDefault( x => x.GetType().IsAssignableFrom( typeof( T ) ) );
 
         }
 
         public AbstractEntity Entity( Type t ) {
 
-            return Graph.Keys.FirstOrDefault( x => x.GetType().IsAssignableFrom( t ) );
+            return TableGraph.Keys.FirstOrDefault( x => x.GetType().IsAssignableFrom( t ) );
 
         }
         //EntityAdapter<ProvinceEntity>
@@ -870,7 +889,7 @@ namespace prestoMySQL.Adapter {
                 if ( ( AbstractEntity ) ( adapter as dynamic ).Entity is null ) {
                     throw new ArgumentNullException( "Entity in abstract is null. Use Create method." );
                 }
-                Graph.ReplaceEntityGraph( ( AbstractEntity ) ( x as dynamic ).Entity , ( AbstractEntity ) ( adapter as dynamic ).Entity );
+                TableGraph.ReplaceEntityGraph( ( AbstractEntity ) ( x as dynamic ).Entity , ( AbstractEntity ) ( adapter as dynamic ).Entity );
 
                 mTableEntityCache[typeof( T )].Remove( x );
                 mTableEntityCache.AddOrCreate( adapter );
@@ -884,7 +903,7 @@ namespace prestoMySQL.Adapter {
 
                 mTableEntityCache.AddOrCreate( adapter );
                 AbstractEntity[] entities = mTableEntityCache.Values.SelectMany( l => l.Select( e => ( AbstractEntity ) ( e as dynamic ).Entity ) ).ToArray();
-                Graph.BuildEntityGraph( entities );
+                TableGraph.BuildEntityGraph( entities );
 
             }
 
@@ -1154,7 +1173,7 @@ namespace prestoMySQL.Adapter {
 
         private bool haveAlmostIdentifyngRelationship() {
             var AlmostIsIdentifying = false;
-            foreach ( var (_, list) in Graph ) {
+            foreach ( var (_, list) in TableGraph ) {
                 foreach ( var fk in list ) {
                     AlmostIsIdentifying = AlmostIsIdentifying || fk.IsIdentifyingRelationship;
                 }
@@ -1186,7 +1205,7 @@ namespace prestoMySQL.Adapter {
             List<dynamic> definitionColumns = new List<dynamic>();
             Dictionary<string , Dictionary<Type , List<object>>> primaryKeysValues = new Dictionary<string , Dictionary<Type , List<object>>>();
 
-            var tables = copyEntity ?? Graph.GetTopologicalOrder();
+            var tables = copyEntity ?? TableGraph.GetTopologicalOrder();
             foreach ( var e in tables ) {
                 definitionColumns.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() );
                 primaryKeysValues.Add( e.ActualName , new Dictionary<Type , List<object>>() );
@@ -1399,7 +1418,7 @@ namespace prestoMySQL.Adapter {
 
             try {
 
-                var tables = Graph.GetTopologicalOrder();
+                var tables = TableGraph.GetTopologicalOrder();
                 bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
 
                 T fromTable = ( T ) tables.FirstOrDefault( e => e.GetType() == typeof( T ) );
@@ -1439,7 +1458,7 @@ namespace prestoMySQL.Adapter {
 
             try {
 
-                var tables = Graph.GetTopologicalOrder();
+                var tables = TableGraph.GetTopologicalOrder();
                 bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
 
                 T fromTable = ( T ) tables.FirstOrDefault( e => e.GetType() == typeof( T ) );
@@ -1478,7 +1497,7 @@ namespace prestoMySQL.Adapter {
 
             try {
 
-                var tables = Graph.GetTopologicalOrder();
+                var tables = TableGraph.GetTopologicalOrder();
                 bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
 
                 T fromTable = ( T ) tables.FirstOrDefault( e => e.GetType() == typeof( T ) );
@@ -1518,7 +1537,7 @@ namespace prestoMySQL.Adapter {
 
             try {
 
-                var tables = Graph.GetTopologicalOrder();
+                var tables = TableGraph.GetTopologicalOrder();
                 bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
 
                 T fromTable = ( T ) tables.FirstOrDefault( e => e.GetType() == typeof( T ) );
@@ -1567,7 +1586,7 @@ namespace prestoMySQL.Adapter {
 
             try {
 
-                var tables = Graph.GetTopologicalOrder();
+                var tables = TableGraph.GetTopologicalOrder();
                 bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
 
                 T fromTable = ( T ) tables.FirstOrDefault( e => e.GetType() == typeof( T ) );
@@ -1641,7 +1660,7 @@ namespace prestoMySQL.Adapter {
 
 
 
-                var tables = Graph.GetTopologicalOrder();
+                var tables = TableGraph.GetTopologicalOrder();
 
                 tables.First().PrimaryKey.setKeyValues( KeyValues );
                 bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
@@ -1685,7 +1704,7 @@ namespace prestoMySQL.Adapter {
         public OperationResult Read<T, X>( Func<T , X> delegateMethod , EntityConditionalExpression Constraint = null ) where X : TableIndex where T : AbstractEntity {
 
             try {
-                var tables = Graph.GetTopologicalOrder();
+                var tables = TableGraph.GetTopologicalOrder();
 
                 bool AlmostIsIdentifying = haveAlmostIdentifyngRelationship();
 

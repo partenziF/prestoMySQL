@@ -38,13 +38,13 @@ namespace prestoMySQL.Adapter {
             //SQLTableEntityHelper.getQueryJoinEntity( typeof( T ) )?.ForEach( e => {
             //    entities.Add( ( AbstractEntity ) Activator.CreateInstance( e ) );
             //} );
-            
+
 
             mSqlQuery.BuildEntityGraph();
 
         }
 
-        public  override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
+        public override CursorWrapper<MySQResultSet , MySqlDataReader> Cursor { get => mCursor; set => mCursor = value; }
 
         public T mSqlQuery;
         public T sqlQuery { get => mSqlQuery; }
@@ -55,7 +55,7 @@ namespace prestoMySQL.Adapter {
                 SQLQueryParams outparam = null;
                 sqlQuery.Prepare();
                 sqlQuery.SelectExpression.Clear();
-                
+
                 var RowCount = sqlQuery.RowCount;
                 var Offset = sqlQuery.Offset;
                 sqlQuery.LIMIT( null , null );
@@ -97,12 +97,12 @@ namespace prestoMySQL.Adapter {
                 try {
 
                     if ( mAdapter.Cursor.MoveNext() ) {
-                        
+
                         var rs = mAdapter.Cursor.Current;
                         Dictionary<string , Dictionary<string , int>> s = rs.ResultSetSchemaTable();
                         this.mAdapter.BindData( s , rs );
                         Type t = typeof( T );
-                       
+
                         var ctor = typeof( X ).GetConstructor( new Type[] { t } );
                         mCurrent = ( X ) ctor?.Invoke( new object[] { this.mAdapter.sqlQuery } );
                         return true;
@@ -161,6 +161,7 @@ namespace prestoMySQL.Adapter {
 
 
             int? index = null;
+            if ( ProjectionColumns is null ) throw new System.Exception( "Undefined ProjectionColumns" );
 
             //foreach ( GenericQueryColumn column in ProjectionColumns ) {
             foreach ( dynamic column in ProjectionColumns ) {
@@ -220,7 +221,7 @@ namespace prestoMySQL.Adapter {
             //sqlQuery.LIMIT( Offset , RowCount );
 
 
-            SQLQueryParams outparam = null ;
+            SQLQueryParams outparam = null;
 
             sqlQuery.Build();
 
@@ -242,7 +243,7 @@ namespace prestoMySQL.Adapter {
 
             return ( IEnumerator<X> ) this.GetEnumerator();
         }
-    }   
+    }
 
 
 

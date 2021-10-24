@@ -42,7 +42,7 @@ namespace prestoMySQL.Adapter {
         protected List<string> mParamNames;
 
 
-        public  TableGraph TableGraph { get => this.mGraph; set => this.mGraph = value; }
+        public TableGraph TableGraph { get => this.mGraph; set => this.mGraph = value; }
         //internal Dictionary<Type , List<TableEntity>> TableEntityCache { get => this.mTableEntityCache; set => this.mTableEntityCache = value; }
 
         //private Dictionary<Type , Dictionary<string,TableEntity>> mEntitiesCache;
@@ -60,7 +60,7 @@ namespace prestoMySQL.Adapter {
             //_Graph.mCache = new Dictionary<Type , List<TableEntity>>();
         }
 
-        public void Add<A1 , E1>( TableEntity adapter = null) where A1 : EntityAdapter<E1> where E1 : AbstractEntity{
+        public void Add<A1, E1>( TableEntity adapter = null ) where A1 : EntityAdapter<E1> where E1 : AbstractEntity {
 
             A1 a1 = null;
 
@@ -1323,7 +1323,7 @@ namespace prestoMySQL.Adapter {
                                 var newEntity = newEntities.Where( x => x.GetType() == tableEntity.GetType().BaseType.GetGenericArguments().FirstOrDefault() ).FirstOrDefault();
 
                                 if ( newEntity.State == EntityState.Changed ) {
-                                    tableEntity.New( newEntity );
+                                    tableEntity.New( newEntity , false );
                                     //Il bind viene fatto all'interno della funzione New
                                     //var generic = ReflectionTypeHelper.GetClassGenericType( tableEntity );
                                     //var type = typeof( BindDataFromEventArgs<> ).MakeGenericType( generic );

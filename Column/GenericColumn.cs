@@ -30,10 +30,7 @@ namespace prestoMySQL.Column {
         // Notify all observers about an event.
         void NotifyObserver();
 
-
     }
-
-
 
     public interface IObserverColumn {
 

@@ -415,7 +415,26 @@ namespace prestoMySQL.Query.SQL {
         }
 
         public QueryParam[] getParam() {
-            return new QueryParam[] { };
+
+            if ( this.expression is FunctionExpression ) {
+
+                var q = new List<QueryParam>();
+
+                if ( ( this.expression as FunctionExpression ).Left is FunctionParamSubQuery ) {
+                    q.AddRange( ( ( ( this.expression as FunctionExpression ).Left as FunctionParamSubQuery ).SubQuery.getParam ) );
+
+                }
+
+                if ( ( this.expression as FunctionExpression ).Right is FunctionParamSubQuery ) {
+                    q.AddRange( ( ( ( this.expression as FunctionExpression ).Right as FunctionParamSubQuery ).SubQuery.getParam ) );
+                    
+                }
+
+                return q.ToArray();
+                
+            } else {
+                return new QueryParam[] { };
+            }
         }
 
         public string[] getParamAsString() {

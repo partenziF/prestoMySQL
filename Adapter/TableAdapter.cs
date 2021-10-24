@@ -57,7 +57,7 @@ namespace prestoMySQL.Adapter {
         //public abstract bool Check();
 
         //public abstract OperationResult Read( EntityConditionalExpression Constraint = null , params Object[] aKeyValues );
-        public abstract OperationResult New(AbstractEntity newEntity = null);
+        public abstract OperationResult New(AbstractEntity newEntity = null , bool UpdateForeignKey = true );
 
 
     }

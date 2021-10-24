@@ -14,6 +14,7 @@ using System.Text;
 namespace prestoMySQL.Column {
     public class SQLColumn<T> : GenericSQLColumn<T>, IConvertible where T : ISQLTypeWrapper { //where T : struct        
 
+
         public SQLColumn( string aDeclaredVariableName , PropertyInfo aMethodBase = null ) : base( aMethodBase ) {
 
             if ( string.IsNullOrEmpty( aDeclaredVariableName ) ) {

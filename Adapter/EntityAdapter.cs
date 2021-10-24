@@ -567,7 +567,7 @@ namespace prestoMySQL.Adapter {
         }
 
 
-        public override OperationResult New( AbstractEntity newEntity = null ) {
+        public override OperationResult New( AbstractEntity newEntity = null,bool UpdateForeignKey = true ) {
 
             //CreateInstace<T>( true );
             Entity = ( T ) ( newEntity ?? CreateInstace<T>() );
@@ -591,29 +591,30 @@ namespace prestoMySQL.Adapter {
             createForeignKey();
             CreatePrimaryKey();
 
-            Entity.GetAllForeignkey().ForEach( fks => {
+            if ( UpdateForeignKey ) {
+                Entity.GetAllForeignkey().ForEach( fks => {
 
-                foreach ( var info in fks.foreignKeyInfo ) {
+                    foreach ( var info in fks.foreignKeyInfo ) {
 
-                    if ( info.ReferenceTable == null ) {
+                        if ( info.ReferenceTable == null ) {
 
-                        var f = mEntities.FirstOrDefault().GetAllForeignkey().FirstOrDefault( x => x.ForeignkeyName == fks.ForeignkeyName );
+                            var f = mEntities.FirstOrDefault().GetAllForeignkey().FirstOrDefault( x => x.ForeignkeyName == fks.ForeignkeyName );
 
-                        if ( f != null ) {
-                            foreach ( var ff in f.foreignKeyInfo ) {
+                            if ( f != null ) {
+                                foreach ( var ff in f.foreignKeyInfo ) {
 
-                                info.ReferenceTable = ff.ReferenceTable;
-                                fks.addEntities( new List<AbstractEntity>() { ff.ReferenceTable } );
+                                    info.ReferenceTable = ff.ReferenceTable;
+                                    fks.addEntities( new List<AbstractEntity>() { ff.ReferenceTable } );
 
+                                }
                             }
+
                         }
 
                     }
 
-                }
-
-            } );
-
+                } );
+            }
 
 
             return OperationResult.OK;

@@ -12,7 +12,7 @@ namespace prestoMySQL.Adapter.Interface {
         //AbstractEntity CreateEntity();
         void InitEntity();
 
-        OperationResult New( AbstractEntity newEntity = null );
+        OperationResult New( AbstractEntity newEntity = null, bool UpdateForeignKey = true );
         OperationResult Read( EntityConditionalExpression Constraint = null , params object[] aKeyValues );
 
         bool Save();

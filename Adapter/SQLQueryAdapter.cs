@@ -104,6 +104,7 @@ namespace prestoMySQL.Adapter {
                         Type t = typeof( T );
 
                         var ctor = typeof( X ).GetConstructor( new Type[] { t } );
+                        if ( ctor is null ) throw new System.Exception( String.Format( "Can't find constructor for type {0} with parameter {1}" , typeof( X ).FullName ,t.FullName));
                         mCurrent = ( X ) ctor?.Invoke( new object[] { this.mAdapter.sqlQuery } );
                         return true;
                     } else {

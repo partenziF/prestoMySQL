@@ -15,6 +15,7 @@ namespace prestoMySQL.ForeignKey {
         internal PropertyInfo mPropertyInfo;
         
         internal string mReferenceTableAlias;
+        public string ReferenceTableAlias { get => mReferenceTableAlias; }
 
         public PropertyInfo Field => mPropertyInfo;
 

@@ -50,16 +50,23 @@ namespace prestoMySQL.Adapter {
         public T sqlQuery { get => mSqlQuery; }
         public override int SQLCount {
             get {
-                sqlQuery.UpdateValueToQueryParam();
+                //sqlQuery.UpdateValueToQueryParam();
+
+                //SQLQueryParams outparam = null;
+                //sqlQuery.Prepare();
+                //sqlQuery.SelectExpression.Clear();
+
+                //var RowCount = sqlQuery.RowCount;
+                //var Offset = sqlQuery.Offset;
+                //sqlQuery.LIMIT( null , null );
+                //sqlQuery.SelectExpression.Add( "COUNT(*)" );
 
                 SQLQueryParams outparam = null;
-                sqlQuery.Prepare();
-                sqlQuery.SelectExpression.Clear();
 
-                var RowCount = sqlQuery.RowCount;
-                var Offset = sqlQuery.Offset;
-                sqlQuery.LIMIT( null , null );
+                sqlQuery.Build();
+                sqlQuery.SelectExpression.Clear();
                 sqlQuery.SelectExpression.Add( "COUNT(*)" );
+
                 mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
 
                 sqlQuery.LIMIT( Offset , RowCount );
@@ -204,23 +211,6 @@ namespace prestoMySQL.Adapter {
 
 
         public override MySQResultSet ExecuteQuery( out ILastErrorInfo Message ) {
-
-            //sqlQuery.UpdateValueToQueryParam();
-            //SQLQueryParams outparam = null;
-            //sqlQuery.Prepare();
-
-            //var orderby = SQLTableEntityHelper.getQueryOrderBy( sqlQuery.GetType() );
-            //var order = 0;
-            //List<SQLQueryGroupBy> listOfQueryGroupBy = new List<SQLQueryGroupBy>();
-            //foreach ( var o in orderby ) {
-            //    if ( sqlQuery.Graph.Cache.ContainsKey( o.Table ) ) {
-            //        var cn = Helper.SQLTableEntityHelper.getColumnName( sqlQuery.Graph.Cache[o.Table].FirstOrDefault() , o.Property , true );
-            //        listOfQueryGroupBy.Add( new SQLQueryGroupBy( order++ , cn ) );
-            //    }
-            //}
-            //sqlQuery.GROUPBY( listOfQueryGroupBy.ToArray() );
-            //sqlQuery.LIMIT( Offset , RowCount );
-
 
             SQLQueryParams outparam = null;
 

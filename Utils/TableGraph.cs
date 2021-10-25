@@ -557,12 +557,12 @@ namespace prestoMySQL.Utils {
 
         }
 
-        public  void AddEntityGraph( AbstractEntity a ) {
+        public void AddEntityGraph( AbstractEntity a ) {
             Graph.Add( ( AbstractEntity ) a );
             Cache.AddOrCreate( ( AbstractEntity ) a );
 
             ( ( AbstractEntity ) a ).GetAllForeignkey().ForEach( x => {
-                
+
                 foreach ( var info in x.foreignKeyInfo ) {
                     Graph.Connect( info.Table , x );
                 }
@@ -570,6 +570,18 @@ namespace prestoMySQL.Utils {
 
         }
 
+        public void RemoveEntityGraph( AbstractEntity a ) {
+
+            ( ( AbstractEntity ) a ).GetAllForeignkey().ForEach( x => {
+
+                foreach ( var info in x.foreignKeyInfo ) {
+                    Graph.Disconnect( info.Table , x );
+                }
+            } );
+
+            Graph.Remove( ( AbstractEntity ) a );
+            Cache.Remove( ( AbstractEntity ) a );
+        }
 
         public void BuildEntityGraph( params AbstractEntity[] tableEntity ) {
 

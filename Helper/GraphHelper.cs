@@ -26,6 +26,15 @@ namespace prestoMySQL.Helper {
             }
 
         }
+        public static void Remove( this Dictionary<Type , List<TableEntity>> d , TableEntity a ) {
+            if ( d.ContainsKey( a.GetType() ) ) {
+                d[a.GetType()].Remove( a );
+                if ( d[a.GetType()].Count == 0 ) {
+                    d.Remove( a.GetType() );
+                }
+            }
+
+        }
 
     }
 
@@ -47,6 +56,17 @@ namespace prestoMySQL.Helper {
 
         }
 
+        public static void Remove( this Dictionary<Type , List<AbstractEntity>> d , AbstractEntity a ) {
+            if ( d.ContainsKey( a.GetType() ) ) {
+                d[a.GetType()].Remove( a );
+                if ( d[a.GetType()].Count == 0 ) {
+                    d.Remove( a.GetType() );
+                }
+            }
+
+        }
+
+
     }
 
     public static class GraphHelper {
@@ -63,6 +83,20 @@ namespace prestoMySQL.Helper {
                 Graph.Add( Head , new List<EntityForeignKey>() { Node } );
             }
         }
+
+        public static void Disconnect( this Dictionary<AbstractEntity , List<EntityForeignKey>> Graph , AbstractEntity Head , EntityForeignKey Node ) {
+            if ( Graph.ContainsKey( Head ) ) {
+                if ( Graph[Head].Contains( Node ) ) {
+                    Graph[Head].Remove( Node );
+                    if (( Graph[Head].Count) == 0)
+                        Graph.Remove( Head );
+                }
+            } else {
+                
+                //Graph.Add( Head , new List<EntityForeignKey>() { Node } );
+            }
+        }
+
         //public static bool IsConnected( this Dictionary<AbstractEntity , List<EntityForeignKey>> Graph , EntityForeignKey Node ) {
         public static bool IsConnected( this Dictionary<AbstractEntity , List<EntityForeignKey>> Graph , EntityForeignKey Node ) {
 

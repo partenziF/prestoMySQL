@@ -60,7 +60,12 @@ namespace prestoMySQL.Adapter {
             //_Graph.mCache = new Dictionary<Type , List<TableEntity>>();
         }
 
-        public void Add<A1, E1>( TableEntity adapter = null ) where A1 : EntityAdapter<E1> where E1 : AbstractEntity {
+        public void Remove<A1, E1>( A1 a1) where A1 : EntityAdapter<E1> where E1 : AbstractEntity {
+            mTableEntityCache.Remove( a1 );
+            TableGraph.RemoveEntityGraph( a1 );
+        }
+
+        public A1 Add<A1, E1>( TableEntity adapter = null ) where A1 : EntityAdapter<E1> where E1 : AbstractEntity {
 
             A1 a1 = null;
 
@@ -74,6 +79,9 @@ namespace prestoMySQL.Adapter {
             mTableEntityCache.AddOrCreate( a1 );
 
             TableGraph.AddEntityGraph( a1 );
+
+
+            return a1;
 
         }
 

@@ -1032,12 +1032,12 @@ namespace prestoMySQL.SQL {
 
                 if ( queryInstance.GroupBy.Count > 0 ) {
                     sb.AppendLine( "GROUP BY " );
-                    sb.AppendLine( String.Join( "," , queryInstance.GroupBy.OrderBy( x => x.order ).ToList() ) );
+                    sb.AppendLine( String.Join( "\r\n," , queryInstance.GroupBy.OrderBy( x => x.order ).ToList() ) );
                 }
 
                 if ( queryInstance.OrderBy.Count > 0 ) {
                     sb.AppendLine( "ORDER BY " );
-                    sb.AppendLine( String.Join( "," , queryInstance.OrderBy.OrderBy( x => x.order ).ToList() ) );
+                    sb.AppendLine( String.Join( "\r\n," , queryInstance.OrderBy.OrderBy( x => x.order ).ToList() ) );
                 }
 
 
@@ -1176,8 +1176,6 @@ namespace prestoMySQL.SQL {
                     }
 
                     FunctionExpression mFunction = ( FunctionExpression ) FunctionFactory.Create( ( ( DALQueryJoinEntityExpression ) a ) , mFunctionParams.ToArray() );
-
-
 
                     if ( mFunction.Right.GetType() == typeof( FunctionParamSubQuery ) ) {
 

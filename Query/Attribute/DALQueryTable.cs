@@ -27,6 +27,9 @@ namespace prestoMySQL.Query.Attribute {
         public string Property { get; set; }
         public Type Table { get; set; }
         public string ID { get; set; }
+
+        public bool FullGroupBy { get; set; }
+
     }
 
     public class DALOrderBy : System.Attribute {

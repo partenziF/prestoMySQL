@@ -18,6 +18,7 @@ using prestoMySQL.Column.Interface;
 using prestoMySQL.Database.MySQL;
 using prestoMySQL.Adapter;
 using prestoMySQL.SQL;
+using prestoMySQL.Extension;
 
 namespace prestoMySQL.Query {
 
@@ -844,13 +845,28 @@ namespace prestoMySQL.Query {
             if ( groupby.Count > 0 ) {
                 List<SQLQueryGroupBy> listOfQueryGroupBy = new List<SQLQueryGroupBy>();
                 var order = 0;
+                if ( groupby.FirstOrDefault( x => x.FullGroupBy ) is not null ) {
 
-                foreach ( var o in groupby ) {
-                    if ( Graph.Cache.ContainsKey( o.Table ) ) {
-                        var cn = Helper.SQLTableEntityHelper.getColumnName( Graph.Cache[o.Table].FirstOrDefault() , o.Property , true );
-                        listOfQueryGroupBy.Add( new SQLQueryGroupBy( order++ , cn ) );
+                    foreach ( var (_, t) in Graph.Cache ) {
+
+                        var ColumNames = Helper.SQLTableEntityHelper.getColumnName( t.FirstOrDefault().GetType() );
+                        foreach ( var ColumName in ColumNames ) {
+
+                            listOfQueryGroupBy.Add( new SQLQueryGroupBy( order++ , String.Concat( t.FirstOrDefault().ActualName.QuoteTableName() , '.' , ColumName ) ) );
+
+                        }
+
                     }
 
+                } else {
+
+                    foreach ( var o in groupby ) {
+                        if ( Graph.Cache.ContainsKey( o.Table ) ) {
+                            var cn = Helper.SQLTableEntityHelper.getColumnName( Graph.Cache[o.Table].FirstOrDefault() , o.Property , true );
+                            listOfQueryGroupBy.Add( new SQLQueryGroupBy( order++ , cn ) );
+                        }
+
+                    }
                 }
 
                 GROUPBY( listOfQueryGroupBy.ToArray() );
@@ -861,7 +877,7 @@ namespace prestoMySQL.Query {
             //foreach (var c in xxx ) {
             //    Console.WriteLine( c );
             //}
-            
+
 
             var orderby = SQLTableEntityHelper.getQueryOrderBy( this.GetType() );
             if ( orderby.Count > 0 ) {

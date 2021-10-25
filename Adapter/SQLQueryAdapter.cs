@@ -67,6 +67,10 @@ namespace prestoMySQL.Adapter {
                 sqlQuery.SelectExpression.Clear();
                 sqlQuery.SelectExpression.Add( "COUNT(*)" );
 
+                var RowCount = sqlQuery.RowCount;
+                var Offset = sqlQuery.Offset;
+                sqlQuery.LIMIT( null , null );
+
                 mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
 
                 sqlQuery.LIMIT( Offset , RowCount );

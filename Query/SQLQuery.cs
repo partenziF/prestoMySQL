@@ -831,8 +831,10 @@ namespace prestoMySQL.Query {
 
 
         public void Build() {
-
-            //Console.WriteLine( "{0}.{1}" , this.GetType().Name , nameof( this.Build ) );
+            
+            this.mGroupBy.Clear();
+            this.mOrderBy.Clear();
+            //this.mJoinTable.Clear();
 
             UpdateValueToQueryParam();
 

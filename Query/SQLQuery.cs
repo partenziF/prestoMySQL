@@ -291,7 +291,7 @@ namespace prestoMySQL.Query {
         public QueryAdapter mQueryAdapter { get; }
 
 
-        internal void UpdateValueToQueryParam() => this.GetType()
+        public void UpdateValueToQueryParam() => this.GetType()
                                                        .GetFields()
                                                        .Where( x => System.Attribute.IsDefined( x , typeof( DALQueryParamAttribute ) ) )
                                                        .ToList()
@@ -331,38 +331,6 @@ namespace prestoMySQL.Query {
 
         //////////////////////////////////////////////////////////////////////////////////
 
-        public String getTableReferences() {
-            throw new NotImplementedException();
-            //          ArrayList<TableReference> l = SQLTableEntityHelper.getQueryTableName(this);
-            //      String []
-            //      s = new String[l.size()];
-            //int i = 0;
-
-            //for (TableReference e : l) {
-
-            //	s[i++] = e.toString();
-            //}
-
-            //return String.join(",", s);
-
-        }
-        public String getmGroupByTableDeclaration( String aTableName ) {
-            throw new NotImplementedException();
-            //if ( mHashOfSQLQueryTableReference.isEmpty() )
-            //    throw new Exception( "No tables found" );
-            //if ( mHashOfSQLQueryTableReference.containsKey( aTableName ) ) {
-            //    TableReference t = mHashOfSQLQueryTableReference.get( aTableName );
-            //    if ( t.getTableAlias().isEmpty() ) {
-            //        return t.getTableName();
-            //    } else {
-            //        return String.format( "%s AS %s" , t.getTableName() , t.getTableAlias() );
-            //    }
-
-            //} else {
-            //    throw new Exception( "No table found in tables" );
-            //}
-
-        }
         public SQLQuery WHERE( params SQLQueryConditionExpression[] sqlQueryConditionExpressions ) {
 
             if ( sqlQueryConditionExpressions.Length > 0 ) {

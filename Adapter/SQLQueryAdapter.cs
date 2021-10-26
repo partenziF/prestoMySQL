@@ -248,6 +248,8 @@ namespace prestoMySQL.Adapter {
 
             this.mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
 
+            //Console.WriteLine( this.mSQLQueryString );
+
             var result = mDatabase.ReadQuery( this.mSQLQueryString , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
             Message = mDatabase.LastError;

@@ -50,6 +50,32 @@ namespace prestoMySQL.Adapter {
         public T sqlQuery { get => mSqlQuery; }
         public override int SQLCount {
             get {
+
+                sqlQuery.UpdateValueToQueryParam();
+
+                SQLQueryParams outparam = null;
+                sqlQuery.Prepare();
+                sqlQuery.SelectExpression.Clear();
+
+                //var RowCount = sqlQuery.RowCount;
+                //var Offset = sqlQuery.Offset;
+                //sqlQuery.LIMIT( null , null );
+                //sqlQuery.SelectExpression.Add( "COUNT(*)" );
+
+                //SQLQueryParams outparam = null;
+
+                sqlQuery.SelectExpression.Add( "COUNT(*)" );
+
+                var RowCount = sqlQuery.RowCount;
+                var Offset = sqlQuery.Offset;
+                sqlQuery.LIMIT( null , null );
+
+                this.mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+
+                sqlQuery.LIMIT( Offset , RowCount );
+
+                return mDatabase.ExecuteScalar<int?>( this.mSQLQueryString , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
+
                 //sqlQuery.UpdateValueToQueryParam();
 
                 //SQLQueryParams outparam = null;
@@ -61,21 +87,21 @@ namespace prestoMySQL.Adapter {
                 //sqlQuery.LIMIT( null , null );
                 //sqlQuery.SelectExpression.Add( "COUNT(*)" );
 
-                SQLQueryParams outparam = null;
+                //SQLQueryParams outparam = null;
 
-                sqlQuery.Build();
-                sqlQuery.SelectExpression.Clear();
-                sqlQuery.SelectExpression.Add( "COUNT(*)" );
+                //sqlQuery.Build();
+                //sqlQuery.SelectExpression.Clear();
+                //sqlQuery.SelectExpression.Add( "COUNT(*)" );
 
-                var RowCount = sqlQuery.RowCount;
-                var Offset = sqlQuery.Offset;
-                sqlQuery.LIMIT( null , null );
+                //var RowCount = sqlQuery.RowCount;
+                //var Offset = sqlQuery.Offset;
+                //sqlQuery.LIMIT( null , null );
 
-                mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+                //mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
 
-                sqlQuery.LIMIT( Offset , RowCount );
+                //sqlQuery.LIMIT( Offset , RowCount );
 
-                return mDatabase.ExecuteScalar<int?>( mSQLQueryString , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
+                //return mDatabase.ExecuteScalar<int?>( mSQLQueryString , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? -1;
 
             }
         }

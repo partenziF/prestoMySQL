@@ -1015,7 +1015,7 @@ namespace prestoMySQL.SQL {
                 sb.AppendLine( "FROM" );
                 sb.AppendLine( String.Join( "," , queryInstance.TablesReferences ) );
 
-                foreach ( var jt in queryInstance.JoinTable.Values ) {
+                foreach ( IJoin jt in queryInstance.JoinTable.Values ) {
 
                     sb.AppendLine( jt.ToString() );
 
@@ -1103,8 +1103,6 @@ namespace prestoMySQL.SQL {
 
                 joins.Add( jt.ToString() );
             }
-
-
 
             return ( T ) sqlQuery;
 

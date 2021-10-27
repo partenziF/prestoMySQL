@@ -86,7 +86,7 @@ namespace prestoMySQL.Query {
             mEntities = new List<AbstractEntity>();
             mSelectExpression = new List<string>();
             mWhereCondition = new List<SQLQueryConditionExpression>();
-            mJoinTable = new Dictionary<string , SQLQueryJoinTable>( StringComparer.OrdinalIgnoreCase );
+            mJoinTable = new Dictionary<string , IJoin>( StringComparer.OrdinalIgnoreCase );
             mHashOfSQLQueryTableReference = new Dictionary<string , TableReference>();
             mOrderBy = new List<SQLQueryOrderBy>();
             mGroupBy = new List<SQLQueryGroupBy>();
@@ -182,8 +182,8 @@ namespace prestoMySQL.Query {
         }
 
 
-        protected Dictionary<string , SQLQueryJoinTable> mJoinTable;
-        public virtual Dictionary<string , SQLQueryJoinTable> JoinTable {
+        protected Dictionary<string , IJoin> mJoinTable;
+        public virtual Dictionary<string , IJoin> JoinTable {
             get {
                 return mJoinTable;
             }
@@ -215,7 +215,7 @@ namespace prestoMySQL.Query {
 
                 List<QueryParam> result = new List<QueryParam>();
 
-                foreach ( SQLQueryJoinTable i in this.mJoinTable.Values ) {
+                foreach ( IJoin i in this.mJoinTable.Values ) {
                     if ( i.SqlQueryConditions != null ) {
                         foreach ( var j in i.SqlQueryConditions ) {
                             foreach ( var x in j.getParam() ) {
@@ -516,14 +516,20 @@ namespace prestoMySQL.Query {
         }
 
 
-        public void JOIN( JoinTable joinTable , SQLQueryConditionExpression constraint = null ) {
+        public void JOIN( IJoin joinTable , SQLQueryConditionExpression constraint = null ) {
+            //if ( joinTable is RawQueryJoinTable ) {
+            //    mJoinTable.TryAdd( (joinTable as RawQueryJoinTable).ID , joinTable );
+            //} else {
+            //    if ( constraint != null )
+            //        mJoinTable.TryAdd( ( joinTable as JoinTable).Table.ActualName , new SQLQueryJoinTable( this , ( joinTable as JoinTable ) , constraint ) );
+            //    else
+            //        mJoinTable.TryAdd( ( joinTable as JoinTable ).Table.ActualName , new SQLQueryJoinTable( this , ( joinTable as JoinTable ) ) );
+            //}
 
             if ( constraint != null )
-                mJoinTable.TryAdd( joinTable.Table.ActualName , new SQLQueryJoinTable( this , joinTable , constraint ) );
+                mJoinTable.TryAdd(  joinTable.ID , ( joinTable is RawQueryJoinTable ) ? joinTable : new SQLQueryJoinTable( this , ( joinTable as JoinTable ) , constraint ) );
             else
-                mJoinTable.TryAdd( joinTable.Table.ActualName , new SQLQueryJoinTable( this , joinTable ) );
-
-
+                mJoinTable.TryAdd( joinTable.ID, ( joinTable is RawQueryJoinTable ) ? joinTable : new SQLQueryJoinTable( this , ( joinTable as JoinTable ) ) );
 
         }
 

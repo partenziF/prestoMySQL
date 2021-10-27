@@ -10,6 +10,11 @@ using System.Threading.Tasks;
 
 namespace prestoMySQL.Query.SQL {
 
+    public interface IJoin {
+        public SQLQueryConditionExpression[] SqlQueryConditions { get; set; }
+        public string ID { get; }
+    }
+
     public class JoinForeignKey {
 
         private AbstractEntity mTable;
@@ -35,6 +40,7 @@ namespace prestoMySQL.Query.SQL {
         public AbstractEntity Table { get => this.mTable; set => this.mTable = value; }
         public AbstractEntity ReferenceTable { get => this.mReferenceTable; set => this.mReferenceTable = value; }
 
+
         public override string ToString() {
 
             var @left = SQLTableEntityHelper.getColumnName( Table , mColumnName , true , true );
@@ -45,54 +51,14 @@ namespace prestoMySQL.Query.SQL {
         }
     }
 
-    public class JoinTable {
-
-        //private string mPrimaryTable;
-        //public string PrimaryTable {
-        //    get {
-        //        return mPrimaryTable;
-        //    }
-        //    set {
-        //        this.mPrimaryTable = value;
-        //    }
-        //}
-
-        //private string mPrimaryKey;
-        //public virtual string PrimaryKey {
-        //    get {
-        //        return mPrimaryKey;
-        //    }
-        //    set {
-        //        this.mPrimaryKey = value;
-        //    }
-        //}
 
 
-        //private string mForeignTable;
-        //public virtual string ForeignTable {
-        //    get {
-        //        return mForeignTable;
-        //    }
-        //    set {
-        //        this.mForeignTable = value;
-        //    }
-        //}
-
-
-        //private string mForeignKey;
-        //public virtual string ForeignKey {
-        //    get {
-        //        return mForeignKey;
-        //    }
-        //    set {
-        //        this.mForeignKey = value;
-        //    }
-        //}
+    public class JoinTable : IJoin {
 
         private List<JoinForeignKey> mJoinForeignKeys;
 
         private SQLQueryConditionExpression[] mSqlQueryConditions;
-        private AbstractEntity mTable;
+        internal AbstractEntity mTable;
         public AbstractEntity Table { get => mTable; }
 
         public SQLQueryConditionExpression[] SqlQueryConditions {
@@ -116,6 +82,11 @@ namespace prestoMySQL.Query.SQL {
 
         public List<JoinForeignKey> JoinForeignKeys { get => this.mJoinForeignKeys; set => this.mJoinForeignKeys = value; }
 
+        public string ID => this.Table.ActualName;
+
+        public JoinTable() {
+
+        }
         public JoinTable( JoinType joinType , AbstractEntity table , JoinForeignKey[] foreignKey , params SQLQueryConditionExpression[] sqlQueryConditionExpressions ) {
 
             mJoinType = joinType;
@@ -161,58 +132,11 @@ namespace prestoMySQL.Query.SQL {
                 return sb.ToString();
 
 
-                //if ( joinTable.AliasName is null ) {
-                //    sb.Append( string.Format( "{0} JOIN {1} ON " , fks.JoinType.ToString() , joinTable.ActualName.QuoteTableName() ) );
-                //} else {
-                //    sb.Append( string.Format( "{0} JOIN {1} {2} ON " , fks.JoinType.ToString() , joinTable.TableName.QuoteTableName() , joinTable.ActualName.QuoteTableName() ) );
-                //}
-
-                //string join = "";
-
-                //switch ( this.mJoinType ) {
-                //    case JoinType.INNER:
-                //    join = "INNER";
-                //    break;
-                //    case JoinType.LEFT:
-                //    join = "LEFT";
-                //    break;
-                //    case JoinType.RIGHT:
-                //    join = "RIGHT";
-                //    break;
-                //    default:
-                //    join = "";
-                //    break;
-                //}
-
-                //if ( ( SqlQueryConditions != null ) && ( SqlQueryConditions.Length > 0 ) ) {
-                //    string[] condition = new string[mSqlQueryConditions.Length];
-                //    int i = 0;
-
-                //    //foreach ( GenericEntityConstraint<object> c in mSqlQueryConditions ) {
-                //    //    condition[i++] = c.ToString();
-                //    //}
-
-                //    //return string.Format( "{0} JOIN {1} ON {2} = {3} AND {4}" , join , mForeignTable , mForeignKey , mPrimaryKey , string.Join( " AND " , condition ) );
-                //    //return string.Format( "{0} JOIN {1} ON {2}.{3} = {4}.{5} AND {6}" , join , mSQLQuery.getTableDeclaration( mForeignTable ) , mSQLQuery.getTableRealName( mForeignTable ) , mForeignKey , mSQLQuery.getTableRealName( mPrimaryTable ) , mPrimaryKey , string.join( " AND " , condition ) );
-                //    return string.Format( "{0} JOIN {1} ON {2}.{3} = {4}.{5} AND {6}" , join , mPrimaryTable , mPrimaryTable , mPrimaryKey , mForeignTable , mForeignKey , string.Join( " AND " , this.SqlQueryConditions?.Select( x => x?.ToString() ).ToArray() ) );
-                //    //return "";
-
-                //} else {
-
-                //    //return string.Format( "{0} JOIN {1} ON {2} = {3} " , join , mForeignTable , mForeignKey , mPrimaryKey );
-                //    //return string.Format( "{0} JOIN {1} ON {2}.{3} = {4}.{5} " , join , mSQLQuery.getTableDeclaration( mForeignTable ) , mSQLQuery.getTableRealName( mForeignTable ) , mForeignKey , mSQLQuery.getTableRealName( mPrimaryTable ) , mPrimaryKey );
-                //    //return string.Format( "{0} JOIN {1} ON {2}.{3} = {4}.{5} " , join , mForeignTable  , mForeignTable  , mForeignKey , mPrimaryTable  , mPrimaryKey );
-                //    return string.Format( "{0} JOIN {1} ON {2}.{3} = {4}.{5} " , join , mPrimaryTable , mPrimaryTable , mPrimaryKey , mForeignTable , mForeignKey );
-                //    //return "";
-
-                //}
-
             } catch ( System.Exception e ) {
                 return "";
             }
 
         }
-
 
 
     }
@@ -229,122 +153,25 @@ namespace prestoMySQL.Query.SQL {
             mSQLQuery = sqlQuery;
         }
 
-        //private string mPrimaryTable;
-        //public string PrimaryTable {
-        //    get {
-        //        return mPrimaryTable;
-        //    }
-        //    set {
-        //        this.mPrimaryTable = value;
-        //    }
-        //}
-
-        //private string mPrimaryKey;
-        //public virtual string PrimaryKey {
-        //    get {
-        //        return mPrimaryKey;
-        //    }
-        //    set {
-        //        this.mPrimaryKey = value;
-        //    }
-        //}
+    }
 
 
-        //private string mForeignTable;
-        //public virtual string ForeignTable {
-        //    get {
-        //        return mForeignTable;
-        //    }
-        //    set {
-        //        this.mForeignTable = value;
-        //    }
-        //}
+    public class RawQueryJoinTable : IJoin {
+        private string id;
+        private string mSQLQuery;
 
+        public string ID { get => id;  }
+        public RawQueryJoinTable(string id, string sQLQuery ) {
+            //this.mTable = new 
+            this.id = id;
+            this.mSQLQuery = sQLQuery;
+        }
 
-        //private string mForeignKey;
-        //public virtual string ForeignKey {
-        //    get {
-        //        return mForeignKey;
-        //    }
-        //    set {
-        //        this.mForeignKey = value;
-        //    }
-        //}
+        public SQLQueryConditionExpression[] SqlQueryConditions { get => new SQLQueryConditionExpression[] { }; set => SqlQueryConditions = value; }
 
-        //private SQLQueryConditionExpression[] mSqlQueryConditions;
-        //public virtual SQLQueryConditionExpression[] SqlQueryConditions {
-        //    get {
-        //        return mSqlQueryConditions;
-        //    }
-        //    set {
-        //        this.mSqlQueryConditions = value;
-        //    }
-        //}
-
-
-        //private JoinType mJoinType;
-
-
-
-        //public virtual JoinType JoinType {
-        //    get {
-        //        return mJoinType;
-        //    }
-        //    set {
-        //        this.mJoinType = value;
-        //    }
-        //}
-
-        //public override string ToString() {
-
-        //    try {
-
-        //        string join = "";
-
-        //        switch ( this.JoinType ) {
-        //            case JoinType.INNER:
-        //            join = "INNER";
-        //            break;
-        //            case JoinType.LEFT:
-        //            join = "LEFT";
-        //            break;
-        //            case JoinType.RIGHT:
-        //            join = "RIGHT";
-        //            break;
-        //            default:
-        //            join = "";
-        //            break;
-        //        }
-
-        //        if ( ( SqlQueryConditions != null ) && ( SqlQueryConditions.Length > 0 ) ) {
-        //            string[] condition = new string[SqlQueryConditions.Length];
-        //            int i = 0;
-
-        //            //foreach ( GenericEntityConstraint<object> c in mSqlQueryConditions ) {
-        //            //    condition[i++] = c.ToString();
-        //            //}
-
-        //            //return string.Format( "{0} JOIN {1} ON {2} = {3} AND {4}" , join , mForeignTable , mForeignKey , mPrimaryKey , string.Join( " AND " , condition ) );
-        //            //return string.Format( "{0} JOIN {1} ON {2}.{3} = {4}.{5} AND {6}" , join , mSQLQuery.getTableDeclaration( mForeignTable ) , mSQLQuery.getTableRealName( mForeignTable ) , mForeignKey , mSQLQuery.getTableRealName( mPrimaryTable ) , mPrimaryKey , string.join( " AND " , condition ) );
-        //            return string.Format( "{0} JOIN {1} ON {2}.{3} = {4}.{5} AND {6}" , join , PrimaryTable , PrimaryTable , PrimaryKey , ForeignTable , ForeignKey , string.Join( " AND " , this.SqlQueryConditions?.Select( x => x?.ToString() ).ToArray() ) );
-        //            //return "";
-
-        //        } else {
-
-        //            //return string.Format( "{0} JOIN {1} ON {2} = {3} " , join , mForeignTable , mForeignKey , mPrimaryKey );
-        //            //return string.Format( "{0} JOIN {1} ON {2}.{3} = {4}.{5} " , join , mSQLQuery.getTableDeclaration( mForeignTable ) , mSQLQuery.getTableRealName( mForeignTable ) , mForeignKey , mSQLQuery.getTableRealName( mPrimaryTable ) , mPrimaryKey );
-        //            //return string.Format( "{0} JOIN {1} ON {2}.{3} = {4}.{5} " , join , mForeignTable  , mForeignTable  , mForeignKey , mPrimaryTable  , mPrimaryKey );
-        //            return string.Format( "{0} JOIN {1} ON {2}.{3} = {4}.{5} " , join , PrimaryTable , PrimaryTable , PrimaryKey , ForeignTable , ForeignKey );
-        //            //return "";
-
-        //        }
-
-        //    } catch ( System.Exception e ) {
-        //        return "";
-        //    }
-
-        //}
-
+        public override string ToString() {
+            return mSQLQuery;
+        }
 
     }
 

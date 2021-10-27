@@ -1041,6 +1041,12 @@ namespace prestoMySQL.SQL {
                 }
 
 
+                if ( queryInstance.Having.Count > 0 ) {
+                    sb.AppendLine( "HAVING" );
+                    sb.AppendLine( String.Join( "\r\n," , queryInstance.Having.OrderBy( x => x.order ).ToList() ) );
+                }
+
+
                 if ( ( queryInstance.Offset is not null ) && ( queryInstance.RowCount is not null ) ) {
                     sb.AppendLine( String.Format( $"LIMIT {queryInstance.RowCount} OFFSET {queryInstance.Offset}" ) );
                 } else if ( ( queryInstance.Offset is null ) && ( queryInstance.RowCount is not null ) ) {

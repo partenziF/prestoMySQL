@@ -90,6 +90,7 @@ namespace prestoMySQL.Query {
             mHashOfSQLQueryTableReference = new Dictionary<string , TableReference>();
             mOrderBy = new List<SQLQueryOrderBy>();
             mGroupBy = new List<SQLQueryGroupBy>();
+            mHaving = new List<SQLQueryHaving>();
 
             mDictionary = new Dictionary<string , MySQLQueryParam>();
 
@@ -328,6 +329,11 @@ namespace prestoMySQL.Query {
 
         private List<SQLQueryGroupBy> mGroupBy;
         public List<SQLQueryGroupBy> GroupBy { get => this.mGroupBy; }
+
+        //////////////////////////////////////////////////////////////////////////////////
+
+        private List<SQLQueryHaving> mHaving;
+        public List<SQLQueryHaving> Having { get => this.mHaving; }
 
         //////////////////////////////////////////////////////////////////////////////////
 
@@ -609,6 +615,17 @@ namespace prestoMySQL.Query {
         public SQLQuery ORDERBY( params SQLQueryOrderBy[] aOrderByEntity ) {
 
             this.mOrderBy.AddRange( aOrderByEntity );
+
+            //foreach ( var e in aOrderByEntity ) {
+            //    this.mOrderBy.Add( e );
+            //}
+
+            return this;
+        }
+
+        public SQLQuery HAVING( params SQLQueryHaving[] aSQLQueryHaving ) {
+
+            this.mHaving.AddRange( aSQLQueryHaving );
 
             //foreach ( var e in aOrderByEntity ) {
             //    this.mOrderBy.Add( e );

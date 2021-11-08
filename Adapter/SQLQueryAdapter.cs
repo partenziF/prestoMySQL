@@ -71,6 +71,7 @@ namespace prestoMySQL.Adapter {
                 sqlQuery.LIMIT( null , null );
 
                 this.mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
+                //Console.WriteLine( "{0}\r\n{1}" , this.mSQLQueryString , outparam.ToString() );
 
                 sqlQuery.LIMIT( Offset , RowCount );
 
@@ -118,7 +119,7 @@ namespace prestoMySQL.Adapter {
                 mAdapter = adapter;
             }
 
-            private dynamic mAdapter;
+            public dynamic mAdapter;
 
             private X mCurrent;
             public X Current => mCurrent;
@@ -141,9 +142,11 @@ namespace prestoMySQL.Adapter {
                         Type t = typeof( T );
 
                         var ctor = typeof( X ).GetConstructor( new Type[] { t } );
-                        if ( ctor is null ) throw new System.Exception( String.Format( "Can't find constructor for type {0} with parameter {1}" , typeof( X ).FullName ,t.FullName));
+                        if ( ctor is null ) throw new System.Exception( String.Format( "Can't find constructor for type {0} with parameter {1}" , typeof( X ).FullName , t.FullName ) );
                         mCurrent = ( X ) ctor?.Invoke( new object[] { this.mAdapter.sqlQuery } );
+
                         return true;
+
                     } else {
                         return false;
                     }
@@ -200,6 +203,12 @@ namespace prestoMySQL.Adapter {
 
             int? index = null;
             if ( ProjectionColumns is null ) throw new System.Exception( "Undefined ProjectionColumns" );
+            Dictionary<string , Dictionary<Type , List<object>>> primaryKeysValues = new Dictionary<string , Dictionary<Type , List<object>>>();
+            foreach ( string TableActualName in s.Keys ) {
+                if ( !String.IsNullOrEmpty( TableActualName ) )
+                    primaryKeysValues.Add( TableActualName.ToLower() , new Dictionary<Type , List<object>>() );
+            }
+
 
             //foreach ( GenericQueryColumn column in ProjectionColumns ) {
             foreach ( dynamic column in ProjectionColumns ) {
@@ -224,20 +233,61 @@ namespace prestoMySQL.Adapter {
                                                            nameof( MySQResultSet.getValueAs ) ,
                                                            new Type[] { typeof( int ) } ,
                                                            new object[] { ( int ) index } );
+                                            
+                //if ( ( column.GetType().IsGenericType) && ( column.GetType().GetGenericTypeDefinition() == typeof( MySQLDefinitionColumn<> ) )) {
 
-                if ( v.IsDBNull() ) {
-                    ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
-                } else if ( v is null ) {
-                    ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
-                } else {
-                    ( ( dynamic ) column ).AssignValue( v );
-                }
+                //    if ( column.isPrimaryKey ) {
+                //        if ( primaryKeysValues.ContainsKey( column.Table.ActualName.ToLower() ) ) {
+
+                //            if ( primaryKeysValues[column.Table.ActualName.ToLower()].ContainsKey( ( column as dynamic ).TypeTable ) ) {
+                //                ( primaryKeysValues[column.Table.ActualName.ToLower()][( column as dynamic ).TypeTable] as List<object> ).Add( v );
+                //            } else {
+                //                primaryKeysValues[column.Table.ActualName.ToLower()][( column as dynamic ).TypeTable] = new List<object>() { v };
+
+                //            }
+                //        } else {
+                //            throw new System.Exception( $"Can't find table name {column.Table.ActualName.ToLower()} in primarykeysvalues" );
+                //        }
+
+                //    } else {
+
+                //        if ( v.IsDBNull() ) {
+                //            ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                //        } else if ( v is null ) {
+                //            ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                //        } else {
+                //            column.AssignValue( v );
+                //        }
+
+                //    }
+
+                //} else {
+                    if ( v.IsDBNull() ) {
+                        ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                    } else if ( v is null ) {
+                        ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                    } else {
+                        column.AssignValue( v );
+                    }
+
+                //}
+
+                //if ( primaryKeysValues.ContainsKey( Entity.ActualName ) )
+                //    Entity.PrimaryKey.setKeyValues( primaryKeysValues[Entity.ActualName].Values.FirstOrDefault().ToArray() );
+
+
+                ////if ( v.IsDBNull() ) {
+                ////    ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                ////} else if ( v is null ) {
+                ////    ( column as dynamic ).TypeWrapperValue = ReflectionTypeHelper.SQLTypeWrapperNULL( column.GenericType );
+                ////} else {
+                ////    ( ( dynamic ) column ).AssignValue( v );
+                ////}
 
 
             }
 
         }
-
 
 
         public override MySQResultSet ExecuteQuery( out ILastErrorInfo Message ) {
@@ -248,7 +298,7 @@ namespace prestoMySQL.Adapter {
 
             this.mSQLQueryString = SQLBuilder.sqlQuery<T>( sqlQuery , ref outparam , "@" );
 
-            //Console.WriteLine( "{0}\r\n{1}",this.mSQLQueryString , outparam.ToString());
+            Console.WriteLine( "{0}\r\n{1}" , this.mSQLQueryString , outparam.ToString() );
 
             var result = mDatabase.ReadQuery( this.mSQLQueryString , outparam?.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
@@ -257,6 +307,7 @@ namespace prestoMySQL.Adapter {
             return result;
 
         }
+
 
         IEnumerator<X> IEnumerable<X>.GetEnumerator() {
 

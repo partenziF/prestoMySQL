@@ -196,6 +196,7 @@ namespace prestoMySQL.Adapter {
 
 
                 if ( column.isPrimaryKey ) {
+
                     if ( primaryKeysValues.ContainsKey( column.Table.ActualName ) ) {
 
                         if ( primaryKeysValues[column.Table.ActualName].ContainsKey( ( column as dynamic ).TypeTable ) ) {
@@ -567,7 +568,7 @@ namespace prestoMySQL.Adapter {
         }
 
 
-        public override OperationResult New( AbstractEntity newEntity = null,bool UpdateForeignKey = true ) {
+        public override OperationResult New( AbstractEntity newEntity = null , bool UpdateForeignKey = true ) {
 
             //CreateInstace<T>( true );
             Entity = ( T ) ( newEntity ?? CreateInstace<T>() );
@@ -667,7 +668,7 @@ namespace prestoMySQL.Adapter {
 
         //}
 
-        public OperationResult Refersh() {
+        public OperationResult Refresh() {
 
             if ( Entity is null ) {
                 throw new ArgumentNullException( "Entity can't be null." );
@@ -914,17 +915,17 @@ namespace prestoMySQL.Adapter {
                         switch ( entity.PrimaryKey?.isAutoIncrement ) {
 
                             case true:
-                            entity.PrimaryKey.doCreatePrimaryKey();
-                            SetPrimaryKey();
-                            entity.PrimaryKey.KeyState = KeyState.SetKey;
-                            break;
-                            case false:
-                            primaryKeyValues = entity.PrimaryKey.getKeyValues();
-                            if ( entity.PrimaryKey.isAutoIncrement ) {
+                                entity.PrimaryKey.doCreatePrimaryKey();
                                 SetPrimaryKey();
-                            }
-                            entity.PrimaryKey.KeyState = KeyState.SetKey;
-                            break;
+                                entity.PrimaryKey.KeyState = KeyState.SetKey;
+                                break;
+                            case false:
+                                primaryKeyValues = entity.PrimaryKey.getKeyValues();
+                                if ( entity.PrimaryKey.isAutoIncrement ) {
+                                    SetPrimaryKey();
+                                }
+                                entity.PrimaryKey.KeyState = KeyState.SetKey;
+                                break;
                         }
 
                         entity.State = prestoMySQL.Entity.Interface.EntityState.Set;
@@ -1057,85 +1058,85 @@ namespace prestoMySQL.Adapter {
                     case null:
                     case KeyState.CreatedKey:
 
-                    if ( result ) {
+                        if ( result ) {
 
-                        switch ( Insert( aEntity ) ) {
-                            case OperationResult.OK:
-                            result &= true;
-                            break;
-                            case OperationResult.Fail:
-                            result &= false;
-                            break;
-                            case OperationResult.Error:
-                            result &= false;
-                            break;
-                            case OperationResult.Exception:
-                            result &= false;
-                            break;
-                            case OperationResult.Unchange:
-                            result &= true;
-                            break;
+                            switch ( Insert( aEntity ) ) {
+                                case OperationResult.OK:
+                                    result &= true;
+                                    break;
+                                case OperationResult.Fail:
+                                    result &= false;
+                                    break;
+                                case OperationResult.Error:
+                                    result &= false;
+                                    break;
+                                case OperationResult.Exception:
+                                    result &= false;
+                                    break;
+                                case OperationResult.Unchange:
+                                    result &= true;
+                                    break;
+                            }
                         }
-                    }
 
-                    break;
+                        break;
 
                     case KeyState.SetKey:
-                    //result = Update() == OperationResult.OK;
-                    if ( result ) {
-                        switch ( Update( aEntity ) ) {
-                            case OperationResult.OK:
-                            result &= true;
-                            break;
-                            case OperationResult.Fail:
-                            result &= false;
-                            break;
+                        //result = Update() == OperationResult.OK;
+                        if ( result ) {
+                            switch ( Update( aEntity ) ) {
+                                case OperationResult.OK:
+                                    result &= true;
+                                    break;
+                                case OperationResult.Fail:
+                                    result &= false;
+                                    break;
 
-                            case OperationResult.Error:
-                            result &= false;
-                            break;
+                                case OperationResult.Error:
+                                    result &= false;
+                                    break;
 
-                            case OperationResult.Exception:
-                            result &= false;
-                            break;
-                            case OperationResult.Unchange:
-                            result &= true;
-                            break;
+                                case OperationResult.Exception:
+                                    result &= false;
+                                    break;
+                                case OperationResult.Unchange:
+                                    result &= true;
+                                    break;
 
+                            }
                         }
-                    }
 
-                    break;
+                        break;
 
                     case KeyState.DeleteKey:
-                    if ( result ) {
-                        switch ( Delete( aEntity ) ) {
-                            case OperationResult.OK:
-                            result &= true;
-                            break;
-                            case OperationResult.Fail:
-                            result &= false;
-                            break;
+                        if ( result ) {
+                            switch ( Delete( aEntity ) ) {
+                                case OperationResult.OK:
+                                    result &= true;
+                                    break;
+                                case OperationResult.Fail:
+                                    result &= false;
+                                    break;
 
-                            case OperationResult.Error:
-                            result &= false;
-                            break;
+                                case OperationResult.Error:
+                                    result &= false;
+                                    break;
 
-                            case OperationResult.Exception:
-                            result &= false;
-                            break;
-                            case OperationResult.Unchange:
-                            result &= true;
-                            break;
+                                case OperationResult.Exception:
+                                    result &= false;
+                                    break;
+                                case OperationResult.Unchange:
+                                    result &= true;
+                                    break;
 
+                            }
                         }
-                    }
 
-                    break;
+                        break;
 
                     case KeyState.UnsetKey:
-                    result = false;
-                    throw new System.Exception( "Unset primary key" );
+                        result = false;
+                        throw new System.Exception( "Unset primary key" );
                 }
             }
 
@@ -1290,7 +1291,8 @@ namespace prestoMySQL.Adapter {
             }
             MapFromAdapter( entity );
             MapToEntity();
-            Entity.PrimaryKey.KeyState = entity.PrimaryKey.KeyState;
+            if ( entity is not null )
+                Entity.PrimaryKey.KeyState = entity.PrimaryKey.KeyState;
 
         }
 

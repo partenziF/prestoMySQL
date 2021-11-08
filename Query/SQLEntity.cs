@@ -149,6 +149,7 @@ namespace prestoMySQL.Query {
                 //result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
                 Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
             }
+
             return result;
 
         }

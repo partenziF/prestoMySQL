@@ -9,25 +9,27 @@ using System.Threading.Tasks;
 
 namespace prestoMySQL {
 
-	public enum KeyState {
-		CreatedKey, // New key for insert
-		SetKey,	// Key is set for update
-		DeleteKey,//Key is set for delete
-		UnsetKey
-	}
+    public enum KeyState {
+        CreatedKey, // New key for insert
+        SetKey, // Key is set for update
+        DeleteKey,//Key is set for delete
+        UnsetKey
+    }
 
-	public delegate void DelegateCreatePrimaryKey( AbstractEntity e );
+    public delegate void DelegateCreatePrimaryKey( AbstractEntity e );
 
-	public interface IPrimaryKey {
+    public interface IPrimaryKey {
 
-		public Object[] getKeyValues();
+        public Object[] getKeyValues();
 
-		void AssignValues( params object[] values );
+        public void setKeyValues( params object[] values );
 
-		public void createKey( dynamic value = null );
+        void AssignValues( params object[] values );
 
-		public void setDoCreatePrimaryKey( DelegateCreatePrimaryKey doCreatePrimaryKey );
+        public void createKey( dynamic value = null );
+
+        public void setDoCreatePrimaryKey( DelegateCreatePrimaryKey doCreatePrimaryKey );
 
 
-	}
+    }
 }

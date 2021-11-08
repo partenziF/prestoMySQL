@@ -79,7 +79,7 @@ namespace prestoMySQL.PrimaryKey {
 
         }
 
-        internal virtual void setKeyValues( params object[] values ) {
+        public virtual void setKeyValues( params object[] values ) {
             int i = 0;
             KeyState = KeyState.SetKey;
 

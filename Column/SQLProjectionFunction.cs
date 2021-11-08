@@ -19,11 +19,11 @@ using System.Reflection;
 namespace prestoMySQL.Column {
 
     public interface IFunction {
-
+        public QueryParam[] getParam();
     }
 
     public interface IFunctionParam {
-
+        public QueryParam[] getParam();
     }
 
     public interface IFunctionTableProperty : IFunctionParam {
@@ -43,7 +43,17 @@ namespace prestoMySQL.Column {
             this.mTableReference = Helper.SQLTableEntityHelper.getTableReference( table );
         }
 
+        protected FunctionTableProperty( TableReference mTableReference , string property ) {
+            this.tableType = null;
+            this.property = property;
+            this.mTableReference = mTableReference;
+        }
+
         public TableReference Table => mTableReference;
+
+        public QueryParam[] getParam() {
+            return new QueryParam[] { };
+        }
     }
 
     public class GenericFunction : IFunction {
@@ -61,6 +71,21 @@ namespace prestoMySQL.Column {
             else
                 return $"{FunctionName}()";
         }
+
+        public QueryParam[] getParam() {
+            List<QueryParam> result = new List<QueryParam>();
+            if ( FunctionParams.Length > 0 )
+                foreach ( var p in FunctionParams ) {
+                    result.AddRange( p.getParam() );
+                }
+            else
+                return new QueryParam[] { };
+
+            return result.ToArray();
+        }
+
+
+
     }
 
     public class FunctionExpression : IFunction {
@@ -73,6 +98,10 @@ namespace prestoMySQL.Column {
         public string Operator { get; }
         public IFunctionParam Left { get; }
         public IFunctionParam Right { get; }
+
+        public QueryParam[] getParam() {
+            return new QueryParam[] { };
+        }
 
         public override string ToString() {
             return $"( {Left.ToString()} {Operator} {Right.ToString()} )";
@@ -96,6 +125,10 @@ namespace prestoMySQL.Column {
                 return $"{FunctionName}({Unit} FROM {string.Join( "," , FunctionParams.ToList() )})";
             else
                 return $"{FunctionName}()";
+        }
+
+        public QueryParam[] getParam() {
+            return new QueryParam[] { };
         }
 
     }
@@ -129,11 +162,31 @@ namespace prestoMySQL.Column {
 
     }
 
+    public class FunctionParamProperty<T> : FunctionTableProperty {
+
+        MySQLDefinitionColumn<SQLTypeWrapper<T>> property;
+        public FunctionParamProperty( MySQLDefinitionColumn<SQLTypeWrapper<T>> property ) : base( property.Table.GetType() , property.ActualName ) {
+            this.property = property;
+            
+        }
+
+
+    }
+
     public class FunctionParamProperty : FunctionTableProperty {
+        private dynamic mColumnDefinition;
+
         //private Type table;
         //private string property;
 
         public FunctionParamProperty( Type table , string property ) : base( table , property ) {
+            //this.table = table;
+            //this.property = property;
+            //this.mTableReference = Helper.SQLTableEntityHelper.getTableReference( table );
+        }
+
+        public FunctionParamProperty( ConstructibleColumn columnDefinition  ) : base( columnDefinition.Table , columnDefinition.ActualName ) {
+            this.mColumnDefinition = columnDefinition;
             //this.table = table;
             //this.property = property;
             //this.mTableReference = Helper.SQLTableEntityHelper.getTableReference( table );
@@ -147,6 +200,37 @@ namespace prestoMySQL.Column {
 
     }
 
+
+    public class FunctionParamQueryParam : IFunctionParam {
+
+        private object mValue;
+        private string mName;
+        private MySQLQueryParam mQueryParam;
+        private string mParamPlaceHolder;
+
+        public FunctionParamQueryParam( string mName , object mValue, string mParamPlaceHolder = "@" ) {
+            this.mValue = mValue;
+            this.mName = mName;
+            this.mParamPlaceHolder = mParamPlaceHolder;
+            mQueryParam = new MySQLQueryParam( mValue , mName );
+        }
+
+        public override string ToString() {
+            //if ( mValue.IsLitteral() ) {
+            //return $"'@{mValue.ToString()}'";
+            return mQueryParam.AsQueryParam( mParamPlaceHolder );
+            //return mQueryParam.ToString();
+            //} else {
+            //  return mValue.ToString();
+            //}
+        }
+
+        public QueryParam[] getParam() {
+            return new QueryParam[] { mQueryParam };
+        }
+
+
+    }
 
     public class FunctionParamConstant : IFunctionParam {
 
@@ -162,6 +246,10 @@ namespace prestoMySQL.Column {
             } else {
                 return mValue.ToString();
             }
+        }
+
+        public QueryParam[] getParam() {
+            return new QueryParam[] { };
         }
 
     }
@@ -184,6 +272,9 @@ namespace prestoMySQL.Column {
             else
                 return $"{this.Function}()";
         }
+        public QueryParam[] getParam() {
+            return new QueryParam[] { };
+        }
 
     }
 
@@ -200,6 +291,16 @@ namespace prestoMySQL.Column {
 
         public override string ToString() {
             return $"( {this.expression} BETWEEN {this.minValue} AND {this.maxValue} )";
+        }
+
+        public QueryParam[] getParam() {
+
+            var result = new List<QueryParam>();
+            result.AddRange( expression.getParam() );
+            result.AddRange( minValue.getParam() );
+            result.AddRange( maxValue.getParam() );
+
+            return result.ToArray();
         }
 
     }
@@ -219,6 +320,10 @@ namespace prestoMySQL.Column {
             return $"( {this.left} {this.@operator} {this.right} )";
         }
 
+        public QueryParam[] getParam() {
+            return new QueryParam[] { };
+        }
+
     }
 
     public class FunctionParamSubQuery : IFunctionParam {
@@ -235,6 +340,10 @@ namespace prestoMySQL.Column {
             this.mSubQuery.Build();
             return this.mSubQuery.ToString();
         }
+        public QueryParam[] getParam() {
+            return new QueryParam[] { };
+        }
+
     }
 
 
@@ -291,6 +400,25 @@ namespace prestoMySQL.Column {
             } else if ( ( Type ) param.TypeId == typeof( DALFunctionParamProperty ) ) {
 
                 return new FunctionParamProperty( ( param as DALFunctionParamProperty ).Table , ( param as DALFunctionParamProperty ).Property );
+
+            } else if ( ( Type ) param.TypeId == typeof( DALFunctionParamQueryParam ) ) {
+
+                var t = ( param as DALFunctionParamQueryParam ).DataType;
+                
+                if ( ( param as DALFunctionParamQueryParam ).Value is not null ) {
+                    if ( ( param as DALFunctionParamQueryParam ).ParamPlaceHolder is null ) {
+                        return new FunctionParamQueryParam( ( param as DALFunctionParamQueryParam ).ParamName , ( param as DALFunctionParamQueryParam ).Value.ConvertTo( t ) );
+                    } else {
+                        return new FunctionParamQueryParam( ( param as DALFunctionParamQueryParam ).ParamName , ( param as DALFunctionParamQueryParam ).Value.ConvertTo( t ), ( param as DALFunctionParamQueryParam ).ParamPlaceHolder  );
+                    }
+                } else {
+                    if ( ( param as DALFunctionParamQueryParam ).ParamPlaceHolder is null ) {
+                        return new FunctionParamQueryParam( ( param as DALFunctionParamQueryParam ).ParamName , null );
+                    } else {
+                        return new FunctionParamQueryParam( ( param as DALFunctionParamQueryParam ).ParamName , null , ( param as DALFunctionParamQueryParam ).ParamPlaceHolder );
+                    }
+                }
+
 
             } else if ( ( Type ) param.TypeId == typeof( DALFunctionParamConstant ) ) {
 
@@ -386,7 +514,7 @@ namespace prestoMySQL.Column {
         }
     }
 
-    public class QueryFunction<T> : GenericQueryColumn, ValuableQueryColumn<T> where T : ISQLTypeWrapper {
+    public abstract class QueryFunction<T> : GenericQueryColumn, ValuableQueryColumn<T> where T : ISQLTypeWrapper {
 
         public QueryFunction( string aDeclaredVariableName , PropertyInfo aPropertyInfo ) : base( aPropertyInfo ) {
             //protected DALFunctionParam[] mParams;
@@ -436,7 +564,7 @@ namespace prestoMySQL.Column {
                 GroupBy = dalProjectionFunction.GroupBy;
             }
 
-            if (dalProjectionFunction.OrderBy != -1 ) {
+            if ( dalProjectionFunction.OrderBy != -1 ) {
                 OrderBy = dalProjectionFunction.OrderBy;
             }
 
@@ -454,6 +582,7 @@ namespace prestoMySQL.Column {
         //private readonly string mFunctionName;
         //public string FunctionName => mFunctionName;
 
+        public abstract QueryParam[] getParam();
 
         public override string ColumnAlias => mColumnAlias;
         public override string ActualName => mColumnAlias ?? mFunction.ToString();
@@ -501,8 +630,13 @@ namespace prestoMySQL.Column {
             mTable = new TableReference( "" );
         }
 
+        public override QueryParam[] getParam() {
+            return Function.getParam();
+        }
+
 
         public override string ToString() {
+
             return $"{Function.ToString()} AS {this.ActualName}";
             //if ( this.FunctionParams is null ) {
             //    return $"{this.FunctionName}() AS {this.ActualName}";

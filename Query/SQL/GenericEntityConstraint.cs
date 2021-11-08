@@ -246,6 +246,8 @@ namespace prestoMySQL.Query.SQL {
 
     public class GenericEntityConstraintFunction<T> : DefinableConstraint {
 
+        private bool haveQueryParams;
+
         private string mColumnName;
         public string ColumnName { get => mColumnName; }
 
@@ -275,26 +277,101 @@ namespace prestoMySQL.Query.SQL {
             this.mParamPlaceHolder = String.Empty;
             this.mFunction = aFunction;
             this.mQueryParams = null;
+            haveQueryParams = false;
+        }
+
+        public GenericEntityConstraintFunction( IFunction aFunction , EvaluableBinaryOperator mBinaryOperator , IQueryParams aQueryPararms , string paramPlaceHolder = "" ) {
+
+            //this.columnDefinition = columnDefinition ?? throw new ArgumentNullException( nameof( columnDefinition ) );
+            this.columnDefinition = null;
+            this.mFunction = aFunction;
+            this.mBinaryOperator = mBinaryOperator;
+            this.mParamPlaceHolder = paramPlaceHolder;
+            this.mQueryParams = ( SQLQueryParams ) ( aQueryPararms ?? throw new ArgumentNullException( nameof( aQueryPararms ) ) );
+            haveQueryParams = true;
         }
 
 
         public int countParam() {
-            return 0;
+            if ( !haveQueryParams )
+                return 0;
+            else
+                return 1;
         }
 
-        public QueryParam[] getParam() {
-            return new QueryParam[] { };
+        public virtual QueryParam[] getParam() {
+
+            if ( !haveQueryParams ) { 
+
+                return new QueryParam[] { };
+
+            } else {
+
+                if ( this.QueryParams.asArray().Length > 0 ) {
+
+                    if ( this.QueryParams[0]?.Value?.GetType().IsArray ?? false ) {
+
+                        var l = ( ( Array ) this.QueryParams[0].Value ).Length;
+                        var result = new QueryParam[l];
+                        int i = 0;
+                        foreach ( var v in ( Array ) this.QueryParams[0].Value ) {
+
+                            //result[i] = new QueryParam( v , string.Format( "{0}_{1]" , this.QueryParams[0].Name , i )  );
+                            result[i] = new MySQLQueryParam( v , String.Concat( this.QueryParams[0].Name , "_" , i.ToString() ) );
+                            i++;
+                        }
+
+                        return result;
+
+                    } else {
+                        if ( this.QueryParams.asArray().Length == 1 ) {
+                            return new QueryParam[] { ( QueryParam ) this.QueryParams[0] };
+                        } else {
+                            return this.QueryParams.asArray();
+                        }
+                    }
+                } else {
+                    return this.QueryParams.asArray();
+                }
+
+            }
+
         }
 
-        public string[] getParamAsString() {
-            return new string[] { };
+        public virtual string[] getParamAsString() {
+            if ( !haveQueryParams )
+                return new string[] { };
+            else
+                return new string[] { this.QueryParams[0].AsQueryParam() };
         }
+
+        public virtual T[] ColumnValue() {
+            if ( haveQueryParams )
+                return new T[] { ( T ) this.QueryParams[0].Value };
+            else
+                return new T[] { };
+        }
+
+
 
 
         public override string ToString() {
 
-            //return $"( {ColumnName} {BinaryOperator} {Function.ToString()}";
-            return $"( {columnDefinition.Table.ActualName.QuoteTableName()}.{columnDefinition.ColumnName.QuoteColumnName()} {BinaryOperator} {Function.ToString()} )";
+            if ( columnDefinition is not null ) {
+
+                return $"( {columnDefinition.Table.ActualName.QuoteTableName()}.{columnDefinition.ColumnName.QuoteColumnName()} {BinaryOperator} {Function.ToString()} )";
+
+            } else {
+                if ( this.QueryParams[0].Value is null ) {
+                    if ( BinaryOperator.Equals( SQLBinaryOperator.equal() ) ) {
+                        BinaryOperator = SQLBinaryOperator.@is();
+                    } else if ( BinaryOperator.Equals( SQLBinaryOperator.notEqual() ) ) {
+                        BinaryOperator = SQLBinaryOperator.isNot();
+                    }
+                }
+
+                return $"( {Function.ToString()} {BinaryOperator} {this.QueryParams[0].AsQueryParam( ParamPlaceHolder )} )";
+            }
         }
 
 
@@ -344,4 +421,69 @@ namespace prestoMySQL.Query.SQL {
         }
     }
 
+
+
+    public class RawConstraint : DefinableConstraint {
+
+        protected string mParamPlaceHolder;
+        public string ParamPlaceHolder { get => mParamPlaceHolder; set => mParamPlaceHolder = value; }
+
+
+        private SQLQueryParams mQueryParams;
+        public SQLQueryParams QueryParams { get => mQueryParams; set => mQueryParams = value; }
+
+
+        protected EvaluableBinaryOperator mBinaryOperator = SQLBinaryOperator.equal();
+
+        public EvaluableBinaryOperator BinaryOperator { get => mBinaryOperator; set => mBinaryOperator = value; }
+
+
+        public RawConstraint( IQueryParams aQueryPararms , string paramPlaceHolder = "" ) {
+
+            this.mParamPlaceHolder = paramPlaceHolder;
+            this.mQueryParams = ( SQLQueryParams ) ( aQueryPararms ?? throw new ArgumentNullException( nameof( aQueryPararms ) ) );
+        }
+
+        public virtual int countParam() {
+            return 1;
+        }
+
+        public virtual QueryParam[] getParam() {
+
+            if ( this.QueryParams.asArray().Length > 0 ) {
+
+                if ( this.QueryParams[0]?.Value?.GetType().IsArray ?? false ) {
+
+                    var l = ( ( Array ) this.QueryParams[0].Value ).Length;
+                    var result = new QueryParam[l];
+                    int i = 0;
+                    foreach ( var v in ( Array ) this.QueryParams[0].Value ) {
+
+                        //result[i] = new QueryParam( v , string.Format( "{0}_{1]" , this.QueryParams[0].Name , i )  );
+                        result[i] = new MySQLQueryParam( v , String.Concat( this.QueryParams[0].Name , "_" , i.ToString() ) );
+                        i++;
+                    }
+
+                    return result;
+
+                } else {
+                    if ( this.QueryParams.asArray().Length == 1 ) {
+                        return new QueryParam[] { ( QueryParam ) this.QueryParams[0] };
+                    } else {
+                        return this.QueryParams.asArray();
+                    }
+                }
+            } else {
+                return this.QueryParams.asArray();
+            }
+        }
+
+        public virtual string[] getParamAsString() {
+            return new string[] { this.QueryParams[0].AsQueryParam() };
+        }
+
+    }
+
+
 }
+

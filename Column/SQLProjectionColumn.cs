@@ -121,7 +121,7 @@ namespace prestoMySQL.Column {
             //this.mPropertyInfo = aPropertyInfo;
 
             DALQueryEntity dalQueryEntity = this.mPropertyInfo?.DeclaringType?.GetCustomAttribute<DALQueryEntity>();
-
+            string TableAlias = null;
             DALProjectionColumn dalProjectionColumn = this.mPropertyInfo?.GetCustomAttribute<DALProjectionColumn>();
             if ( dalProjectionColumn == null ) throw new ArgumentNullException( String.Format( "DALProjectionColumn attribute is required for {0}" , aPropertyInfo.Name ) );
 
@@ -132,6 +132,7 @@ namespace prestoMySQL.Column {
                     entity = dalProjectionColumn.Entity;
                 } else {
                     entity = dalQueryEntity.Entity;
+                    TableAlias = dalQueryEntity.Alias;
                 }
 
             } else {
@@ -140,6 +141,7 @@ namespace prestoMySQL.Column {
                     entity = dalProjectionColumn.Entity;
                 } else {
                     entity = dalQueryEntity.Entity;
+                    TableAlias = dalQueryEntity.Alias;
                 }
 
             }
@@ -148,7 +150,7 @@ namespace prestoMySQL.Column {
             DALTable dalTable = entity?.GetCustomAttribute<DALTable>();
 
             if ( dalTable == null ) throw new ArgumentNullException();
-            mTable = new TableReference( dalTable.TableName );
+            mTable = new TableReference( dalTable.TableName ,TableAlias);
 
 
             mSQLDataType = ( MySQLDataType ) ( dalProjectionColumn as DALProjectionColumn ).DataType;

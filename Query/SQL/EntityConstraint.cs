@@ -316,6 +316,7 @@ namespace prestoMySQL.Query.SQL {
     //    }
     //}
 
+
     public class EntityConstraint<T> : GenericEntityConstraint<T> where T : notnull {
 
         public EntityConstraint( MySQLDefinitionColumn<SQLTypeWrapper<T>> aColumnDefinition , EvaluableBinaryOperator aOperator , IQueryParams aQueryPararm , string aParamPlaceHolder = "" ) :
@@ -339,9 +340,6 @@ namespace prestoMySQL.Query.SQL {
         }
 
     }
-
-
-
 
     public class EntityAssignement<T> : GenericEntityConstraint<T> where T : notnull {
 

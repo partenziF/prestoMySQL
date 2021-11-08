@@ -47,7 +47,34 @@ namespace prestoMySQL.Query.SQL {
         }
 
         public virtual QueryParam[] getParam() {
-            return new QueryParam[] { ( QueryParam ) this.QueryParams[0] };
+            //return new QueryParam[] { ( QueryParam ) this.QueryParams[0] };
+
+            if ( this.QueryParams.asArray().Length > 0 ) {
+
+                if ( this.QueryParams[0]?.Value?.GetType().IsArray ?? false ) {
+
+                    var l = ( ( Array ) this.QueryParams[0].Value ).Length;
+                    var result = new QueryParam[l];
+                    int i = 0;
+                    foreach ( var v in ( Array ) this.QueryParams[0].Value ) {
+
+                        //result[i] = new QueryParam( v , string.Format( "{0}_{1]" , this.QueryParams[0].Name , i )  );
+                        result[i] = new MySQLQueryParam( v , String.Concat( this.QueryParams[0].Name , "_" , i.ToString() ) );
+                        i++;
+                    }
+
+                    return result;
+
+                } else {
+                    if ( this.QueryParams.asArray().Length == 1 ) {
+                        return new QueryParam[] { ( QueryParam ) this.QueryParams[0] };
+                    } else {
+                        return this.QueryParams.asArray();
+                    }
+                }
+            } else {
+                return this.QueryParams.asArray();
+            }
         }
 
         public virtual string[] getParamAsString() {

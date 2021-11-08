@@ -8,6 +8,30 @@ using System.Threading.Tasks;
 namespace prestoMySQL.Extension {
     public static class ObjectExtension {
 
+        public static object ConvertTo( this object source , Type t ) {
+            if ( t.IsGenericType && ( t.GetGenericTypeDefinition() == typeof( Nullable<> ) ) ) {
+                if ( source == null ) {
+                    return default( object );
+                } else if ( source.GetType() == typeof( DBNull ) ) {
+                    return default( object );
+                } else {
+                    return  Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
+                }
+            } else {
+
+                if ( ( source is not null ) && ( ( source.GetType().IsArray ) && ( source.GetType() == typeof( byte[] ) ) ) && ( t == typeof( string ) ) ) {
+
+                    return Convert.ChangeType( Encoding.UTF8.GetString( ( byte[] ) source ) , t );
+
+                } else if ( source.GetType() == typeof( DBNull ) ) {
+                    return default( object );
+
+                } else {
+                    return Convert.ChangeType( source , t );
+                }
+            }
+
+        }
 
         public static T ConvertTo<T>( this object source ) {
 
@@ -188,7 +212,7 @@ namespace prestoMySQL.Extension {
                 .ToArray() );
         }
 
-        public static string EncloseWith( this string text , string begin ,string ends ) {
+        public static string EncloseWith( this string text , string begin , string ends ) {
             return begin + text + ends;
         }
 
@@ -198,7 +222,7 @@ namespace prestoMySQL.Extension {
         public static string SurroundWith( this string text , char quote ) {
             return quote + text + quote;
         }
-        public static string QuoteTableName(this string table ) {
+        public static string QuoteTableName( this string table ) {
             return table.SurroundWith( SQLConstant.TABLE_NAME_QUALIFIER );
         }
         public static string QuoteColumnName( this string column ) {

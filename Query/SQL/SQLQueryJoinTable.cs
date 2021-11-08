@@ -161,13 +161,25 @@ namespace prestoMySQL.Query.SQL {
         private string mSQLQuery;
 
         public string ID { get => id;  }
-        public RawQueryJoinTable(string id, string sQLQuery ) {
+        public RawQueryJoinTable(string id, string sQLQuery, params SQLQueryConditionExpression[] constraint ) {
             //this.mTable = new 
             this.id = id;
             this.mSQLQuery = sQLQuery;
+            SqlQueryConditions = constraint.Length == 0 ? null : constraint.ToArray();
+
+ 
         }
 
-        public SQLQueryConditionExpression[] SqlQueryConditions { get => new SQLQueryConditionExpression[] { }; set => SqlQueryConditions = value; }
+        private SQLQueryConditionExpression[] mSqlQueryConditions;
+
+        public SQLQueryConditionExpression[] SqlQueryConditions {
+            get {
+                return mSqlQueryConditions;
+            }
+            set {
+                this.mSqlQueryConditions = value;
+            }
+        }
 
         public override string ToString() {
             return mSQLQuery;

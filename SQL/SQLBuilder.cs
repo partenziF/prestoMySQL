@@ -1005,7 +1005,7 @@ namespace prestoMySQL.SQL {
             //Count total params
             outParams ??= new SQLQueryParams( ( ( SQLQuery ) queryInstance ).getParam );
 
-            //    return aQueryInstance.ToString();ù
+
 
             StringBuilder sb = new StringBuilder( "SELECT\r\n" );
 
@@ -1043,7 +1043,7 @@ namespace prestoMySQL.SQL {
 
                 if ( queryInstance.Having.Count > 0 ) {
                     sb.AppendLine( "HAVING" );
-                    sb.AppendLine( String.Join( "\r\n," , queryInstance.Having.OrderBy( x => x.order ).ToList() ) );
+                    sb.AppendLine( "( " + String.Join( "\r\n AND " , queryInstance.Having.OrderBy( x => x.order ).ToList() ) + " )" );
                 }
 
 
@@ -1066,11 +1066,22 @@ namespace prestoMySQL.SQL {
 
         public static SQLQuery SELECT<T>( T sqlQuery ) where T : SQLQuery {
 
-            //throw new NotImplementedException();
-
             sqlQuery.Initialize();
             //myQuery.SelectExpression = SQLTableEntityHelper.getProjectionColumnName<T>( myQuery );
+
+            sqlQuery.ProjectionFunction = sqlQuery.GetProjectionColumnParam<T>( sqlQuery );
+            foreach ( var i in sqlQuery.ProjectionFunction ) {
+                foreach ( var x in i.getParam() ) {
+                    ( ( T ) sqlQuery ).MakeUniqueParamName( x );
+                }
+            }
+
+            //foreach ( dynamic p in sqlQuery.ProjectionFunction.getParams() ) {
+            //    ( ( T ) sqlQuery ).MakeUniqueParamName( p );
+            //}
+
             sqlQuery.SelectExpression = sqlQuery.GetProjectionColumnName<T>( sqlQuery );
+
             List<string> joins = new List<string>();
             Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
 
@@ -1145,13 +1156,13 @@ namespace prestoMySQL.SQL {
                     //var xxx = c.ToString();    
 
                 } else if ( ( Type ) a.TypeId == typeof( DALQueryJoinBetween ) ) {
-                    
+
                 } else if ( ( Type ) a.TypeId == typeof( DALQueryJoinEntityExpression ) ) {
 
                     int baseIndex = 0;
 
                     var mFunctionParams = new List<IFunctionParam>();
-                    
+
                     DALFunctionParam[] dalFunctionParam = ( ( DALFunctionParam[] ) ( typeof( T ).GetCustomAttributes<DALFunctionParam>() ) );
 
                     var totalParam = dalFunctionParam.Sum( x => x.CountParam() ) + a.CountParam();

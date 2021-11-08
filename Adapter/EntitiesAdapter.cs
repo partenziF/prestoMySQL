@@ -1405,7 +1405,7 @@ namespace prestoMySQL.Adapter {
                 MakeUniqueParamName( Constraint );
 
                 mSQLQueryString = SQLBuilder.sqlSelect<T>( this , ref outparam , ParamPlaceholder: "@" , Constraint , PrimaryKeyTables.ToArray() );
-
+                //Console.WriteLine( mSQLQueryString );
                 var rs = mDatabase.ReadQuery( SQLQueryString , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() );
 
                 var r = FetchResultSet( rs , AlmostIsIdentifying );
@@ -1580,6 +1580,7 @@ namespace prestoMySQL.Adapter {
 
 
         public void Read<T>( Func<T , ConstructibleColumn> p , params object[] KeyValues ) where T : TableEntity {
+            
             var x = this.Adapter<T>();
             var xx = p( x );
 
@@ -1648,6 +1649,7 @@ namespace prestoMySQL.Adapter {
 
 
         public void MakeUniqueParamName( EntityConditionalExpression c ) {
+
             if ( ( c != null ) && ( c.countParam() > 0 ) ) {
                 foreach ( QueryParam qp in c.getParam() ) {
                     var count = ( mParamNames.Count( c => c.StartsWith( qp.Name ) ) );

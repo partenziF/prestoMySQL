@@ -587,6 +587,43 @@ namespace prestoMySQL.Helper {
         }
 
 
+        public static List<dynamic> getProjectionColumnParam( SQLQuery aQueryInstance ) {
+
+            var result = new List<dynamic>();
+
+            foreach ( System.Reflection.PropertyInfo f in getProjectionFields( aQueryInstance ) ) {
+                if ( f.PropertyType.IsGenericType && ( f.PropertyType.GetGenericTypeDefinition() == typeof( SQLProjectionFunction<> ) ) ) {
+                    dynamic o = f.GetValue( aQueryInstance );
+                }
+            }
+
+            return result;
+        }
+
+        public static List<dynamic> getProjectionColumnParam<T>( T aQueryInstance ) where T : SQLQuery {
+            
+            var result = new List<dynamic>();
+
+            foreach ( System.Reflection.PropertyInfo f in getProjectionFields<T>() ) {
+
+
+                if ( f.PropertyType.IsGenericType && ( f.PropertyType.GetGenericTypeDefinition() == typeof( SQLProjectionFunction<> ) ) ) {
+
+                    dynamic o = f.GetValue( aQueryInstance );
+                    result.Add( o );
+                    //QueryParam[] param = o.getParam();
+                    //result.AddRange( param );
+                    //new MySQLQueryParam( pQualificaDataOra , nameof( pQualificaDataOra ) )
+                }
+
+
+
+            }
+
+            return result;
+
+        }
+
         public static List<string> getProjectionColumnName<T>( T aQueryInstance ) where T : SQLQuery {
 
             List<string> result = new List<string>();
@@ -613,11 +650,6 @@ namespace prestoMySQL.Helper {
 
             return result;
 
-        }
-
-
-        public static IEnumerable<TableReference> getQueryJoinTableName<T>() {
-            throw new NotImplementedException();
         }
 
 

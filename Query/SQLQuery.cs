@@ -45,6 +45,7 @@ namespace prestoMySQL.Query {
             }
             return c;
         }
+
         public void MakeUniqueParamName( SQLQueryParams queryParams ) {
 
             if ( queryParams != null ) {
@@ -58,6 +59,20 @@ namespace prestoMySQL.Query {
                 }
 
             }
+        }
+
+        public QueryParam MakeUniqueParamName( QueryParam queryParam ) {
+
+            if ( queryParam != null ) {
+
+                var count = ( mParamNames.Count( c => c.StartsWith( queryParam.Name ) ) );
+                if ( count > 0 ) {
+                    queryParam.rename( string.Format( "{0}_{1}" , queryParam.Name , count ) );
+                }
+                mParamNames.Add( queryParam.Name );
+
+            }
+            return queryParam;
         }
 
         public virtual void BuildEntityGraph() {
@@ -85,6 +100,7 @@ namespace prestoMySQL.Query {
 
             mEntities = new List<AbstractEntity>();
             mSelectExpression = new List<string>();
+            mProjectionFunction = new List<dynamic>();
             mWhereCondition = new List<SQLQueryConditionExpression>();
             mJoinTable = new Dictionary<string , IJoin>( StringComparer.OrdinalIgnoreCase );
             mHashOfSQLQueryTableReference = new Dictionary<string , TableReference>();
@@ -154,6 +170,13 @@ namespace prestoMySQL.Query {
 
         }
 
+        protected List<dynamic> mProjectionFunction;
+
+        public List<dynamic> ProjectionFunction {
+            get => mProjectionFunction;
+            set => mProjectionFunction = value;
+        }
+
 
         protected List<string> mSelectExpression;
         public virtual List<string> SelectExpression {
@@ -213,8 +236,13 @@ namespace prestoMySQL.Query {
         public QueryParam[] getParam {
             get {
 
-
                 List<QueryParam> result = new List<QueryParam>();
+
+                foreach ( var i in this.mProjectionFunction ) {
+                    foreach ( var x in i.getParam() ) {
+                        result.Add( x );
+                    }
+                }
 
                 foreach ( IJoin i in this.mJoinTable.Values ) {
                     if ( i.SqlQueryConditions != null ) {
@@ -231,50 +259,6 @@ namespace prestoMySQL.Query {
                         result.Add( j );
                     }
                 }
-
-
-                ////                Console.WriteLine( "{0}.{1}" , this.GetType().Name , nameof( this.getParam ) );
-                ////Console.WriteLine( "=============================" );
-                ////Console.WriteLine( "SQLQuery.getParam mJoinTable {0}" , this.mJoinTable.Count );
-
-                //for ( int i = 0; i < this.mJoinTable.Count; i++ ) {
-
-                //    var jt = this.mJoinTable.ElementAt( i );
-                //    if ( jt.Value.SqlQueryConditions != null ) {
-                //        for ( int k = 0; k < jt.Value.SqlQueryConditions.Length; k++ ) {
-                //            var j = jt.Value.SqlQueryConditions[k];
-                //            for ( int z = 0; z < j.getParam().Length; z++ ) {
-                //                //Console.WriteLine( "\tSQLQuery.getParam {0} = {1}" , j.getParam()[z].Name , j.getParam()[z].Value );
-                //                result.Add( j.getParam()[z] );
-
-
-                //            }
-
-                //        }
-                //    }
-                //}
-
-                ////Console.WriteLine( "SQLQuery.getParam {0}" , this.mWhereCondition.Count );
-                ////for ( int x = 0; x < this.mWhereCondition.Count; x++ ) {
-                ////    Console.WriteLine( "SQLQuery.getParam {0}" , this.mWhereCondition[x] );
-                ////}
-                ////Console.WriteLine( "SQLQuery.getParam mWhereCondition {0}" , this.mWhereCondition.Count );
-
-                //for ( int x = 0; x < this.mWhereCondition.Count; x++ ) {
-
-                //    for ( int z = 0; z < this.mWhereCondition[x].getParam().Length; z++ ) {
-                //        var j = this.mWhereCondition[x].getParam()[z];
-                //        result.Add( j );
-                //        //Console.WriteLine( "\tSQLQuery.getParam {0} = {1}" , j.Name , j.Value );
-
-                //    }
-                //    //foreach ( var j in this.mWhereCondition[x].getParam() ) {
-                //    //    result.Add( j );
-                //    //}
-                //}
-
-                //Console.WriteLine( "SQLQuery.getParam return" );
-                //Console.WriteLine( "-------------------------------------" );
 
                 return result.ToArray();
             }
@@ -436,16 +420,16 @@ namespace prestoMySQL.Query {
         }
 
         protected virtual List<TableReference> GetListOfTableReference() {
+
             return SQLTableEntityHelper.getQueryTableName( this.GetType() );
-            //foreach ( TableReference e in SQLTableEntityHelper.getQueryTableName( this.GetType() ) ) {
-            //    mHashOfSQLQueryTableReference.Add( e.TableName , e );
-            //}
+
         }
 
         public virtual void Initialize() { //final
 
             mParamNames.Clear();
             mSelectExpression.Clear();
+            mProjectionFunction.Clear();
 
             mWhereCondition.Clear();
             mJoinTable.Clear();
@@ -533,9 +517,9 @@ namespace prestoMySQL.Query {
             //}
 
             if ( constraint != null )
-                mJoinTable.TryAdd(  joinTable.ID , ( joinTable is RawQueryJoinTable ) ? joinTable : new SQLQueryJoinTable( this , ( joinTable as JoinTable ) , constraint ) );
+                mJoinTable.TryAdd( joinTable.ID , ( joinTable is RawQueryJoinTable ) ? joinTable : new SQLQueryJoinTable( this , ( joinTable as JoinTable ) , constraint ) );
             else
-                mJoinTable.TryAdd( joinTable.ID, ( joinTable is RawQueryJoinTable ) ? joinTable : new SQLQueryJoinTable( this , ( joinTable as JoinTable ) ) );
+                mJoinTable.TryAdd( joinTable.ID , ( joinTable is RawQueryJoinTable ) ? joinTable : new SQLQueryJoinTable( this , ( joinTable as JoinTable ) ) );
 
         }
 
@@ -811,6 +795,9 @@ namespace prestoMySQL.Query {
         internal virtual List<string> GetProjectionColumnName<T>( T sqlQuery ) where T : SQLQuery {
             return SQLTableEntityHelper.getProjectionColumnName<T>( sqlQuery );
         }
+        internal virtual List<dynamic> GetProjectionColumnParam<T>( T sqlQuery ) where T : SQLQuery {
+            return SQLTableEntityHelper.getProjectionColumnParam<T>( sqlQuery );
+        }
 
         internal virtual IEnumerable<DALGenericQueryJoinConstraint> GetQueryJoinConstraint() {
             return SQLTableEntityHelper.getQueryJoinConstraint( this.GetType() );
@@ -822,7 +809,7 @@ namespace prestoMySQL.Query {
 
 
         public void Build() {
-            
+
             this.mGroupBy.Clear();
             this.mOrderBy.Clear();
             //this.mJoinTable.Clear();

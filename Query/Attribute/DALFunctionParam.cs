@@ -113,6 +113,24 @@ namespace prestoMySQL.Query.Attribute {
 
     }
 
+
+    [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]    
+    public class DALFunctionParamQueryParam : DALFunctionParam {
+
+        //public Type Expression { get; set; }
+        public Type DataType { get; set; }
+        public string Value { get; set; }
+        public string ParamName { get; set; }
+        public string ParamPlaceHolder { get; set; }
+
+
+        public override int CountParam() {
+            return 0;
+        }
+
+    }
+
+
     [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
     public class DALAlias : DALFunctionParam {
         public override int CountParam() {

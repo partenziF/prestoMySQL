@@ -902,7 +902,7 @@ namespace prestoMySQL.Adapter {
 
                 int? rowInserted = -1;
                 try {
-
+                    
                     rowInserted = mDatabase.ExecuteQuery( SQLQuery , outparam.asArray().Select( x => ( MySqlParameter ) x ).ToArray() ) ?? null;
 
                     if ( rowInserted is null ) {

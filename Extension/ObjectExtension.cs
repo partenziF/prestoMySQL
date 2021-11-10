@@ -43,7 +43,16 @@ namespace prestoMySQL.Extension {
                 } else if ( source.GetType() == typeof( DBNull ) ) {
                     return default( T );
                 } else {
-                    return ( T ) Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
+                    if ( Nullable.GetUnderlyingType( t ).IsEnum ) {
+                        if ( ( string ) source != String.Empty ) {
+                            return ( T ) Enum.Parse( Nullable.GetUnderlyingType( t ) , ( string ) source );
+                        }else {
+                            return default( T );
+                        }
+
+                    } else {
+                        return ( T ) Convert.ChangeType( source , Nullable.GetUnderlyingType( t ) );
+                    }
                 }
             } else {
                 // Encoding.ASCII.GetString

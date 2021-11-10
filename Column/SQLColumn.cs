@@ -350,6 +350,8 @@ namespace prestoMySQL.Column {
             TypeCode code;
             if ( TypeWrapperValue is null ) {
                 return isNotNull ? default( string ) : throw new ArgumentNullException();
+            } else if (TypeWrapperValue.ToObject().GetType().IsEnum ) {
+                return TypeWrapperValue.ToString();
             } else if ( TypeWrapperValue.IsInteger( out code ) ) {
                 return ( ( long ) Convert.ChangeType( TypeWrapperValue , typeof( long ) ) ).ToString();
             } else if ( TypeWrapperValue.IsFloatingPoint( out code ) ) {

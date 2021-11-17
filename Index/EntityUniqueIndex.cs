@@ -17,6 +17,9 @@ namespace prestoMySQL.Entity {
         private readonly int mKeyLength;
         public int KeyLength { get => mKeyLength; }
 
+        private DelegateCreateUniqueKey delegatorCreateUniqueKey = null;
+
+
         public EntityUniqueIndex( string Name , AbstractEntity aTableEntity ) : base() {
             this.Table = aTableEntity;
 
@@ -97,6 +100,23 @@ namespace prestoMySQL.Entity {
 
             }
 
+        }
+
+        public virtual void doCreateUniqueKey() {
+
+            if ( delegatorCreateUniqueKey != null ) {
+                this.delegatorCreateUniqueKey( this.Table );//.createPrimaryKey();            
+            } else {
+                foreach ( var (name, pi) in IndexColumns ) {
+
+                    ReflectionTypeHelper.SetValueToColumn( this , pi , null );
+                }
+            }
+        }
+
+
+        public void setDoCreateUniqueKey( DelegateCreateUniqueKey doCreatePrimaryKey ) {
+            this.delegatorCreateUniqueKey = doCreatePrimaryKey;
         }
     }
 

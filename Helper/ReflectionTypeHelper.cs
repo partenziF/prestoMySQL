@@ -165,6 +165,22 @@ namespace prestoMySQL.Helper {
 
         }
 
+        public static void SetValueToColumn( EntityUniqueIndex key , PropertyInfo pi , dynamic value ) {
+
+            //TODO oppure usare il metodo AssignValue
+            ConstructibleColumn col = ( ConstructibleColumn ) ( pi?.GetValue( key.Table ) );
+            var p2 = col.GetType().GetProperty( nameof( MySQLDefinitionColumn<SQLTypeWrapper<dynamic>>.TypeWrapperValue ) );
+            if ( value != null ) {
+                var ctors = p2.PropertyType.GetConstructor( new Type[] { col.GenericType } );
+                var setter = p2.GetSetMethod( nonPublic: true );
+                var x = setter.Invoke( col , new object?[] { ctors.Invoke( new object?[] { Convert.ChangeType( value , col.GenericType ) } ) } );
+            } else {
+
+                p2.SetValue( col , p2.PropertyType.GetField( "NULL" ).GetValue( value ) );
+            }
+
+        }
+
 
         public static void SetValueToColumn( AbstractEntity entity, PropertyInfo pi , dynamic value ) {
 

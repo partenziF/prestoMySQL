@@ -898,6 +898,7 @@ namespace prestoMySQL.Adapter {
 
             if ( entity.State == prestoMySQL.Entity.Interface.EntityState.Changed ) {
 
+
                 mSQLQuery = SQLBuilder.sqlInsert<T>( ( T ) entity , ref outparam , "@" );
 
                 int? rowInserted = -1;
@@ -1192,6 +1193,10 @@ namespace prestoMySQL.Adapter {
             OnInitData( EventArgs.Empty );
 
         }
+
+        public override void CreateUniqueKey() {
+        }
+
 
         public U defaultValue<U>( string propertyName ) {
 

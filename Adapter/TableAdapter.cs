@@ -47,6 +47,8 @@ namespace prestoMySQL.Adapter {
         public abstract void SetPrimaryKey();
         public abstract void CreatePrimaryKey();
         public abstract void createForeignKey();
+
+        public abstract void CreateUniqueKey();
         public abstract void CreateEvents();
 
 

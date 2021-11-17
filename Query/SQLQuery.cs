@@ -339,79 +339,9 @@ namespace prestoMySQL.Query {
 
         }
 
-        //public override string ToString() {
-
-        //    StringBuilder sb = new StringBuilder();
-
-        //    try {
-
-
-        //        sb.Append( String.Format( "SELECT\r\n\t{0} " , String.Join( ',' , SelectExpression ) ) );
-        //        sb.Append( String.Format( "\r\nFROM\r\n\t{0} " , String.Join( ',' , mHashOfSQLQueryTableReference.Select( x => x.Value.ToString() ).ToArray() ) ) );
-
-        //        //    if ( !mJoinTable.isEmpty() ) {
-        //        //        String[] j = new String[mJoinTable.size()];
-        //        //        int i = 0;
-        //        //        for ( SQLQueryJoinTable jt : mJoinTable ) {
-        //        //            j[i++] = jt.toString();
-        //        //        }
-        //        //        sb.append( String.format( "\r\n %s " , String.join( "\r\n\t" , j ) ) );
-
-        //        //    }
-
-        //        if ( ( mWhereCondition.Count > 0 ) ) {
-
-        //            String[] c = new String[mWhereCondition.Count];
-        //            int i = 0;
-        //            foreach ( SQLQueryConditionExpression sc in mWhereCondition ) {
-        //                c[i++] = sc.ToString();
-        //            }
-
-        //            sb.Append( String.Format( "\r\nWHERE\r\n\t( {0} )" , String.Join( " AND " , c ) ) );
-
-        //        }
-
-        //        //    if ( !mGroupBy.isEmpty() ) {
-        //        //        String[] c = new String[mGroupBy.size()];
-        //        //        int i = 0;
-        //        //        for ( SQLQueryGroupBy sc : mGroupBy ) {
-        //        //            c[i++] = sc.toString();
-        //        //        }
-
-        //        //        sb.append( String.format( "\r\nGROUP BY\r\n\t%s " , String.join( "," , c ) ) );
-
-        //        //    }
-
-        //        //    if ( !mOrderBy.isEmpty() ) {
-        //        //        String[] c = new String[mOrderBy.size()];
-        //        //        int i = 0;
-        //        //        for ( SQLQueryOrderBy sc : mOrderBy ) {
-        //        //            c[i++] = sc.toString();
-        //        //        }
-
-        //        //        sb.append( String.format( "\r\nORDER BY\r\n\t%s " , String.join( "," , c ) ) );
-        //        //    }
-
-        //        if ( ( mOffset is not null ) && ( mRowCount is not null ) ) {
-        //            sb.Append( String.Format( $"LIMIT {mRowCount} OFFSET {mOffset}" ) );
-        //        } else if ( ( mOffset is null ) && ( mRowCount is not null ) ) {
-        //            sb.Append( String.Format( $"LIMIT {mRowCount}" ) );
-        //        } else if ( ( mOffset is not null ) && ( mRowCount is null ) ) {
-        //            throw new ArgumentException( "Invalid argument RowCount can't be null." );
-        //        }
-
-        //    } catch ( System.Exception e ) {
-        //        //    // TODO Auto-generated catch block
-        //        //    e.printStackTrace();
-        //    }
-        //    return sb.ToString();
-        //}
-
-
         public int execute() {
             return 0;
         }
-
 
         public virtual List<dynamic> GetProjectionColumns<T>( T myQuery ) where T : SQLQuery {
 

@@ -35,6 +35,10 @@ namespace prestoMySQL.Database.Cursor {
         object IEnumerator.Current => mResultSet;
 
         public void Dispose() {
+#if DEBUG
+            Console.WriteLine( "Cursor.Dispose()" );
+#endif
+
             Close();
         }
 
@@ -55,6 +59,11 @@ namespace prestoMySQL.Database.Cursor {
         }
 
         public void Close() {
+
+#if DEBUG
+            Console.WriteLine( "ResultSet Close()"  );
+#endif
+
             mResultSet?.close();
         }
 

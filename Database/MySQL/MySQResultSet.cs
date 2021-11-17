@@ -34,6 +34,13 @@ namespace prestoMySQL.Database.MySQL {
         public void close() {
             //throw new NotImplementedException();
             if ( this.mResultSet != null ) {
+
+
+#if DEBUG
+                Console.WriteLine( "ResultSet.Close()" );
+#endif
+
+
                 mResultSet.Close();
             }
         }

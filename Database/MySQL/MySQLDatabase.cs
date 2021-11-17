@@ -44,7 +44,9 @@ namespace prestoMySQL.Database.MySQL {
                             Password = this.mPassword ,
                             Database = this.mDatabase ,
                             Port = this.mPort ,
-                            ConnectionTimeout = this.mTimeout
+                            ConnectionTimeout = this.mTimeout ,
+                            DefaultCommandTimeout = this.mTimeout
+
                         };
 
                     } else {
@@ -56,6 +58,7 @@ namespace prestoMySQL.Database.MySQL {
                             Database = this.mDatabase ,
                             Port = this.mPort ,
                             ConnectionTimeout = this.mTimeout ,
+                            DefaultCommandTimeout = this.mTimeout ,
                             CharacterSet = this.mCharset
                         };
 
@@ -112,13 +115,16 @@ namespace prestoMySQL.Database.MySQL {
             }
         }
 
-
         public MySQLDatabase( string mConnectionString , ILogger aLogger = null ) : base( mConnectionString , aLogger ) {
             this.mTimeout = 15;
         }
 
-        public MySQLDatabase( string aUsername , string aPassword , string aHost , string aDatabase , uint aPort = 3306 , ILogger aLogger = null ) : base( aUsername , aPassword , aHost , aDatabase , aPort , aLogger ) {
-            this.mTimeout = 15;
+        public MySQLDatabase( string mConnectionString , ILogger aLogger = null , uint Timeout = 15 ) : base( mConnectionString , aLogger ) {
+            this.mTimeout = Timeout;
+        }
+
+        public MySQLDatabase( string aUsername , string aPassword , string aHost , string aDatabase , uint aPort = 3306 , ILogger aLogger = null , uint Timeout = 15 ) : base( aUsername , aPassword , aHost , aDatabase , aPort , aLogger ) {
+            this.mTimeout = Timeout;
         }
 
 
@@ -233,6 +239,12 @@ namespace prestoMySQL.Database.MySQL {
                         mCommand.Parameters.AddRange( args );
                     }
 
+
+#if DEBUG
+                    Console.WriteLine( "{0}\r\n{1}" , aSQLQuery , String.Join( "\r\n" , args.ToList().Select( a => $"{a.ParameterName} = {a.Value}" ).ToArray() ) );
+#endif
+
+
                     result = Command.ExecuteNonQuery();
 
                 } catch ( MySqlException ex ) {
@@ -257,6 +269,11 @@ namespace prestoMySQL.Database.MySQL {
 
                     Command.CommandText = aSQLQuery;
 
+#if DEBUG
+                    Console.WriteLine( "{0}\r\n{1}" , aSQLQuery , String.Join( "\r\n" , args.ToList().Select( a => $"{a.ParameterName} = {a.Value}" ).ToArray() ) );
+#endif
+
+
                     if ( mTransaction != null )
                         this.mCommand.Transaction = mTransaction;
 
@@ -266,7 +283,11 @@ namespace prestoMySQL.Database.MySQL {
                         mCommand.Parameters.AddRange( args );
                     }
 
+
+
                     var rs = Command.ExecuteReader();
+
+
 
                     if ( ( Logger is not null ) && ( args?.Length > 0 ) ) {
                         args.ToList().ForEach( a => Logger?.LogDebug( a.ParameterName + " " + a.Value ) );
@@ -307,6 +328,10 @@ namespace prestoMySQL.Database.MySQL {
                         mCommand.Parameters.AddRange( args );
                         //}
                     }
+
+#if DEBUG
+                    Console.WriteLine( "{0}\r\n{1}" , aSQLQuery , String.Join( "\r\n" , args.ToList().Select( a => $"{a.ParameterName} = {a.Value}" ).ToArray() ) );
+#endif
 
                     var rs = await Command.ExecuteReaderAsync();
 
@@ -418,6 +443,7 @@ namespace prestoMySQL.Database.MySQL {
 
         public override bool Close() {
 
+
             if ( isConnected ) {
 
                 if ( mTransaction != null ) {
@@ -458,6 +484,9 @@ namespace prestoMySQL.Database.MySQL {
                     }
 
 
+#if DEBUG
+                    Console.WriteLine( "{0}\r\n{1}" , aSQLQuery , args );
+#endif
 
                     var value = Command.ExecuteScalar();
                     if ( value is not null ) result = value.ConvertTo<T>();
@@ -502,6 +531,9 @@ namespace prestoMySQL.Database.MySQL {
                     }
 
 
+#if DEBUG
+                    Console.WriteLine( "{0}\r\n{1}" , aSQLQuery , args );
+#endif
 
                     var id = await Command.ExecuteScalarAsync();
                     result = id.ConvertTo<T>();

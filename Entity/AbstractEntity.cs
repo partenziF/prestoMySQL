@@ -100,12 +100,17 @@ namespace prestoMySQL.Entity {
             this.mPrimaryKey = aPrimaryKey;
             this.mPrimaryKey.setDoCreatePrimaryKey( aDelegatorCreatePrimaryKey );
         }
+
         public AbstractEntity setCreatePrimaryKey( DelegateCreatePrimaryKey delegatorCreatePrimaryKey ) {
             this.mPrimaryKey.setDoCreatePrimaryKey( delegatorCreatePrimaryKey );
             return this;
         }
 
         #endregion
+        public AbstractEntity setCreateUniqueKey( EntityUniqueIndex e, DelegateCreateUniqueKey delegatorCreateUniqueKey ) {
+            e.setDoCreateUniqueKey( delegatorCreateUniqueKey );
+            return this;
+        }
 
 
         public EntityUniqueIndex createUniqueIndex( [CallerMemberName] string memberName = "" , params object[] values ) {

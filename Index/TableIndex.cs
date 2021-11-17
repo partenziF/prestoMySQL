@@ -8,11 +8,14 @@ using prestoMySQL.Entity;
 
 namespace prestoMySQL.Index {
 
+    public delegate void DelegateCreateUniqueKey( AbstractEntity e );
+
     public interface ITableIndex {
 
         public AbstractEntity Table { get; set; }
 
         public PropertyInfo this[string index] { get; }
+
 
     }
 
@@ -33,6 +36,8 @@ namespace prestoMySQL.Index {
 
 
         protected IDictionary<string , PropertyInfo> IndexColumns;
+
+        
 
         public PropertyInfo this[string index] {
 

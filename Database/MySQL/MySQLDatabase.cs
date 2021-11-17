@@ -241,7 +241,7 @@ namespace prestoMySQL.Database.MySQL {
 
 
 #if DEBUG
-                    Console.WriteLine( "{0}\r\n{1}" , aSQLQuery , String.Join( "\r\n" , args.ToList().Select( a => $"{a.ParameterName} = {a.Value}" ).ToArray() ) );
+                    Console.WriteLine( "[{0}]\r\n{1}\r\n{2}" , DateTime.Now.ToString( "G" ) , Command.CommandText , String.Join( "\r\n" , args.ToList().Select( a => $"{a.DbType} {a.ParameterName} = {a.Value}" ).ToArray() ) );
 #endif
 
 
@@ -270,7 +270,7 @@ namespace prestoMySQL.Database.MySQL {
                     Command.CommandText = aSQLQuery;
 
 #if DEBUG
-                    Console.WriteLine( "{0}\r\n{1}" , aSQLQuery , String.Join( "\r\n" , args.ToList().Select( a => $"{a.ParameterName} = {a.Value}" ).ToArray() ) );
+                    Console.WriteLine( "[{0}]\r\n{1}\r\n{2}" , DateTime.Now.ToString( "G" ) , Command.CommandText , String.Join( "\r\n" , args.ToList().Select( a => $"{a.DbType} {a.ParameterName} = {a.Value}" ).ToArray() ) );
 #endif
 
 
@@ -330,7 +330,7 @@ namespace prestoMySQL.Database.MySQL {
                     }
 
 #if DEBUG
-                    Console.WriteLine( "{0}\r\n{1}" , aSQLQuery , String.Join( "\r\n" , args.ToList().Select( a => $"{a.ParameterName} = {a.Value}" ).ToArray() ) );
+                    Console.WriteLine( "[{0}]\r\n{1}\r\n{2}" , DateTime.Now.ToString( "G" ) , Command.CommandText , String.Join( "\r\n" , args.ToList().Select( a => $"{a.DbType} {a.ParameterName} = {a.Value}" ).ToArray() ) );
 #endif
 
                     var rs = await Command.ExecuteReaderAsync();
@@ -485,7 +485,7 @@ namespace prestoMySQL.Database.MySQL {
 
 
 #if DEBUG
-                    Console.WriteLine( "{0}\r\n{1}" , aSQLQuery , args );
+                    Console.WriteLine( "[{0}]\r\n{1}\r\n{2}" , DateTime.Now.ToString( "G" ) , Command.CommandText , String.Join( "\r\n" , args.ToList().Select( a => $"{a.DbType} {a.ParameterName} = {a.Value}" ).ToArray() ) );
 #endif
 
                     var value = Command.ExecuteScalar();
@@ -532,7 +532,7 @@ namespace prestoMySQL.Database.MySQL {
 
 
 #if DEBUG
-                    Console.WriteLine( "{0}\r\n{1}" , aSQLQuery , args );
+                    Console.WriteLine( "[{0}]\r\n{1}\r\n{2}" , DateTime.Now.ToString( "G" ) , Command.CommandText , String.Join( "\r\n" , args.ToList().Select( a => $"{a.DbType} {a.ParameterName} = {a.Value}" ).ToArray() ) );
 #endif
 
                     var id = await Command.ExecuteScalarAsync();

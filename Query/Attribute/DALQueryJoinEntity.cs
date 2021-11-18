@@ -33,8 +33,7 @@ namespace prestoMySQL.Query.Attribute {
         }
     }
 
-    [AttributeUsage( AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
-   
+    [AttributeUsage( AttributeTargets.Class , AllowMultiple = true , Inherited = false )]   
     public class DALQueryJoinSubQueryConstraint : DALGenericQueryJoinConstraint {
         public Type SubQuery { get; set; }
         public string FieldNameSubQuery { get; set; }
@@ -57,9 +56,7 @@ namespace prestoMySQL.Query.Attribute {
     public class DALQueryJoinEntity : System.Attribute {
         public Type Entity;
         public string Alias;
-
     }
-
 
     [AttributeUsage( AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
     public class DALQueryJoinEntityUnConstraint : System.Attribute {

@@ -299,6 +299,11 @@ namespace prestoMySQL.Database.MySQL {
                 } catch ( MySqlException ex ) {
                     Logger?.LogWarning( $"{nameof( ExecuteQueryAsync )} {{0}}" , ex.Message );
                     this.LastError = new LastErrorInfo( ex );
+
+#if DEBUG
+                    Console.WriteLine( "[{0}]\t{1}" , DateTime.Now.ToString( "G" ) , ex.Message );
+#endif
+
                 }
 
             } else {

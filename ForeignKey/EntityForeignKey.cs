@@ -60,24 +60,9 @@ namespace prestoMySQL.ForeignKey {
 
                                 this.foreignKeyColumns.Add( aa.Name , p );
 
-                                //this.TypeReferenceTable = a.TableReferences;
-
-                                //this.mReferenceColumnName = a.Reference;
-                                //this.mColumnName = aa.Name;
                                 this.JoinType = aa.NullValue == NullValue.NotNull ? JoinType.INNER : JoinType.LEFT;
 
-                                //this.mPropertyInfo = p;
-
-
                                 this.foreignKeyInfo.Add( new ForeignKeyInfo( p , a.TableReferences , a.TableAlias , a.Reference , aTableEntity , aa.Name ) );
-
-                                //if ( !foreignKeyInfo.ContainsKey( a.TableReferences ) ) {
-                                //    foreignKeyInfo.Add( a.TableReferences , new Dictionary<string , ForeignKeyInfo>() );
-                                //    foreignKeyInfo[a.TableReferences].Add( foreignkeyName , new ForeignKeyInfo( p , a.TableReferences , a.Reference , aTableEntity , aa.Name ) );
-
-                                //} else {
-                                //    foreignKeyInfo[a.TableReferences].Add( foreignkeyName , new ForeignKeyInfo( p , a.TableReferences , a.Reference , aTableEntity , aa.Name ) );
-                                //}
 
                             }
 

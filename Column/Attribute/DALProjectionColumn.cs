@@ -43,7 +43,7 @@ namespace prestoMySQL.Column.Attribute {
     [AttributeUsage( AttributeTargets.Property , AllowMultiple = false , Inherited = false )]
     public sealed class DALStringProjectionColumnAttribute : DALProjectionColumn {        
 
-        public byte Length { get; set; }
+        public int Length { get; set; }
         public string Charset { get; set; }
 
 

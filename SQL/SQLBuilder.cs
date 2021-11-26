@@ -645,6 +645,9 @@ namespace prestoMySQL.SQL {
 
         public static Dictionary<AbstractEntity , JoinTable> BuildJoinTable( ref Stack<AbstractEntity> visited , List<ForeignkeyConstraint> fkConstraint , List<EntityForeignKey> listFK ) {
 
+#if DEBUG
+            Console.WriteLine( "TotalMemory {0} CollectionCount:{1}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) );
+#endif
             Dictionary<AbstractEntity , JoinTable> joinTable = new Dictionary<AbstractEntity , JoinTable>();
 
             var OrderArcs = new List<EntityForeignKey>();
@@ -753,6 +756,21 @@ namespace prestoMySQL.SQL {
                 //}
             }
 
+#if DEBUG
+            Console.WriteLine( "TotalMemory {0} CollectionCount:{1}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) );
+#endif
+
+            OrderArcs.Clear();
+            OrderVisit.Clear();
+#if DEBUG
+            Console.WriteLine( "TotalMemory {0} CollectionCount:{1}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) );
+#endif
+            GC.Collect();
+
+#if DEBUG
+            Console.WriteLine( "TotalMemory {0} CollectionCount:{1}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) );
+#endif
+
             return joinTable;
         }
 
@@ -772,99 +790,6 @@ namespace prestoMySQL.SQL {
             }
 
             return sqlSelect( startEntity , primaryKeyTables , tables , Entities , ref outParams , ParamPlaceholder , Constraint );
-
-            //List<dynamic> pkColumnDefinition = SQLTableEntityHelper.getPrimaryKeyDefinitionColumn( startEntity );
-            //List<string> columnsName = new List<string>();
-            //List<string> joins = new List<string>();
-            //Stack<AbstractEntity> visited = new Stack<AbstractEntity>();
-
-            ////var aliases = new Dictionary<string , AbstractEntity>( tables.Count );
-            ////foreach ( var t in tables ) {
-            ////    if ( aliases.ContainsKey( t.TableName ) ) {
-            ////        if ( t.FkNames.Count == 1 ) {
-            ////            if ( !aliases.ContainsKey( t.FkNames.FirstOrDefault() ) ) {
-            ////                aliases.Add( t.FkNames.FirstOrDefault() , t );
-            ////                t.AliasName = t.FkNames.FirstOrDefault();
-            ////            }
-            ////        } else {
-            ////            throw new NotImplementedException( "sqlSelect t.FkNames.Count > 1" );
-            ////        }
-            ////    } else {
-            ////        aliases.Add( t.TableName , t );
-            ////    }
-            ////}
-
-            //visited.Push( startEntity );
-
-            //StringBuilder sb = new StringBuilder( "SELECT\r\n" );
-
-            //foreach ( var e in tables ) {
-
-            //    //foreach ( var c in SQLTableEntityHelper.getDefinitionColumn( e , true ) ) {
-            //    //    c.Table.TableAlias = e.AliasName ?? c.Table.ActualName;
-            //    //    columnsName.Add( ( string ) c.ToString() );
-            //    //}
-
-            //    columnsName.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
-            //    columnsName[columnsName.Count - 1] += "\r\n";
-
-            //}
-            ////columnsName.RemoveAt( columnsName.Count() - 1 );
-
-            ////joins.AddRange( Entities.GetForeignKeys().Select( fk => fk.ToString() ).ToList() );
-
-            //var listFK = Entities.GetForeignKeys();
-            //foreach ( var fks in listFK ) {
-
-            //    foreach ( var info in fks.foreignKeyInfo ) {
-
-            //        joins.Add( sqlJoin( visited , fks ) );
-
-            //        if ( !visited.Contains( info.Table ) ) {
-            //            visited?.Push( info.Table );
-            //        } else if ( !visited.Contains( info.ReferenceTable ) ) {
-            //            visited?.Push( info.ReferenceTable );
-            //        } else {
-            //            //Console.WriteLine( "provva" );
-            //            throw new NotImplementedException( "sqlSelect else not implemented" );
-            //        }
-
-
-            //    }
-
-
-            //}
-
-
-            //sb.AppendLine( string.Join( "," , columnsName ) );
-
-            //sb.AppendLine( "FROM" );
-            //sb.AppendLine( SQLTableEntityHelper.getTableName( startEntity.GetType() ) );
-
-            //sb.AppendLine( ( joins.Count > 0 ? String.Join( "\r\n" , joins ) : String.Empty ) );
-
-            //EntityConditionalExpression constraintExpression = null;
-
-            //if ( Constraint?.Length > 0 ) {
-
-            //    constraintExpression = new EntityConditionalExpression( LogicOperator.AND ,
-
-            //    new EntityConditionalExpression( LogicOperator.AND ,
-            //         new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() ) ,
-            //         new EntityConditionalExpression( LogicOperator.AND , Constraint )
-            //        ) );
-
-            //} else {
-            //    constraintExpression = new EntityConditionalExpression( LogicOperator.AND , pkColumnDefinition.Select( x => FactoryEntityConstraint.MakeConstraintEqual( x , ParamPlaceholder ) ).ToArray() );
-            //}
-
-            //outParams ??= new SQLQueryParams( constraintExpression.getParam() );
-
-            //sb.AppendLine( "WHERE" );
-            //sb.AppendLine( constraintExpression.ToString() );
-
-
-            //return sb.ToString();
 
         }
         public static string sqlSelect( EntitiesAdapter Entities , ref SQLQueryParams outParams , string ParamPlaceholder = "" , EntityConditionalExpression Constraint = null ) {
@@ -1065,6 +990,9 @@ namespace prestoMySQL.SQL {
         }
 
         public static SQLQuery SELECT<T>( T sqlQuery ) where T : SQLQuery {
+#if DEBUG
+            Console.WriteLine( "{2} TotalMemory {0} CollectionCount:{1}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) , nameof( SELECT ) );
+#endif
 
             sqlQuery.Initialize();
             //myQuery.SelectExpression = SQLTableEntityHelper.getProjectionColumnName<T>( myQuery );
@@ -1120,6 +1048,21 @@ namespace prestoMySQL.SQL {
 
                 joins.Add( jt.ToString() );
             }
+
+#if DEBUG
+            Console.WriteLine( "{2} Before Collect TotalMemory {0} CollectionCount:{1}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) , nameof( SELECT ) );
+#endif
+
+            joins.Clear();
+            visited.Clear();
+            fkConstraint.Clear();
+            listFK.Clear();
+
+            GC.Collect();
+#if DEBUG
+            Console.WriteLine( "{2} After Collect TotalMemory {0} CollectionCount:{1}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) , nameof( SELECT ) );
+#endif
+
 
             return ( T ) sqlQuery;
 

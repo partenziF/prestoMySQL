@@ -13,6 +13,7 @@ namespace prestoMySQL.Query.SQL {
     public interface IJoin {
         public SQLQueryConditionExpression[] SqlQueryConditions { get; set; }
         public string ID { get; }
+        public JoinType JoinType { get; set; }
     }
 
     public class JoinForeignKey {
@@ -160,14 +161,14 @@ namespace prestoMySQL.Query.SQL {
         private string id;
         private string mSQLQuery;
 
-        public string ID { get => id;  }
-        public RawQueryJoinTable(string id, string sQLQuery, params SQLQueryConditionExpression[] constraint ) {
+        public string ID { get => id; }
+        public RawQueryJoinTable( string id , string sQLQuery , params SQLQueryConditionExpression[] constraint ) {
             //this.mTable = new 
             this.id = id;
             this.mSQLQuery = sQLQuery;
             SqlQueryConditions = constraint.Length == 0 ? null : constraint.ToArray();
 
- 
+
         }
 
         private SQLQueryConditionExpression[] mSqlQueryConditions;
@@ -180,6 +181,8 @@ namespace prestoMySQL.Query.SQL {
                 this.mSqlQueryConditions = value;
             }
         }
+
+        public JoinType JoinType { get => JoinType.NONE; set => _ = value; }
 
         public override string ToString() {
             return mSQLQuery;

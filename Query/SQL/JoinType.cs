@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace prestoMySQL.Query.SQL {
     public enum JoinType {
-        INNER, LEFT, RIGHT
+        NONE, INNER, LEFT, RIGHT
     }
 
 	public enum LogicOperator {

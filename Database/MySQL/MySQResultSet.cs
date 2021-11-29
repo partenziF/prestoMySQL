@@ -231,24 +231,24 @@ namespace prestoMySQL.Database.MySQL {
         public MySQResultSet( MySqlDataReader aResultSet ) : base( aResultSet ) {
         }
 
-        public T MapTo<T>() where T : struct {
+        public T MapTo<T>( string tableName = null ) where T : struct {
 
             var schema = this.ResultSetSchemaTable();
             object result = Activator.CreateInstance<T>();
             //objectResult = ( object ) result;
 
-            MethodInfo miGetValueAs = this.GetType().GetMethod( nameof( this.getValueAs ), new Type[] { typeof(int)} );
+            MethodInfo miGetValueAs = this.GetType().GetMethod( nameof( this.getValueAs ) , new Type[] { typeof( int ) } );
 
-            if ( schema.ContainsKey( typeof( T ).Name ) ) {
+            if ( schema.ContainsKey( tableName ?? typeof( T ).Name ) ) {
 
                 foreach ( var p in typeof( T ).GetProperties() ) {
 
-                    if ( schema[typeof( T ).Name].ContainsKey( p.Name ) ) {
+                    if ( schema[tableName ?? typeof( T ).Name].ContainsKey( p.Name ) ) {
 
                         MethodInfo getValueAs = miGetValueAs.MakeGenericMethod( p.PropertyType );
-                        var v = getValueAs.Invoke( this , new object[] { schema[typeof( T ).Name][p.Name] } );
+                        var v = getValueAs.Invoke( this , new object[] { schema[tableName ?? typeof( T ).Name][p.Name] } );
 
-                        p.SetValue( result , v, null );
+                        p.SetValue( result , v , null );
 
                     }
                 }
@@ -257,7 +257,7 @@ namespace prestoMySQL.Database.MySQL {
             }
 
             schema.Clear();
-            return (T) result;
+            return ( T ) result;
 
         }
     }

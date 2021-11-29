@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using prestoMySQL.Extension;
 using System.Collections;
 using System.Data;
-
+using System.Reflection;
 
 namespace prestoMySQL.Database.MySQL {
 
@@ -19,14 +19,14 @@ namespace prestoMySQL.Database.MySQL {
 
         //private Task<T> mResultSet;
         private T mResultSet;
-        private Random rand;
+        //private Random rand;
 
         public object this[string name] => mResultSet[name] ?? throw new NullReferenceException( "Invalid resultset" );
 
         //public MySQResultSet( Task<T> aResultSet ) {
         public ReadableResultSet( T aResultSet ) {
             this.mResultSet = aResultSet;
-            this.rand = new Random();
+            //this.rand = new Random();
         }
 
 
@@ -140,7 +140,6 @@ namespace prestoMySQL.Database.MySQL {
 
         public string getString( int i ) {
             if ( ( this.mResultSet != null ) && ( !this.mResultSet.IsClosed ) ) {
-
                 return this.mResultSet.GetString( i );
 
             } else {
@@ -164,6 +163,7 @@ namespace prestoMySQL.Database.MySQL {
 
 
         public Dictionary<string , Dictionary<string , int>> ResultSetSchemaTable() {
+
             Dictionary<string , Dictionary<string , int>> result = new Dictionary<string , Dictionary<string , int>>( StringComparer.OrdinalIgnoreCase );
             DataTable schema = mResultSet.GetSchemaTable();
 
@@ -174,7 +174,9 @@ namespace prestoMySQL.Database.MySQL {
                 string tablename = rdrColumn[schema.Columns["BaseTableName"]].ToString();
                 int index = ( int ) rdrColumn[schema.Columns["ColumnOrdinal"]];
                 string BaseColumnName = rdrColumn[schema.Columns["BaseColumnName"]].ToString();
+
                 if ( !columnName.Equals( BaseColumnName ) ) {
+
                     var beginChar = columnName.IndexOf( '{' );
                     if ( beginChar != -1 ) {
                         var endChar = columnName.IndexOf( '}' , beginChar );
@@ -189,6 +191,7 @@ namespace prestoMySQL.Database.MySQL {
                         }
                     }
                 }
+
                 if ( result.ContainsKey( tablename ) ) {
                     if ( result[tablename].ContainsKey( columnName ) ) {
                         result[tablename][columnName] = index;
@@ -203,6 +206,7 @@ namespace prestoMySQL.Database.MySQL {
             }
 
             return result;
+
             //Dictionary<int , String> columnNames = new Dictionary<int , string>();
             //int index = 0;
             //foreach ( DataRow row in schema.Rows ) {
@@ -225,6 +229,36 @@ namespace prestoMySQL.Database.MySQL {
 
     public class MySQResultSet : ReadableResultSet<MySqlDataReader> {
         public MySQResultSet( MySqlDataReader aResultSet ) : base( aResultSet ) {
+        }
+
+        public T MapTo<T>() where T : struct {
+
+            var schema = this.ResultSetSchemaTable();
+            object result = Activator.CreateInstance<T>();
+            //objectResult = ( object ) result;
+
+            MethodInfo miGetValueAs = this.GetType().GetMethod( nameof( this.getValueAs ), new Type[] { typeof(int)} );
+
+            if ( schema.ContainsKey( typeof( T ).Name ) ) {
+
+                foreach ( var p in typeof( T ).GetProperties() ) {
+
+                    if ( schema[typeof( T ).Name].ContainsKey( p.Name ) ) {
+
+                        MethodInfo getValueAs = miGetValueAs.MakeGenericMethod( p.PropertyType );
+                        var v = getValueAs.Invoke( this , new object[] { schema[typeof( T ).Name][p.Name] } );
+
+                        p.SetValue( result , v, null );
+
+                    }
+                }
+
+
+            }
+
+            schema.Clear();
+            return (T) result;
+
         }
     }
 }

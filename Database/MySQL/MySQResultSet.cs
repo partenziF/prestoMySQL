@@ -11,6 +11,7 @@ using prestoMySQL.Extension;
 using System.Collections;
 using System.Data;
 using System.Reflection;
+using prestoMySQL.Query.Attribute;
 
 namespace prestoMySQL.Database.MySQL {
 
@@ -239,20 +240,22 @@ namespace prestoMySQL.Database.MySQL {
 
             MethodInfo miGetValueAs = this.GetType().GetMethod( nameof( this.getValueAs ) , new Type[] { typeof( int ) } );
 
-            if ( schema.ContainsKey( tableName ?? typeof( T ).Name ) ) {
+            foreach ( var p in typeof( T ).GetProperties() ) {
+                var a = p.GetCustomAttribute<DALSchemaBind>();
 
-                foreach ( var p in typeof( T ).GetProperties() ) {
+                var schemaTable = a?.Table ?? tableName ?? typeof( T ).Name;
 
-                    if ( schema[tableName ?? typeof( T ).Name].ContainsKey( p.Name ) ) {
+                if ( ( schemaTable is not null ) && ( schema.ContainsKey( schemaTable ) ) ) {
+
+                    if ( schema[schemaTable].ContainsKey( p.Name ) ) {
 
                         MethodInfo getValueAs = miGetValueAs.MakeGenericMethod( p.PropertyType );
-                        var v = getValueAs.Invoke( this , new object[] { schema[tableName ?? typeof( T ).Name][p.Name] } );
-
+                        var v = getValueAs.Invoke( this , new object[] { schema[schemaTable][p.Name] } );
                         p.SetValue( result , v , null );
 
                     }
-                }
 
+                }
 
             }
 

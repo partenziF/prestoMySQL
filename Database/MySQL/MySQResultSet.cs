@@ -16,10 +16,13 @@ using prestoMySQL.Query.Attribute;
 namespace prestoMySQL.Database.MySQL {
 
 
-    public class ReadableResultSet<T> : IReadableResultSet where T : DbDataReader {
+    public class ReadableResultSet<T> : IReadableResultSet,IDisposable where T : DbDataReader {
 
         //private Task<T> mResultSet;
         private T mResultSet;
+        private bool disposedValue;
+        protected Dictionary<string , Dictionary<string , int>> schema;
+
         //private Random rand;
 
         public object this[string name] => mResultSet[name] ?? throw new NullReferenceException( "Invalid resultset" );
@@ -27,6 +30,7 @@ namespace prestoMySQL.Database.MySQL {
         //public MySQResultSet( Task<T> aResultSet ) {
         public ReadableResultSet( T aResultSet ) {
             this.mResultSet = aResultSet;
+            schema = null;
             //this.rand = new Random();
         }
 
@@ -226,22 +230,50 @@ namespace prestoMySQL.Database.MySQL {
 
         }
 
+        protected virtual void Dispose( bool disposing ) {
+            if ( !disposedValue ) {
+                if ( disposing ) {
+                    // TODO: eliminare lo stato gestito (oggetti gestiti)
+                    schema?.Clear();
+                }
+
+                // TODO: liberare risorse non gestite (oggetti non gestiti) ed eseguire l'override del finalizzatore
+                // TODO: impostare campi di grandi dimensioni su Null
+                disposedValue = true;
+            }
+        }
+
+        // // TODO: eseguire l'override del finalizzatore solo se 'Dispose(bool disposing)' contiene codice per liberare risorse non gestite
+        // ~ReadableResultSet()
+        // {
+        //     // Non modificare questo codice. Inserire il codice di pulizia nel metodo 'Dispose(bool disposing)'
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose() {
+            // Non modificare questo codice. Inserire il codice di pulizia nel metodo 'Dispose(bool disposing)'
+            Dispose( disposing: true );
+            GC.SuppressFinalize( this );
+        }
     }
 
     public class MySQResultSet : ReadableResultSet<MySqlDataReader> {
+
+        
         public MySQResultSet( MySqlDataReader aResultSet ) : base( aResultSet ) {
+            schema = null;
         }
 
         public T MapTo<T>( string tableName = null ) where T : struct {
 
-            var schema = this.ResultSetSchemaTable();
+            schema ??= this.ResultSetSchemaTable();
             object result = Activator.CreateInstance<T>();
             //objectResult = ( object ) result;
 
             MethodInfo miGetValueAs = this.GetType().GetMethod( nameof( this.getValueAs ) , new Type[] { typeof( int ) } );
 
             foreach ( var p in typeof( T ).GetProperties() ) {
-                var a = p.GetCustomAttribute<DALSchemaBind>();
+                var a = p.GetCustomAttribute<SchemaBindTable>();
 
                 var schemaTable = a?.Table ?? tableName ?? typeof( T ).Name;
 
@@ -258,8 +290,7 @@ namespace prestoMySQL.Database.MySQL {
                 }
 
             }
-
-            schema.Clear();
+            
             return ( T ) result;
 
         }

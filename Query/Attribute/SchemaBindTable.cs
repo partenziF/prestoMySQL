@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace prestoMySQL.Query.Attribute {
 
     [AttributeUsage( AttributeTargets.Property , AllowMultiple = false , Inherited = false )]
-    public class DALSchemaBind : System.Attribute {
+    public class SchemaBindTable : System.Attribute {
         public string Table;
     }
 }

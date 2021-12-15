@@ -83,10 +83,22 @@ namespace prestoMySQL.Column {
 
             return result.ToArray();
         }
+    }
 
 
+    public class SqlRawFunction : GenericFunction {
+        public SqlRawFunction( string functionName , params IFunctionParam[] functionParams ) : base( functionName , functionParams ) {
+        }
+
+        public override string ToString() {
+            if ( FunctionParams.Length > 0 )
+                return $"{FunctionName}({string.Join( "," , FunctionParams.ToList() )})";
+            else
+                return $"( {FunctionName} )";
+        }
 
     }
+
 
     public class FunctionExpression : IFunction {
         public FunctionExpression( string @operator , IFunctionParam left , IFunctionParam right ) {
@@ -367,6 +379,8 @@ namespace prestoMySQL.Column {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_EXTRACT ) ) {
                 return new FunctionExtract( ( param as DALProjectionFunction ).Function , ( param as DALProjectionFunction_EXTRACT ).Unit , functionParams );
+            } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_RAW ) ) {
+                return new SqlRawFunction( ( param as DALProjectionFunction ).Function , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_MAX ) ) {
                 return new GenericFunction( ( param as DALProjectionFunction ).Function , functionParams );
             } else if ( ( Type ) param.TypeId == typeof( DALProjectionFunction_MIN ) ) {

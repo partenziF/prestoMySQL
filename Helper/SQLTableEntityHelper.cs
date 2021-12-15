@@ -558,6 +558,17 @@ namespace prestoMySQL.Helper {
             }
         }
 
+
+        public static String[] getQueryTableProjectionField( SQLQuery aQueryInstance ) {
+
+            if ( Attribute.IsDefined( aQueryInstance.GetType() , typeof( DALQueryUseProjectionFieldFromEntity ) ) ) {
+                return aQueryInstance.GetType().GetCustomAttributes( typeof( DALQueryUseProjectionFieldFromEntity ) ).Select( a => ( a as DALQueryUseProjectionFieldFromEntity ).TableName ).ToArray();
+            } else {
+                return default;
+            }
+        }
+
+
         public static List<dynamic> getProjectionColumn( SQLQuery aQueryInstance ) {
 
             List<dynamic> result = new List<dynamic>();
@@ -601,7 +612,7 @@ namespace prestoMySQL.Helper {
         }
 
         public static List<dynamic> getProjectionColumnParam<T>( T aQueryInstance ) where T : SQLQuery {
-            
+
             var result = new List<dynamic>();
 
             foreach ( System.Reflection.PropertyInfo f in getProjectionFields<T>() ) {

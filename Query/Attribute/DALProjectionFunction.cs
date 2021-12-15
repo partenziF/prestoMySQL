@@ -74,6 +74,19 @@ namespace prestoMySQL.Query.Attribute {
 
     }
 
+
+    public class DALProjectionFunction_RAW : DALProjectionFunction {
+        public DALProjectionFunction_RAW( string RawFunction , MySQLDataType mySQLDataType ) : base( RawFunction , mySQLDataType ) {
+
+        }
+
+        public override int CountParam() {
+            return 0;
+        }
+
+    }
+
+
     public class DALProjectionFunction_SUM : DALProjectionFunction {
         public DALProjectionFunction_SUM( Type expression , MySQLDataType mySQLDataType ) : base( "SUM" , mySQLDataType ) {
             Expression = expression;

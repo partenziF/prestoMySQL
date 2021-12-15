@@ -990,8 +990,8 @@ namespace prestoMySQL.SQL {
         }
 
         public static SQLQuery SELECT<T>( T sqlQuery ) where T : SQLQuery {
-#if DEBUG
-            Console.WriteLine( "{2} TotalMemory {0} CollectionCount:{1}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) , nameof( SELECT ) );
+#if DEBUG            
+            Console.WriteLine( "{2} TotalMemory {0} CollectionCount:{1} Fragmented:{3}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ), nameof( SELECT ) , GC.GetGCMemoryInfo().FragmentedBytes );
 #endif
 
             sqlQuery.Initialize();
@@ -1049,9 +1049,9 @@ namespace prestoMySQL.SQL {
                 joins.Add( jt.ToString() );
             }
 
-#if DEBUG
-            Console.WriteLine( "{2} Before Collect TotalMemory {0} CollectionCount:{1}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) , nameof( SELECT ) );
-#endif
+//#if DEBUG
+            //Console.WriteLine( "{2} Before Collect TotalMemory {0} CollectionCount:{1} Fragmented:{3}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) , nameof( SELECT ) , GC.GetGCMemoryInfo().FragmentedBytes );
+//#endif
 
             joins.Clear();
             visited.Clear();
@@ -1060,7 +1060,7 @@ namespace prestoMySQL.SQL {
 
             GC.Collect();
 #if DEBUG
-            Console.WriteLine( "{2} After Collect TotalMemory {0} CollectionCount:{1}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) , nameof( SELECT ) );
+            Console.WriteLine( "{2} After Collect TotalMemory {0} CollectionCount:{1} Fragmented:{3}" , GC.GetTotalMemory( false ) , GC.CollectionCount( 0 ) , nameof( SELECT ) , GC.GetGCMemoryInfo().FragmentedBytes );
 #endif
 
 

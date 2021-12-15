@@ -49,4 +49,11 @@ namespace prestoMySQL.Query.Attribute {
     }
 
 
+    [AttributeUsage( AttributeTargets.Class , AllowMultiple = true , Inherited = false )]
+    public class DALQueryUseProjectionFieldFromEntity : System.Attribute {
+        public String TableName { get; set; }
+
+    }
+
+
 }

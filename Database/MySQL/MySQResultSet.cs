@@ -16,7 +16,7 @@ using prestoMySQL.Query.Attribute;
 namespace prestoMySQL.Database.MySQL {
 
 
-    public class ReadableResultSet<T> : IReadableResultSet,IDisposable where T : DbDataReader {
+    public class ReadableResultSet<T> : IReadableResultSet, IDisposable where T : DbDataReader {
 
         //private Task<T> mResultSet;
         private T mResultSet;
@@ -259,7 +259,7 @@ namespace prestoMySQL.Database.MySQL {
 
     public class MySQResultSet : ReadableResultSet<MySqlDataReader> {
 
-        
+
         public MySQResultSet( MySqlDataReader aResultSet ) : base( aResultSet ) {
             schema = null;
         }
@@ -269,13 +269,13 @@ namespace prestoMySQL.Database.MySQL {
             schema ??= this.ResultSetSchemaTable();
             object result = Activator.CreateInstance<T>();
             //objectResult = ( object ) result;
-
+            var aa = typeof( T ).GetCustomAttribute<SchemaBindTable>();
             MethodInfo miGetValueAs = this.GetType().GetMethod( nameof( this.getValueAs ) , new Type[] { typeof( int ) } );
 
             foreach ( var p in typeof( T ).GetProperties() ) {
                 var a = p.GetCustomAttribute<SchemaBindTable>();
 
-                var schemaTable = a?.Table ?? tableName ?? typeof( T ).Name;
+                var schemaTable = aa?.Table ?? a?.Table ?? tableName ?? typeof( T ).Name;
 
                 if ( ( schemaTable is not null ) && ( schema.ContainsKey( schemaTable ) ) ) {
 
@@ -290,7 +290,7 @@ namespace prestoMySQL.Database.MySQL {
                 }
 
             }
-            
+
             return ( T ) result;
 
         }

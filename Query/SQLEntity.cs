@@ -18,7 +18,7 @@ namespace prestoMySQL.Query {
 
         protected U mEntity;
 
-        
+
 
         public SQLEntity( QueryAdapter queryAdapter ) : base( queryAdapter ) {
             mEntity ??= ( U ) Activator.CreateInstance( typeof( U ) );
@@ -39,21 +39,26 @@ namespace prestoMySQL.Query {
 
         public override List<dynamic> GetProjectionColumns<T>( T myQuery ) {
 
+
+
             var result = new List<dynamic>();
             var option = SQLTableEntityHelper.getQueryTableOptions( myQuery );
+
             if ( option != default( ProjectionFieldsOption ) ) {
+
                 List<dynamic> ProjectionColumns = new List<dynamic>();
                 switch ( option ) {
-                    case ProjectionFieldsOption.All:                    
-                    result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
-                    result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
-                    break;
+                    case ProjectionFieldsOption.All:
+                        var aa = SQLTableEntityHelper.getQueryTableProjectionField( myQuery );
+                        result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
+                        result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
+                        break;
                     case ProjectionFieldsOption.Declared:
-                    result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
-                    break;
+                        result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
+                        break;
                     case ProjectionFieldsOption.Entity:
-                    result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
-                    break;
+                        result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
+                        break;
 
                 }
 
@@ -75,20 +80,18 @@ namespace prestoMySQL.Query {
 
             var option = SQLTableEntityHelper.getQueryTableOptions( myQuery );
             if ( option != default( ProjectionFieldsOption ) ) {
-                List<dynamic> ProjectionColumns = new List<dynamic>();
                 switch ( option ) {
                     case ProjectionFieldsOption.All:
-                    result.AddRange( SQLTableEntityHelper.getProjectionColumnName<T>( myQuery ) );
-                    result.AddRange( SQLTableEntityHelper.getColumnName<U>( true , false ) );
-                    break;
+                        result.AddRange( SQLTableEntityHelper.getProjectionColumnName<T>( myQuery ) );
+                        result.AddRange( SQLTableEntityHelper.getColumnName<U>( true , false ) );
+                        break;
                     case ProjectionFieldsOption.Declared:
-                    result.AddRange( SQLTableEntityHelper.getProjectionColumnName<T>( myQuery ) );
-                    //result.AddRange( SQLTableEntityHelper.getColumnName<U>( true , false ) );
-                    break;
+                        result.AddRange( SQLTableEntityHelper.getProjectionColumnName<T>( myQuery ) );
+                        //result.AddRange( SQLTableEntityHelper.getColumnName<U>( true , false ) );
+                        break;
                     case ProjectionFieldsOption.Entity:
-                    //result.AddRange( SQLTableEntityHelper.getProjectionColumnName<T>( myQuery ) );
-                    result.AddRange( SQLTableEntityHelper.getColumnName<U>( true , false ) );
-                    break;
+                        result.AddRange( SQLTableEntityHelper.getColumnName<U>( true , false ) );
+                        break;
 
                 }
 
@@ -125,30 +128,60 @@ namespace prestoMySQL.Query {
         public override List<dynamic> GetProjectionColumns<T>( T myQuery ) {
 
             var result = new List<dynamic>();
+            string[] entitiesNames;
             var option = SQLTableEntityHelper.getQueryTableOptions( myQuery );
+
             if ( option != default( ProjectionFieldsOption ) ) {
+
                 List<dynamic> ProjectionColumns = new List<dynamic>();
+
                 switch ( option ) {
+
                     case ProjectionFieldsOption.All:
-                    result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
-                    Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
-                    //result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
-                    break;
+
+                        entitiesNames = SQLTableEntityHelper.getQueryTableProjectionField( myQuery );
+                        result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
+                        if ( entitiesNames is null ) {
+                            Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
+                        } else {
+                            Graph.GetTopologicalOrder().Where( e => entitiesNames.Contains( e.TableName ) ).ToList().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
+                        }
+
+                        //Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
+                        //result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
+                        break;
+
                     case ProjectionFieldsOption.Declared:
-                    result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
-                    break;
+                        result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
+                        break;
+
                     case ProjectionFieldsOption.Entity:
-                    //result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
-                    Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
-                    break;
+                        //result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
+                        entitiesNames = SQLTableEntityHelper.getQueryTableProjectionField( myQuery );
+                        //Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
+                        if ( entitiesNames is null ) {
+                            Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
+                        } else {
+                            Graph.GetTopologicalOrder().Where( e => entitiesNames.Contains( e.TableName ) ).ToList().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
+                        }
+
+                        break;
 
                 }
 
             } else {
+                entitiesNames = SQLTableEntityHelper.getQueryTableProjectionField( myQuery );
                 result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
-                //result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
-                Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
+                //Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
+                if ( entitiesNames is null ) {
+                    Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
+                } else {
+                    Graph.GetTopologicalOrder().Where( e => entitiesNames.Contains( e.TableName ) ).ToList().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).ToList() ) );
+                }
+
             }
+
+
 
             return result;
 
@@ -157,75 +190,62 @@ namespace prestoMySQL.Query {
 
         protected override List<TableReference> GetListOfTableReference() {
 
-            /*Graph.GetTopologicalOrder().Select( x => x.tableReference )*/            
+            /*Graph.GetTopologicalOrder().Select( x => x.tableReference )*/
             //return new List<TableReference> { SQLTableEntityHelper.getTableReference<U>() };
             //mHashOfSQLQueryTableReference.Add( e.TableName , e );
             //return Graph.GetTopologicalOrder().Select( x => x.tableReference ).ToList();
             return new List<TableReference>() { Graph.GetTopologicalOrder().Select( x => x.tableReference ).ToList().FirstOrDefault() };
         }
 
-
-        //public override List<dynamic> GetProjectionColumns<T>( T myQuery ) {
-
-        //    var result = new List<dynamic>();
-        //    var option = SQLTableEntityHelper.getQueryTableOptions( myQuery );
-        //    if ( option != default( ProjectionFieldsOption ) ) {
-        //        List<dynamic> ProjectionColumns = new List<dynamic>();
-        //        switch ( option ) {
-        //            case ProjectionFieldsOption.All:
-        //            result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
-        //            result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
-        //            break;
-        //            case ProjectionFieldsOption.Declared:
-        //            result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
-        //            break;
-        //            case ProjectionFieldsOption.Entity:
-        //            result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
-        //            break;
-
-        //        }
-
-        //    } else {
-        //        result.AddRange( SQLTableEntityHelper.getProjectionColumn<T>( myQuery ) );
-        //        result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
-        //    }
-        //    return result;
-
-        //}
-
         internal override List<string> GetProjectionColumnName<T>( T myQuery ) {
 
             List<string> result = new List<string>();
 
             var option = SQLTableEntityHelper.getQueryTableOptions( myQuery );
+            string[] entitiesNames;
             if ( option != default( ProjectionFieldsOption ) ) {
                 List<dynamic> ProjectionColumns = new List<dynamic>();
                 switch ( option ) {
+
                     case ProjectionFieldsOption.All:
-                    result.AddRange( SQLTableEntityHelper.getProjectionColumnName<T>( myQuery ) );
-                    //result.AddRange( SQLTableEntityHelper.getDefinitionColumn( mEntity , true ).ToList() );
-                    Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
-                    break;
+                        entitiesNames = SQLTableEntityHelper.getQueryTableProjectionField( myQuery );
+                        result.AddRange( SQLTableEntityHelper.getProjectionColumnName<T>( myQuery ) );
+                        //Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
+                        if ( entitiesNames is null ) {
+                            Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
+                        } else {
+                            Graph.GetTopologicalOrder().Where( e => entitiesNames.Contains( e.TableName ) ).ToList().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
+                        }
+
+                        break;
+
                     case ProjectionFieldsOption.Declared:
-                    result.AddRange( SQLTableEntityHelper.getProjectionColumnName<T>( myQuery ) );
-                    break;
+                        result.AddRange( SQLTableEntityHelper.getProjectionColumnName<T>( myQuery ) );
+                        break;
+
                     case ProjectionFieldsOption.Entity:
-                    Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
-                    break;
+                        entitiesNames = SQLTableEntityHelper.getQueryTableProjectionField( myQuery );
+                        if ( entitiesNames is null ) {
+                            Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
+                        } else {
+                            Graph.GetTopologicalOrder().Where( e => entitiesNames.Contains( e.TableName ) ).ToList().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
+                        }
+
+                        break;
 
                 }
 
             } else {
+
+                entitiesNames = SQLTableEntityHelper.getQueryTableProjectionField( myQuery );
                 result.AddRange( SQLTableEntityHelper.getProjectionColumnName<T>( myQuery ) );
-                Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
+                if ( entitiesNames is null ) {
+                    Graph.GetTopologicalOrder().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
+                } else {
+                    Graph.GetTopologicalOrder().Where( e => entitiesNames.Contains( e.TableName ) ).ToList().ForEach( e => result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() ) );
+                }
+
             }
-
-
-            //result = SQLTableEntityHelper.getProjectionColumnName<T>( myQuery );
-            //foreach ( var e in Graph.GetTopologicalOrder() ) {
-            //    result.AddRange( SQLTableEntityHelper.getDefinitionColumn( e , true ).Select( x => ( string ) x.ToString() ).ToList() );
-            //}
-
 
             return result;
 

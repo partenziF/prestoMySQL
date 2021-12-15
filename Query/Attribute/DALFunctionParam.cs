@@ -100,6 +100,8 @@ namespace prestoMySQL.Query.Attribute {
     }
 
 
+
+
     [AttributeUsage( AttributeTargets.Property | AttributeTargets.Class , AllowMultiple = true , Inherited = false )]    
     public class DALFunctionParamFunction : DALFunctionParam {
 

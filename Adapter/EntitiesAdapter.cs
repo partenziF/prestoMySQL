@@ -934,19 +934,19 @@ namespace prestoMySQL.Adapter {
             return mAdapter<T>( null , selector );
         }
 
-        public T Adapter<T>( string name ) where T : TableEntity {
-            return mAdapter<T>( name , null );
+        public T Adapter<T>( string fkname ) where T : TableEntity {
+            return mAdapter<T>( fkname , null );
         }
 
-        private T mAdapter<T>( string name , Func<List<TableEntity> , T> selector = null ) where T : TableEntity {
+        private T mAdapter<T>( string fkname , Func<List<TableEntity> , T> selector = null ) where T : TableEntity {
 
 
             if ( mTableEntityCache.ContainsKey( typeof( T ) ) ) {
                 if ( selector is null ) {
-                    if ( name is null ) {
+                    if ( fkname is null ) {
                         return ( T ) mTableEntityCache[typeof( T )].FirstOrDefault();
                     } else {
-                        return ( T ) mTableEntityCache[typeof( T )].Where( x => ( ( x as dynamic ).Entity as AbstractEntity ).FkNames.Contains( name ) ).FirstOrDefault();
+                        return ( T ) mTableEntityCache[typeof( T )].Where( x => ( ( x as dynamic ).Entity as AbstractEntity ).FkNames.Contains( fkname ) ).FirstOrDefault();
                     }
                 } else {
                     var r = selector( mTableEntityCache[typeof( T )] );
@@ -964,9 +964,9 @@ namespace prestoMySQL.Adapter {
                     if ( t != null ) {
 
                         var e = Entity( t );
-                        if ( name is not null ) {
-                            if ( !e.FkNames.Contains( name ) )
-                                e.FkNames.Add( name );
+                        if ( fkname is not null ) {
+                            if ( !e.FkNames.Contains( fkname ) )
+                                e.FkNames.Add( fkname );
                         }
 
                         if ( e != null ) {

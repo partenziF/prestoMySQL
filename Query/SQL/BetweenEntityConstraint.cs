@@ -58,7 +58,7 @@ namespace prestoMySQL.Query.SQL {
     }
 
 
-    //	private String p1, p2 = null;
+    //    private String p1, p2 = null;
 
 
 

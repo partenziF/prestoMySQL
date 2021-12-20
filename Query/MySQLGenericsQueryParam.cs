@@ -22,9 +22,9 @@ namespace prestoMySQL.Query {
                 //  CONVALIDARE TUTTI GLI INPUT
                 //  Carattere di input Significato in Transact - SQL
                 //  ;               Delimitatore di query
-                //  '	            Delimitatore di stringhe di dati di tipo carattere
+                //  '                Delimitatore di stringhe di dati di tipo carattere
                 //  --              Delimitatore di commento a riga singola. Il testo --che segue fino alla fine della riga non viene valutato dal server.
-                //  /*_ ... _*/	    Delimitatori di commento.Il testo compreso fra /* _ e _ */ non viene valutato dal server.
+                //  /*_ ... _*/        Delimitatori di commento.Il testo compreso fra /* _ e _ */ non viene valutato dal server.
                 return String.Concat( "'" , MySqlConnector.MySqlHelper.EscapeString( ( string ) ( mValue as object) ) , "'" );
             else if ( mValue is DateTime )
                 return String.Concat( "'" , MySqlConnector.MySqlHelper.EscapeString( ( ( DateTime ) ( mValue as object ) ).ToString( MySQLQueryParam.MYSQL_DATE_FORMAT ) ) , "'" );

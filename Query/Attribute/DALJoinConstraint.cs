@@ -16,11 +16,11 @@ namespace prestoMySQL.Query.Attribute {
 
         //public DALJoinConstraint( String Column , String Value , Type TypeValue , Type Entity = GenericEntity, String Table = "")
         //{
-        //	this.Entity = Entity;
-        //	this.Table = Table;
-        //	this.Column = Column;
-        //	this.Value = Value;
-        //	this.TypeValue = TypeValue;
+        //    this.Entity = Entity;
+        //    this.Table = Table;
+        //    this.Column = Column;
+        //    this.Value = Value;
+        //    this.TypeValue = TypeValue;
         //}
     }
 

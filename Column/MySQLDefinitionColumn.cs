@@ -83,7 +83,7 @@ namespace prestoMySQL.Column {
                     break;
 
 
-                    //C# Alias	.NET Type	    Size	    Precision	                Range
+                    //C# Alias    .NET Type        Size        Precision                    Range
                     //float     System.Single   4 bytes     7 digits                    + -1.5 x 10^- 45 to + -3.4 x 10^38
                     //double    System.Double   8 bytes     15 - 16 digits              + -5.0 x 10^- 324 to + -1.7 x 10^308
                     //decimal   System.Decimal  16 bytes    28 - 29 decimal places      +-1.0 x 10^-28 to + -7.9 x 10^28

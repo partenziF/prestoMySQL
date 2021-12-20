@@ -11,14 +11,14 @@ namespace prestoMySQL.Query.Attribute {
         internal JoinType Join;
         internal string Table;
         internal string ForeignKey;
-        //	internal DALJoinConstraint[] Constraint;
+        //    internal DALJoinConstraint[] Constraint;
 
         public DALJoinClause( JoinType Join , String Table , String ForeignKey )
-	{
-		this.Join = Join;
-		this.Table = Table;
-		this.ForeignKey = ForeignKey;
-		//this.Constraint = Constraint;
-	}
+    {
+        this.Join = Join;
+        this.Table = Table;
+        this.ForeignKey = ForeignKey;
+        //this.Constraint = Constraint;
+    }
 }
 }

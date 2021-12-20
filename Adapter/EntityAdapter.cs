@@ -150,7 +150,7 @@ namespace prestoMySQL.Adapter {
                     return e.TableName;
                 }
                 //if (entity.isInstance(e)) {
-                //	return e.getTableName();
+                //    return e.getTableName();
                 //}
 
             }

@@ -562,28 +562,28 @@ namespace prestoMySQL.Query {
             //            for ( Field f : projectionFields ) {
 
             //                if ( f.isAnnotationPresent( DALJoinClauses.class)) {
-            //				if (f.isAnnotationPresent(DALProjectionColumn.class)) {
-            //					DALJoinClause[] t = f.getAnnotationsByType( DALJoinClause.class);
-            //					for (DALJoinClause a : t) {
+            //                if (f.isAnnotationPresent(DALProjectionColumn.class)) {
+            //                    DALJoinClause[] t = f.getAnnotationsByType( DALJoinClause.class);
+            //                    for (DALJoinClause a : t) {
 
-            //						DALProjectionColumn aa = f.getAnnotation( DALProjectionColumn.class);
-            //						createJoin( a, aa);
+            //                        DALProjectionColumn aa = f.getAnnotation( DALProjectionColumn.class);
+            //                        createJoin( a, aa);
 
             //    }
             //}
 
-            //			} else if ( f.isAnnotationPresent( DALJoinClause.class)) {
+            //            } else if ( f.isAnnotationPresent( DALJoinClause.class)) {
 
             //    if ( f.isAnnotationPresent( DALProjectionColumn.class)) {
             //    DALJoinClause a = f.getAnnotation( DALJoinClause.class);
             //DALProjectionColumn aa = f.getAnnotation( DALProjectionColumn.class);
 
             //createJoin( a , aa );
-            //				}
+            //                }
 
-            //			}
+            //            }
 
-            //		}
+            //        }
 
         }
 
@@ -592,11 +592,11 @@ namespace prestoMySQL.Query {
 
             //            String TableName = "";
             //            if ( ( c.Table().isEmpty() ) && ( c.Entity() == void.class)){
-            //			throw new Exception("In a constraint must specify Table or Entity");
+            //            throw new Exception("In a constraint must specify Table or Entity");
             //    } else if (c.Entity()!=void.class){
-            //			//TableName = c.Entity()
-            //			TableName = SQLTableEntityHelper.getTableName(c.Entity());
-            //		}else if ( !c.Table().isEmpty() ) {
+            //            //TableName = c.Entity()
+            //            TableName = SQLTableEntityHelper.getTableName(c.Entity());
+            //        }else if ( !c.Table().isEmpty() ) {
             //    TableName = c.Table();
             //}
 
